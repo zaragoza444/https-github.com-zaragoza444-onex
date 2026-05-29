@@ -1,0 +1,99 @@
+# Production stack: node + wallet bridge + optional TLS proxy
+# Usage:
+#   cp .env.example .env   # set SHIVA_API_KEY, SHIVA_CORS_ORIGINS, etc.
+#   docker compose -f docker-compose.prod.yml up -d
+#   docker compose -f docker-compose.prod.yml --profile proxy up -d
+
+services:
+  shivad:
+    build: .
+    image: shiva-blockchain:latest
+    ports:
+      - "8545:8545"
+      - "30303:30303"
+    volumes:
+      - shiva-data:/data
+    environment:
+      SHIVA_CORS_ORIGINS: ${SHIVA_CORS_ORIGINS:-*}
+      SHIVA_API_KEY: ${SHIVA_API_KEY:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8545/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  shiva-bridge:
+    build: .
+    image: shiva-blockchain:latest
+    entrypoint: ["/usr/local/bin/shiva-bridge"]
+    command:
+      - "-node"
+      - "http://shivad:8545"
+      - "-listen"
+      - ":9338"
+      - "-config"
+      - "/bridge-data/bridge.json"
+      - "-wallet"
+      - "/bridge-data/wallets/default.json"
+    ports:
+      - "9338:9338"
+    volumes:
+      - bridge-data:/bridge-data
+    environment:
+      SHIVA_NODE_URL: http://shivad:8545
+      SHIVA_PROJECT_ROOT: /app
+    depends_on:
+      shivad:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:9338/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  nginx:
+    image: nginx:alpine
+    profiles: ["proxy"]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/certs:/etc/nginx/certs:ro
+    depends_on:
+      - shivad
+      - shiva-bridge
+    restart: unless-stopped
+
+  shivad-testnet:
+    build: .
+    image: shiva-blockchain:latest
+    profiles: ["testnet"]
+    ports:
+      - "8547:8547"
+      - "30305:30305"
+    command:
+      - "-datadir"
+      - "/data"
+      - "-genesis"
+      - "/app/configs/genesis-testnet.json"
+      - "-api"
+      - ":8547"
+      - "-listen"
+      - ":30305"
+      - "-mine"
+      - "-faucet"
+    volumes:
+      - shiva-testnet:/data
+    environment:
+      SHIVA_FAUCET_PRIVATE_KEY: ${SHIVA_FAUCET_PRIVATE_KEY:-}
+    restart: unless-stopped
+
+volumes:
+  shiva-data:
+  bridge-data:
+  shiva-testnet:

@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Shiva Wallet",
+  "version": "1.0.0",
+  "description": "MetaMask-style wallet for Shiva blockchain (Ed25519)",
+  "permissions": ["storage"],
+  "host_permissions": ["http://localhost:8545/*", "http://localhost:8547/*", "https://*/*"],
+  "action": {
+    "default_title": "Shiva Wallet",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["inpage.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

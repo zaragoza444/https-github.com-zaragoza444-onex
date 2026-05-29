@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#000000" id="meta-theme">
+  <title>Shiva Wallet</title>
+  <link rel="stylesheet" href="okx.css">
+</head>
+<body data-theme="dark">
+  <div class="app">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="avatar">S</div>
+        <button type="button" class="network-pill" id="network-pill" onclick="refreshAll()">
+          <span class="network-dot" id="network-dot"></span>
+          <span id="network-name">Shiva</span>
+        </button>
+      </div>
+      <div class="topbar-right">
+        <button type="button" class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="Theme">☀</button>
+        <button type="button" class="icon-btn" onclick="refreshAll()" title="Refresh">↻</button>
+        <button type="button" class="icon-btn" onclick="openSheet('settings')" title="Settings">⚙</button>
+      </div>
+    </header>
+
+    <main class="screens">
+      <!-- WALLET (Home) -->
+      <section id="screen-wallet" class="screen active">
+        <div class="balance-section">
+          <div class="balance-label">Total assets</div>
+          <div class="balance-total" id="balance-total">—</div>
+          <div class="balance-sub balance-change positive" id="balance-sub">Shiva Wallet</div>
+          <p class="addr" id="addr-short"></p>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-periods">
+            <button type="button" class="active" data-period="24h" onclick="setChartPeriod('24h')">24h</button>
+            <button type="button" data-period="7d" onclick="setChartPeriod('7d')">7d</button>
+            <button type="button" data-period="30d" onclick="setChartPeriod('30d')">30d</button>
+          </div>
+          <div class="chart-wrap">
+            <svg id="portfolio-chart" viewBox="0 0 360 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <div class="chart-empty hidden" id="chart-empty">Balance history builds as you use the wallet</div>
+          </div>
+          <div class="chart-stats">
+            <span id="chart-change">—</span>
+            <span class="chart-stat-label" id="chart-period-label">24h change</span>
+          </div>
+        </div>
+
+        <div class="quick-actions">
+          <button type="button" class="quick-action" onclick="openSheet('send')">
+            <div class="quick-action-icon">↑</div>
+            <span>Send</span>
+          </button>
+          <button type="button" class="quick-action" onclick="openSheet('receive')">
+            <div class="quick-action-icon">↓</div>
+            <span>Receive</span>
+          </button>
+          <button type="button" class="quick-action" onclick="showTab('trade')">
+            <div class="quick-action-icon">⇄</div>
+            <span>Swap</span>
+          </button>
+          <button type="button" class="quick-action" onclick="openSheet('deposit')">
+            <div class="quick-action-icon">⊕</div>
+            <span>Deposit</span>
+          </button>
+        </div>
+
+        <div class="section-head">
+          <h2>Tokens</h2>
+          <a href="#" onclick="refreshAll();return false">Refresh</a>
+        </div>
+        <div class="asset-list" id="portfolio-grid"></div>
+      </section>
+
+      <!-- TRADE -->
+      <section id="screen-trade" class="screen">
+        <h1 class="trade-header">Swap</h1>
+        <div class="subtabs">
+          <button type="button" class="active" id="sub-swap" onclick="setSwapMode('swap')">Swap</button>
+          <button type="button" id="sub-pool" onclick="setSwapMode('pool')">Pool</button>
+          <button type="button" id="sub-bridge" onclick="setSwapMode('bridge')">Bridge</button>
+        </div>
+
+        <div id="swap-mode-swap">
+          <div class="swap-card">
+            <label>You pay</label>
+            <select id="swap-from-chain" class="chain-select" onchange="onChainChange(this,'swap-from-token'); swapQuoteDebounced()"></select>
+            <select id="swap-from-token" onchange="swapQuoteDebounced()"></select>
+            <input id="swap-amount" placeholder="0" oninput="swapQuoteDebounced()" />
+          </div>
+          <div class="swap-flip-btn">
+            <button type="button" onclick="flipSwap()">⇅</button>
+          </div>
+          <div class="swap-card">
+            <label>You receive</label>
+            <select id="swap-to-chain" class="chain-select" onchange="onChainChange(this,'swap-to-token'); swapQuoteDebounced()"></select>
+            <select id="swap-to-token" onchange="swapQuoteDebounced()"></select>
+            <input id="swap-out" placeholder="0" readonly />
+          </div>
+          <label>Slippage %</label>
+          <input id="swap-slippage" value="0.5" style="max-width:100px" />
+          <p class="impact" id="swap-quote"></p>
+          <button type="button" class="btn-primary" onclick="doShivaSwap()">Swap</button>
+          <p class="msg" id="swap-msg"></p>
+        </div>
+
+        <div id="swap-mode-pool" class="hidden">
+          <div class="card">
+            <label>Pool</label>
+            <select id="liq-pool" onchange="showPoolReserves()"></select>
+            <p class="msg" id="pool-reserves"></p>
+            <div class="row2">
+              <input id="liq-amount0" placeholder="Amount 0" />
+              <input id="liq-amount1" placeholder="Amount 1" />
+            </div>
+            <button type="button" class="btn-primary" onclick="addLiquidity()">Add liquidity</button>
+            <input id="liq-remove-shares" placeholder="LP shares to remove" />
+            <button type="button" class="btn-secondary" onclick="removeLiquidity()">Remove</button>
+            <p class="msg" id="liq-msg"></p>
+          </div>
+          <div class="section-head"><h2>Pools</h2></div>
+          <div class="grid" id="amm-pools"></div>
+        </div>
+
+        <div id="swap-mode-bridge" class="hidden">
+          <div class="card">
+            <p class="msg">Route via SHIVA hub for cross-chain swaps.</p>
+            <select id="bridge-from-chain" class="chain-select" onchange="onChainChange(this,'bridge-from-token')"></select>
+            <select id="bridge-from-token"></select>
+            <select id="bridge-to-chain" class="chain-select" onchange="onChainChange(this,'bridge-to-token')"></select>
+            <select id="bridge-to-token"></select>
+            <input id="bridge-amount" placeholder="Amount" />
+            <button type="button" class="btn-secondary" onclick="bridgeQuote()">Quote</button>
+            <button type="button" class="btn-primary" onclick="bridgeSwap()">Bridge</button>
+            <p class="msg" id="bridge-quote"></p>
+            <p class="msg" id="bridge-msg"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- EARN -->
+      <section id="screen-earn" class="screen">
+        <h1 class="trade-header">Earn</h1>
+        <div class="card">
+          <div class="card-title">Stake</div>
+          <div class="grid" id="stake-pools"></div>
+          <select id="stake-pool"></select>
+          <input id="stake-amount" placeholder="Amount" />
+          <button type="button" class="btn-primary" onclick="doStake()">Stake</button>
+          <p class="msg" id="stake-msg"></p>
+        </div>
+        <div class="card">
+          <div class="card-title">Your stakes</div>
+          <div id="stake-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Loans</div>
+          <div id="loan-list"></div>
+          <select id="loan-type"><option value="borrow">Borrow</option><option value="lend">Lend</option></select>
+          <input id="loan-col-key" value="shiva-mainnet-1:SHIVA" placeholder="Collateral" />
+          <input id="loan-col-amt" placeholder="Collateral amt" />
+          <input id="loan-debt-key" value="shiva-mainnet-1:wSHIVA" placeholder="Debt token" />
+          <input id="loan-debt-amt" placeholder="Debt amt" />
+          <input id="loan-apy" value="5.5" placeholder="APY" />
+          <button type="button" class="btn-primary" onclick="createLoan()">Open loan</button>
+          <p class="msg" id="loan-msg"></p>
+        </div>
+      </section>
+
+      <!-- DISCOVER -->
+      <section id="screen-discover" class="screen">
+        <h1 class="trade-header">Discover</h1>
+        <div class="discover-grid" id="discover-menu">
+          <button type="button" class="discover-tile" onclick="showDiscoverSection('nft')">
+            <div class="tile-icon">🖼</div>
+            <div class="tile-title">NFT</div>
+            <div class="tile-desc">Mint & collect</div>
+          </button>
+          <button type="button" class="discover-tile" onclick="showDiscoverSection('tasks')">
+            <div class="tile-icon">🎁</div>
+            <div class="tile-title">Rewards</div>
+            <div class="tile-desc">Tasks & bonuses</div>
+          </button>
+          <button type="button" class="discover-tile" onclick="showDiscoverSection('token')">
+            <div class="tile-icon">◎</div>
+            <div class="tile-title">Create token</div>
+            <div class="tile-desc">Launch your coin</div>
+          </button>
+          <button type="button" class="discover-tile" onclick="showDiscoverSection('networks')">
+            <div class="tile-icon">⛓</div>
+            <div class="tile-title">Networks</div>
+            <div class="tile-desc">13+ chains</div>
+          </button>
+        </div>
+
+        <div id="discover-nft" class="discover-panel hidden">
+          <button type="button" class="btn-secondary" onclick="showDiscoverMenu()">← Back</button>
+          <div class="card">
+            <div class="card-title">NFTs</div>
+            <div id="nft-list"></div>
+          </div>
+          <div class="card">
+            <select id="nft-chain" class="chain-select"></select>
+            <input id="nft-name" placeholder="Name" />
+            <textarea id="nft-desc" placeholder="Description" rows="2"></textarea>
+            <input id="nft-img" placeholder="Image URL" />
+            <button type="button" class="btn-primary" onclick="mintNFT()">Mint NFT</button>
+            <p class="msg" id="nft-msg"></p>
+          </div>
+        </div>
+
+        <div id="discover-tasks" class="discover-panel hidden">
+          <button type="button" class="btn-secondary" onclick="showDiscoverMenu()">← Back</button>
+          <div class="card"><div id="task-list"></div></div>
+        </div>
+
+        <div id="discover-token" class="discover-panel hidden">
+          <button type="button" class="btn-secondary" onclick="showDiscoverMenu()">← Back</button>
+          <div class="card">
+            <select id="mint-chain" class="chain-select"></select>
+            <input id="mint-name" placeholder="Token name" />
+            <input id="mint-symbol" placeholder="Symbol" />
+            <input id="mint-decimals" type="number" value="8" />
+            <input id="mint-supply" placeholder="Total supply" />
+            <button type="button" class="btn-primary" onclick="createToken()">Create</button>
+            <p class="msg" id="mint-msg"></p>
+          </div>
+          <div class="card"><div id="custom-tokens"></div></div>
+        </div>
+
+        <div id="discover-networks" class="discover-panel hidden">
+          <button type="button" class="btn-secondary" onclick="showDiscoverMenu()">← Back</button>
+          <div class="grid" id="chains-list"></div>
+        </div>
+      </section>
+
+      <!-- WEB3 -->
+      <section id="screen-web3" class="screen">
+        <h1 class="trade-header">Web3</h1>
+        <div class="web3-search">
+          <input id="dapp-url" placeholder="Search or enter dApp URL" onkeydown="if(event.key==='Enter')openDapp()" />
+          <button type="button" class="btn-primary web3-go" onclick="openDapp()">Go</button>
+        </div>
+        <div class="section-head"><h2>Popular</h2></div>
+        <div class="dapp-grid" id="dapp-grid"></div>
+        <div class="section-head"><h2>Connected</h2></div>
+        <div id="dapp-connected" class="dapp-connected-list"></div>
+        <div class="card web3-provider-card">
+          <div class="card-title">Shiva provider</div>
+          <p class="msg">Ed25519 · EIP-1193 compatible via extension</p>
+          <p class="addr" id="web3-addr">—</p>
+          <button type="button" class="btn-secondary" onclick="copyAddress()">Copy address</button>
+          <a class="btn-secondary web3-link" href="http://127.0.0.1:8545/" target="_blank" rel="noopener">Open explorer</a>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav">
+      <button type="button" class="active" data-screen="wallet" onclick="showTab('wallet')">
+        <span class="nav-icon">💼</span>
+        Wallet
+      </button>
+      <button type="button" data-screen="trade" onclick="showTab('trade')">
+        <span class="nav-icon">⇄</span>
+        Trade
+      </button>
+      <button type="button" data-screen="earn" onclick="showTab('earn')">
+        <span class="nav-icon">📈</span>
+        Earn
+      </button>
+      <button type="button" data-screen="discover" onclick="showTab('discover')">
+        <span class="nav-icon">◎</span>
+        Discover
+      </button>
+      <button type="button" data-screen="web3" onclick="showTab('web3')">
+        <span class="nav-icon">🌐</span>
+        Web3
+      </button>
+    </nav>
+  </div>
+
+  <!-- Sheets -->
+  <div class="sheet-backdrop" id="sheet-backdrop" onclick="closeSheet()"></div>
+
+  <div class="sheet" id="sheet-send">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Send</div>
+    <select id="send-chain" class="chain-select" onchange="onChainChange(this,'send-token')"></select>
+    <select id="send-token"></select>
+    <input id="send-to" placeholder="Recipient address" />
+    <input id="send-amount" placeholder="Amount" />
+    <input id="send-fee" value="0.001" placeholder="Fee (Shiva)" />
+    <button type="button" class="btn-primary" onclick="doSend(); closeSheet()">Confirm send</button>
+    <p class="msg" id="send-msg"></p>
+  </div>
+
+  <div class="sheet" id="sheet-receive">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Receive</div>
+    <p class="msg">Your Shiva address — share to receive SHIVA on-chain.</p>
+    <p class="addr" id="addr"></p>
+    <button type="button" class="btn-primary" onclick="copyAddress()">Copy address</button>
+  </div>
+
+  <div class="sheet" id="sheet-settings">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Settings</div>
+    <div class="settings-row">
+      <span>Appearance</span>
+      <button type="button" class="btn-secondary" onclick="toggleTheme(); closeSheet()">Toggle light / dark</button>
+    </div>
+    <div class="settings-row">
+      <span>Wallet</span>
+      <button type="button" class="btn-primary" onclick="createWallet(); closeSheet()">Create new wallet</button>
+    </div>
+    <p class="msg">Shiva Wallet · bridge + native Ed25519</p>
+  </div>
+
+  <div class="sheet" id="sheet-deposit">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Deposit</div>
+    <select id="dep-chain" class="chain-select" onchange="loadDeposit(); onChainChange(this,'dep-token')"></select>
+    <button type="button" class="btn-secondary" onclick="loadDeposit()">Deposit address</button>
+    <div id="dep-info"></div>
+    <select id="dep-token"></select>
+    <input id="dep-amount" placeholder="Amount" />
+    <input id="dep-tx" placeholder="Tx hash (optional)" />
+    <button type="button" class="btn-primary" onclick="doDeposit(); closeSheet()">Record</button>
+    <p class="msg" id="dep-msg"></p>
+  </div>
+
+  <span id="status" class="hidden" aria-hidden="true"></span>
+
+  <script src="app.js"></script>
+</body>
+</html>

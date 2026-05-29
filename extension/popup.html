@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { width: 320px; font-family: system-ui; background: #0a0e14; color: #eef2f8; padding: 12px; margin: 0; }
+    input { width: 100%; padding: 8px; margin: 6px 0; border-radius: 6px; border: 1px solid #333; background: #141b26; color: #fff; box-sizing: border-box; }
+    button { width: 100%; padding: 10px; background: #00e5b0; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 6px; }
+    .addr { font-size: 10px; word-break: break-all; color: #00e5b0; }
+    label { font-size: 11px; color: #7d8da6; }
+  </style>
+</head>
+<body>
+  <h3 style="margin:0 0 8px">Shiva Wallet</h3>
+  <label>RPC URL</label>
+  <input id="rpc" value="http://127.0.0.1:9338/rpc" />
+  <label>Private key (hex, stored locally)</label>
+  <input id="key" type="password" placeholder="64-byte hex" />
+  <button id="save">Save & connect</button>
+  <p class="addr" id="addr"></p>
+  <script src="popup.js"></script>
+</body>
+</html>

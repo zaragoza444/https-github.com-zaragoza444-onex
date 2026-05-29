@@ -1,0 +1,36 @@
+# Binaries & data
+bin/
+data/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Local SDK bundle (breaks go mod tidy if committed)
+go/
+go-sdk.zip
+
+# Secrets & env
+.env
+.env.*
+!.env.example
+configs/faucet-testnet.env
+**/wallets/*.json
+!**/wallets/.gitkeep
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+*.lnk
+.idea/
+.vscode/
+*.swp
+
+# Certs (use deploy/certs/README only)
+deploy/certs/*.pem
+deploy/certs/*.key
+
+# Test / temp
+coverage.out
+*.test
+tmp/
