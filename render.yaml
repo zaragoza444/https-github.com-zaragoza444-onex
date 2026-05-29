@@ -1,0 +1,42 @@
+# Deploy Shiva node + wallet bridge on Render (free tier for testing).
+# Dashboard → New → Blueprint → connect this repo.
+# After deploy, set GitHub repo variable SHIVA_BRIDGE_PUBLIC_URL to your bridge URL
+# (e.g. https://shiva-bridge.onrender.com) and re-run the Pages workflow.
+
+services:
+  - type: web
+    name: shiva-node
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerCommand: sh -c "/usr/local/bin/shivad -datadir /var/data -api 0.0.0.0:$PORT -listen :30303 -seeds /app/configs/seeds-mainnet.json"
+    healthCheckPath: /health
+    disk:
+      name: shiva-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: SHIVA_CORS_ORIGINS
+        value: https://zaragoza444.github.io
+
+  - type: web
+    name: shiva-bridge
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerCommand: sh -c "/usr/local/bin/shiva-bridge -node $SHIVA_NODE_URL -listen 0.0.0.0:$PORT -config /bridge-data/bridge.json -wallet /bridge-data/wallets/default.json"
+    healthCheckPath: /health
+    disk:
+      name: bridge-data
+      mountPath: /bridge-data
+      sizeGB: 1
+    envVars:
+      - key: SHIVA_NODE_URL
+        fromService:
+          type: web
+          name: shiva-node
+          property: host
+      - key: SHIVA_CORS_ORIGINS
+        value: https://zaragoza444.github.io
+      - key: SHIVA_PROJECT_ROOT
+        value: /app

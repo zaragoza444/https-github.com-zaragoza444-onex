@@ -51,6 +51,18 @@ sudo systemctl enable --now shivad shiva-bridge
 - Never commit `.env`, wallet JSON, or private keys
 - Testnet faucet: set `SHIVA_FAUCET_PRIVATE_KEY` only on testnet hosts
 
+## Shiva Wallet mobile apps
+
+React Native (Expo) WebView app in [`mobile/`](mobile/).
+
+1. Deploy backend with HTTPS (`https://YOUR_DOMAIN/wallet/`).
+2. Set `EXPO_PUBLIC_WALLET_URL` in `mobile/.env` (see `mobile/.env.example`).
+3. Build and publish: **[mobile/PUBLISH.md](mobile/PUBLISH.md)**.
+
+```bash
+cd mobile && npm install && eas build --platform all --profile production
+```
+
 ## Publish to GitHub + Gitea
 
 ```powershell

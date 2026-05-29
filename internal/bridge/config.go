@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type Config struct {
@@ -69,6 +70,21 @@ func applyEnvOverrides(cfg *Config) {
 	if v := os.Getenv("SHIVA_PROJECT_ROOT"); v != "" {
 		cfg.ProjectRoot = v
 	}
+	if p := strings.TrimSpace(os.Getenv("PORT")); p != "" && os.Getenv("SHIVA_BRIDGE_LISTEN") == "" {
+		cfg.Listen = ":" + strings.TrimPrefix(p, ":")
+	}
+	cfg.NodeURL = normalizeURL(cfg.NodeURL)
+}
+
+func normalizeURL(u string) string {
+	u = strings.TrimSpace(u)
+	if u == "" {
+		return u
+	}
+	if strings.HasPrefix(u, "http://") || strings.HasPrefix(u, "https://") {
+		return u
+	}
+	return "https://" + u
 }
 
 func SaveConfig(path string, cfg Config) error {

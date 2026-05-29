@@ -158,6 +158,10 @@ make test
 make run-testnet   # :8547, mining + faucet
 ```
 
+## Mobile apps (Android & iOS)
+
+Expo WebView wrapper in [`mobile/`](mobile/) — see [mobile/PUBLISH.md](mobile/PUBLISH.md).
+
 ## Publish to GitHub & Gitea
 
 1. Create empty repos named `shiva-blockchain` on [GitHub](https://github.com/new) and your Gitea server.
