@@ -4,7 +4,7 @@ param(
     [string]$BridgeUrl,
     [switch]$GitHubVariable,
     [string]$GitHubUser = "zaragoza444",
-    [string]$RepoName = "onex-blockchain"
+    [string]$RepoName = "onex"
 )
 
 $ErrorActionPreference = "Stop"

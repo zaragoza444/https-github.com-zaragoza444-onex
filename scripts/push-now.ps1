@@ -1,7 +1,7 @@
 # One-shot: GitHub login (if needed), create repo, push. Optional Gitea mirror.
 param(
     [string]$GitHubUser = "zaragoza444",
-    [string]$RepoName = "onex-blockchain",
+    [string]$RepoName = "onex",
     [string]$GiteaUrl = ""
 )
 

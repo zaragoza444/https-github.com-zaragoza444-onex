@@ -5,7 +5,7 @@
 - [Expo account](https://expo.dev) and EAS CLI: `npm i -g eas-cli`
 - **Apple Developer** + **Google Play Console** (you indicated both are ready)
 - Production wallet URL: `https://YOUR_DOMAIN/wallet/` (see [DEPLOY.md](../DEPLOY.md))
-- **Anakatech Gitea Pages UI**: `https://git.anakatech.llc/pages/zardashtways44/onex-blockchain/wallet/` + bridge URL in [docs/wallet/config.js](../docs/wallet/config.js) (see [docs/HOSTING.md](../docs/HOSTING.md))
+- **Anakatech Gitea Pages UI**: `https://git.anakatech.llc/pages/zardashtways44/onex/wallet/` + bridge URL in [docs/wallet/config.js](../docs/wallet/config.js) (see [docs/HOSTING.md](../docs/HOSTING.md))
 
 ## 1. Configure
 

@@ -1,7 +1,7 @@
 # Production publish: sync wallet → GitHub (+ Pages) → Gitea (+ Pages).
 param(
     [string]$GitHubUser = "zaragoza444",
-    [string]$RepoName = "onex-blockchain",
+    [string]$RepoName = "onex",
     [string]$GiteaUrl = "",
     [string]$BridgeUrl = ""
 )

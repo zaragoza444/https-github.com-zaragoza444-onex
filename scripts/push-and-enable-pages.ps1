@@ -1,7 +1,7 @@
 # Push main to GitHub and enable GitHub Pages (Actions / workflow deployment).
 param(
     [string]$GitHubUser = "zaragoza444",
-    [string]$RepoName = "onex-blockchain",
+    [string]$RepoName = "onex",
     [string]$BridgeUrl = ""
 )
 

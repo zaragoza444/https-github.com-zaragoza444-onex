@@ -164,7 +164,7 @@ Expo WebView wrapper in [`mobile/`](mobile/) — see [mobile/PUBLISH.md](mobile/
 
 ## Publish to [Anakatech Gitea](https://git.anakatech.llc/) & GitHub
 
-1. Create empty repo **onex-blockchain** on https://git.anakatech.llc/ (and optionally on GitHub).
+1. Create empty repo **onex** on https://git.anakatech.llc/ (and optionally on GitHub).
 2. Copy `remotes.env.example` → `remotes.env` (defaults to Anakatech URLs).
 3. Push:
 
@@ -173,7 +173,7 @@ git push -u gitea main
 # optional mirror:
 .\scripts\publish-remotes.ps1 `
   -GitHub "https://github.com/zaragoza444/onex-blockchain.git" `
-  -Gitea "https://git.anakatech.llc/zardashtways44/onex-blockchain.git"
+  -Gitea "https://git.anakatech.llc/zardashtways44/onex.git"
 ```
 
 CI: `.gitea/workflows/ci.yml` (Anakatech) and `.github/workflows/ci.yml` (GitHub).
