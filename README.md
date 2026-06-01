@@ -162,18 +162,21 @@ make run-testnet   # :8547, mining + faucet
 
 Expo WebView wrapper in [`mobile/`](mobile/) — see [mobile/PUBLISH.md](mobile/PUBLISH.md).
 
-## Publish to GitHub & Gitea
+## Publish to [Anakatech Gitea](https://git.anakatech.llc/) & GitHub
 
-1. Create empty repos named `onex-blockchain` on [GitHub](https://github.com/new) and your Gitea server.
-2. Run (replace URLs with yours — see `remotes.example.env`):
+1. Create empty repo **onex-blockchain** on https://git.anakatech.llc/ (and optionally on GitHub).
+2. Copy `remotes.env.example` → `remotes.env` (defaults to Anakatech URLs).
+3. Push:
 
 ```powershell
+git push -u gitea main
+# optional mirror:
 .\scripts\publish-remotes.ps1 `
-  -GitHub "git@github.com:YOUR_USER/onex-blockchain.git" `
-  -Gitea "git@git.YOUR_DOMAIN:YOUR_USER/onex-blockchain.git"
+  -GitHub "https://github.com/zaragoza444/onex-blockchain.git" `
+  -Gitea "https://git.anakatech.llc/zardashtways44/onex-blockchain.git"
 ```
 
-CI runs on push: `.github/workflows/ci.yml` (GitHub) and `.gitea/workflows/ci.yml` (Gitea).
+CI: `.gitea/workflows/ci.yml` (Anakatech) and `.github/workflows/ci.yml` (GitHub).
 
 ## Layout
 

@@ -1,18 +1,21 @@
-# GitHub Pages + bridge API
+# Anakatech Gitea Pages + bridge API
 
 | Component | URL |
 |-----------|-----|
-| Wallet UI (Pages) | https://zaragoza444.github.io/onex-blockchain/wallet/ |
-| Bridge API | Your hosted `onex-bridge` (required for send/swap/AI) |
+| **Git** | https://git.anakatech.llc/zardashtways44/onex-blockchain |
+| **Wallet UI (Pages)** | https://git.anakatech.llc/pages/zardashtways44/onex-blockchain/wallet/ |
+| **Bridge API** | Your hosted `onex-bridge` (required for send/swap/AI) |
 
 **Quick connect (external):** open  
-`https://zaragoza444.github.io/onex-blockchain/wallet/?bridge=https://YOUR-bridge.onrender.com`  
+`https://git.anakatech.llc/pages/zardashtways44/onex-blockchain/wallet/?bridge=https://YOUR-bridge.onrender.com`  
 or set the URL under **Settings → Bridge API**.
+
+Confirm the exact Pages URL in your repo on [Anakatech Gitea](https://git.anakatech.llc/) → **Settings → Pages** after the first workflow run.
 
 ## Step 1 — Deploy bridge (Render, recommended)
 
 1. Open [Render Dashboard](https://dashboard.render.com/) → **New** → **Blueprint**
-2. Connect repo `zaragoza444/onex-blockchain`
+2. Connect repo (Gitea or GitHub mirror)
 3. Apply [`render.yaml`](../render.yaml) (creates `onex-node` + `onex-bridge`)
 4. When finished, copy the **onex-bridge** public URL, e.g. `https://onex-bridge-xxxx.onrender.com`
 
@@ -20,11 +23,11 @@ Free tier sleeps after inactivity; use a paid plan or your own VPS for productio
 
 ## Step 2 — Wire bridge URL into Pages wallet
 
-**Option A — GitHub variable (best)**
+**Option A — Gitea variable (best)**
 
-1. Repo → **Settings** → **Secrets and variables** → **Actions** → **Variables**
-2. Add variable: `ONEX_BRIDGE_PUBLIC_URL` = `https://onex-bridge-xxxx.onrender.com` (no trailing slash)
-3. **Actions** → **GitHub Pages** → **Run workflow**
+1. Repo on https://git.anakatech.llc/ → **Settings** → **Actions** → **Variables**
+2. Add: `ONEX_BRIDGE_PUBLIC_URL` = `https://onex-bridge-xxxx.onrender.com` (no trailing slash)
+3. **Actions** → **Gitea Pages** → **Run workflow**
 
 **Option B — Local script**
 
@@ -32,40 +35,28 @@ Free tier sleeps after inactivity; use a paid plan or your own VPS for productio
 .\scripts\set-bridge-url.ps1 -BridgeUrl "https://onex-bridge-xxxx.onrender.com"
 git add docs/wallet/config.js
 git commit -m "Configure bridge URL for Pages wallet"
-git push
+git push gitea main
 ```
 
 ## Step 3 — CORS on bridge
 
-On Render, `ONEX_CORS_ORIGINS` is set to `https://zaragoza444.github.io` in `render.yaml`.
+On Render, `ONEX_CORS_ORIGINS` includes `https://git.anakatech.llc` in `render.yaml`.
 
-If you host bridge elsewhere, set:
+If you host bridge elsewhere:
 
 ```env
-ONEX_CORS_ORIGINS=https://zaragoza444.github.io,https://your-bridge-host
+ONEX_CORS_ORIGINS=https://git.anakatech.llc,https://your-bridge-host
 ```
 
 ## Step 4 — Mobile app
 
-[`mobile/.env`](../mobile/.env) uses the Pages wallet URL. No change needed if you use GitHub Pages UI.
+[`mobile/.env`](../mobile/.env) should use the Gitea Pages wallet URL. See [`mobile/.env.example`](../mobile/.env.example).
 
-## Enable GitHub Pages
-
-**Settings → Pages → Source: GitHub Actions**
-
-Push to `main` runs [`.github/workflows/pages.yml`](../.github/workflows/pages.yml).
-
-One command (after [GitHub CLI](https://cli.github.com/) is installed):
+## Push to Anakatech Gitea
 
 ```powershell
-.\scripts\push-and-enable-pages.ps1
-# optional bridge URL for swaps on Pages:
-.\scripts\push-and-enable-pages.ps1 -BridgeUrl "https://your-onex-bridge.onrender.com"
+git remote set-url gitea https://git.anakatech.llc/zardashtways44/onex-blockchain.git
+git push -u gitea main
 ```
 
-## Full stack on your domain (alternative)
-
-Use [DEPLOY.md](../DEPLOY.md) with `docker-compose.prod.yml` and set:
-
-- `EXPO_PUBLIC_WALLET_URL=https://your-domain.com/wallet/`
-- No split `ONEX_BRIDGE_URL` needed (same origin)
+Create the empty repository on https://git.anakatech.llc/ first if push fails with “repository not found”.

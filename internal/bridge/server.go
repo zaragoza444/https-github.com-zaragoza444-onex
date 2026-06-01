@@ -133,6 +133,10 @@ func originAllowed(origin string, allowed []string) bool {
 		if strings.Contains(a, "github.io") && strings.Contains(o, "github.io") {
 			return true
 		}
+		// Anakatech Gitea Pages and subdomains when git.anakatech.llc is listed.
+		if strings.Contains(a, "anakatech.llc") && strings.Contains(o, "anakatech.llc") {
+			return true
+		}
 	}
 	return false
 }

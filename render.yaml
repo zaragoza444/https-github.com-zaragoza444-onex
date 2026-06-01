@@ -17,7 +17,7 @@ services:
       sizeGB: 1
     envVars:
       - key: ONEX_CORS_ORIGINS
-        value: https://zaragoza444.github.io
+        value: https://git.anakatech.llc,https://zaragoza444.github.io
 
   - type: web
     name: onex-bridge
@@ -37,6 +37,6 @@ services:
           name: onex-node
           property: host
       - key: ONEX_CORS_ORIGINS
-        value: https://zaragoza444.github.io
+        value: https://git.anakatech.llc,https://zaragoza444.github.io
       - key: ONEX_PROJECT_ROOT
         value: /app

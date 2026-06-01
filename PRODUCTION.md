@@ -1,11 +1,13 @@
 # OneX Wallet — production go-live
 
-## One command (GitHub + Gitea)
+Primary Git host: **[Anakatech Gitea](https://git.anakatech.llc/)** (`git.anakatech.llc`).
+
+## One command (Gitea + optional GitHub)
 
 ```powershell
 # 1. Copy and edit remotes
 copy remotes.env.example remotes.env
-# Set GITEA_URL and optional ONEX_BRIDGE_PUBLIC_URL
+# GITEA_URL defaults to https://git.anakatech.llc/zardashtways44/onex-blockchain.git
 
 # 2. Publish
 .\scripts\publish-production.ps1
@@ -21,44 +23,48 @@ With bridge URL (Render):
 
 | Target | Result |
 |--------|--------|
-| **GitHub** | Repo `zaragoza444/onex-blockchain`, Actions Pages workflow |
-| **Wallet UI** | https://zaragoza444.github.io/onex-blockchain/wallet/ |
-| **Gitea** | Push to `GITEA_URL`, `.gitea/workflows/pages.yml` for Pages |
+| **Anakatech Gitea** | Repo `zardashtways44/onex-blockchain`, `.gitea/workflows/pages.yml` for Pages |
+| **Wallet UI** | `https://git.anakatech.llc/pages/zardashtways44/onex-blockchain/wallet/` |
+| **GitHub** (optional) | Mirror `zaragoza444/onex-blockchain`, Actions Pages |
 | **Bridge API** | Deploy [`render.yaml`](../render.yaml) on Render (or Docker prod) |
 
 ## After first push
 
-### GitHub Pages
+### Gitea (Anakatech)
+
+1. Create empty repo **onex-blockchain** at https://git.anakatech.llc/ (if it does not exist).
+2. Push: `git push -u gitea main`
+3. Repo → **Settings → Pages** → enable Actions deploy.
+4. Set variable `ONEX_BRIDGE_PUBLIC_URL` if using split hosting (Render bridge).
+
+### GitHub Pages (optional mirror)
+
 1. Repo → **Settings → Pages** → source **GitHub Actions**
 2. **Actions → GitHub Pages** → confirm green run
-3. Optional: **Settings → Actions → Variables** → `ONEX_BRIDGE_PUBLIC_URL`
-
-### Gitea Pages
-1. Push to your Gitea remote (`remotes.env` → `GITEA_URL`)
-2. Repo → **Settings → Pages** → enable Actions deploy
-3. Set variable `ONEX_BRIDGE_PUBLIC_URL` if using split hosting
+3. Optional variable: `ONEX_BRIDGE_PUBLIC_URL`
 
 ### Bridge (required for send/swap/wallet sync)
+
 1. [Render Blueprints](https://dashboard.render.com/blueprints) → connect repo → apply `render.yaml`
 2. Copy **onex-bridge** HTTPS URL
 3. Run: `.\scripts\connect-bridge.ps1 -BridgeUrl "https://..." -GitHubVariable`
 
 ### Mobile app
-Default wallet URL: `https://zaragoza444.github.io/onex-blockchain/wallet/` (`mobile/.env.example`)
+
+Default wallet URL: `https://git.anakatech.llc/pages/zardashtways44/onex-blockchain/wallet/` (`mobile/.env.example`)
 
 ## CORS
 
 Set on bridge (`ONEX_CORS_ORIGINS`):
 
 ```env
-ONEX_CORS_ORIGINS=https://zaragoza444.github.io,https://your-gitea-pages-host
+ONEX_CORS_ORIGINS=https://git.anakatech.llc,https://zaragoza444.github.io
 ```
 
 ## Local production stack
 
 ```powershell
 docker compose -f docker-compose.prod.yml up -d --build
-# Wallet: http://HOST:9338/wallet/
 ```
 
-See [DEPLOY.md](../DEPLOY.md) and [docs/HOSTING.md](HOSTING.md).
+See [DEPLOY.md](DEPLOY.md) and [docs/HOSTING.md](docs/HOSTING.md).
