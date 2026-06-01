@@ -2,12 +2,12 @@
 
 | Component | URL |
 |-----------|-----|
-| **Git** | https://git.anakatech.llc/zardashtways44/onex |
-| **Wallet UI (Pages)** | https://git.anakatech.llc/pages/zardashtways44/onex/wallet/ |
+| **Git** | https://git.anakatech.llc/zaragoza/onex |
+| **Wallet UI (Pages)** | https://git.anakatech.llc/pages/zaragoza/onex/wallet/ |
 | **Bridge API** | Your hosted `onex-bridge` (required for send/swap/AI) |
 
 **Quick connect (external):** open  
-`https://git.anakatech.llc/pages/zardashtways44/onex/wallet/?bridge=https://YOUR-bridge.onrender.com`  
+`https://git.anakatech.llc/pages/zaragoza/onex/wallet/?bridge=https://YOUR-bridge.onrender.com`  
 or set the URL under **Settings → Bridge API**.
 
 Confirm the exact Pages URL in your repo on [Anakatech Gitea](https://git.anakatech.llc/) → **Settings → Pages** after the first workflow run.
@@ -55,7 +55,7 @@ ONEX_CORS_ORIGINS=https://git.anakatech.llc,https://your-bridge-host
 ## Push to Anakatech Gitea
 
 ```powershell
-git remote set-url gitea https://git.anakatech.llc/zardashtways44/onex.git
+git remote set-url gitea https://git.anakatech.llc/zaragoza/onex.git
 git push -u gitea main
 ```
 

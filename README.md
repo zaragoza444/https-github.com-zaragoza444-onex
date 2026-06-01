@@ -173,7 +173,7 @@ git push -u gitea main
 # optional mirror:
 .\scripts\publish-remotes.ps1 `
   -GitHub "https://github.com/zaragoza444/onex-blockchain.git" `
-  -Gitea "https://git.anakatech.llc/zardashtways44/onex.git"
+  -Gitea "https://git.anakatech.llc/zaragoza/onex.git"
 ```
 
 CI: `.gitea/workflows/ci.yml` (Anakatech) and `.github/workflows/ci.yml` (GitHub).

@@ -7,7 +7,7 @@ Primary Git host: **[Anakatech Gitea](https://git.anakatech.llc/)** (`git.anakat
 ```powershell
 # 1. Copy and edit remotes
 copy remotes.env.example remotes.env
-# GITEA_URL defaults to https://git.anakatech.llc/zardashtways44/onex.git
+# GITEA_URL defaults to https://git.anakatech.llc/zaragoza/onex.git
 
 # 2. Publish
 .\scripts\publish-production.ps1
@@ -23,8 +23,8 @@ With bridge URL (Render):
 
 | Target | Result |
 |--------|--------|
-| **Anakatech Gitea** | Repo `zardashtways44/onex`, `.gitea/workflows/pages.yml` for Pages |
-| **Wallet UI** | `https://git.anakatech.llc/pages/zardashtways44/onex/wallet/` |
+| **Anakatech Gitea** | Repo `zaragoza/onex`, `.gitea/workflows/pages.yml` for Pages |
+| **Wallet UI** | `https://git.anakatech.llc/pages/zaragoza/onex/wallet/` |
 | **GitHub** (optional) | Mirror `zaragoza444/onex-blockchain`, Actions Pages |
 | **Bridge API** | Deploy [`render.yaml`](../render.yaml) on Render (or Docker prod) |
 
@@ -51,7 +51,7 @@ With bridge URL (Render):
 
 ### Mobile app
 
-Default wallet URL: `https://git.anakatech.llc/pages/zardashtways44/onex/wallet/` (`mobile/.env.example`)
+Default wallet URL: `https://git.anakatech.llc/pages/zaragoza/onex/wallet/` (`mobile/.env.example`)
 
 ## CORS
 
