@@ -39,6 +39,36 @@ services:
     environment:
       - ONEX_FAUCET_PRIVATE_KEY=${ONEX_FAUCET_PRIVATE_KEY:-}
 
+  bsc-launcher:
+    build:
+      context: .
+      dockerfile: bsc-launcher/Dockerfile
+    image: bsc-launcher:latest
+    profiles: ["bsc-launcher"]
+    ports:
+      - "${BSC_LAUNCHER_PORT:-9340}:9340"
+    env_file:
+      - bsc-launcher/.env
+    environment:
+      BSC_LAUNCHER_ENV: ${BSC_LAUNCHER_ENV:-production}
+      BSC_RPC_URL: ${BSC_RPC_URL:-https://bsc-dataseed.binance.org}
+      BSC_DEPLOYER_PRIVATE_KEY: ${BSC_DEPLOYER_PRIVATE_KEY:-}
+      BSCSCAN_API_KEY: ${BSCSCAN_API_KEY:-}
+      BSC_LAUNCHER_API_KEY: ${BSC_LAUNCHER_API_KEY:-}
+      BSC_LAUNCHER_CORS_ORIGINS: ${BSC_LAUNCHER_CORS_ORIGINS:-}
+      BSC_LAUNCHER_LISTEN: :9340
+      BSC_LAUNCHER_DATA_DIR: /data
+      BSC_LAUNCHER_ROOT: /app/bsc-launcher
+    volumes:
+      - bsc-launcher-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:9340/ready"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 15s
+
   nginx:
     image: nginx:alpine
     profiles: ["proxy"]
@@ -54,3 +84,4 @@ services:
 volumes:
   onex-data:
   onex-testnet:
+  bsc-launcher-data:

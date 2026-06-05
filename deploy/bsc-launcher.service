@@ -1,0 +1,25 @@
+[Unit]
+Description=BSC Token Launcher
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=launcher
+Group=launcher
+WorkingDirectory=/opt/onex/bsc-launcher
+EnvironmentFile=/opt/onex/bsc-launcher/.env
+Environment=BSC_LAUNCHER_ROOT=/opt/onex/bsc-launcher
+ExecStart=/opt/onex/bin/bsc-launcher
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65535
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/onex/bsc-launcher/data
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

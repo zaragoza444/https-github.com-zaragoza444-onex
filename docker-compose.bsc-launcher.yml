@@ -1,0 +1,46 @@
+# Standalone BSC Token Launcher — production
+# Usage:
+#   cp bsc-launcher/.env.example bsc-launcher/.env
+#   docker compose -f docker-compose.bsc-launcher.yml up -d
+
+services:
+  bsc-launcher:
+    build:
+      context: .
+      dockerfile: bsc-launcher/Dockerfile
+    image: bsc-launcher:latest
+    ports:
+      - "${BSC_LAUNCHER_PORT:-9340}:9340"
+    env_file:
+      - bsc-launcher/.env
+    environment:
+      BSC_LAUNCHER_ENV: production
+      BSC_LAUNCHER_LISTEN: :9340
+      BSC_LAUNCHER_DATA_DIR: /data
+      BSC_LAUNCHER_ROOT: /app/bsc-launcher
+    volumes:
+      - bsc-launcher-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:9340/ready"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 15s
+
+  nginx:
+    image: nginx:alpine
+    profiles: ["proxy"]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx.bsc-launcher.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/certs:/etc/nginx/certs:ro
+    depends_on:
+      bsc-launcher:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  bsc-launcher-data:

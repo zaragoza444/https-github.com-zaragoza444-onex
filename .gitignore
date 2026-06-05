@@ -1,6 +1,8 @@
 # Binaries & data
 bin/
 data/
+!bsc-launcher/data/
+!bsc-launcher/data/.gitkeep
 *.exe
 *.dll
 *.so
@@ -14,6 +16,7 @@ go-sdk.zip
 .env
 .env.*
 !.env.example
+!.env.production.example
 remotes.env
 configs/faucet-testnet.env
 **/wallets/*.json
@@ -37,3 +40,4 @@ deploy/certs/*.key
 coverage.out
 *.test
 tmp/
+node_modules/

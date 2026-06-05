@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Create BEP-20 tokens on BNB Smart Chain mainnet. Deploy with MetaMask, track on BSCScan, live DEX prices.">
+  <title>BSC Token Launcher</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="header">
+    <div class="brand">
+      <span class="logo">BSC</span>
+      <div>
+        <h1>Token Launcher</h1>
+        <p class="subtitle">Create BEP-20 tokens on BNB Smart Chain Mainnet</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span id="env-badge" class="env-badge"></span>
+      <button id="btn-settings" class="btn secondary" type="button">Settings</button>
+      <button id="btn-connect" class="btn secondary">Connect MetaMask</button>
+      <span id="wallet-addr" class="wallet-addr"></span>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="create">Create Token</button>
+    <button class="tab" data-tab="dashboard">Dashboard</button>
+  </nav>
+
+  <main>
+    <section id="pane-create" class="pane">
+      <div class="card">
+        <h2>Deploy new BEP-20 token</h2>
+        <form id="create-form" class="form-grid">
+          <label>Name<input id="token-name" placeholder="My Token" required></label>
+          <label>Symbol<input id="token-symbol" placeholder="MTK" maxlength="11" required></label>
+          <label>Decimals<input id="token-decimals" type="number" min="0" max="18" value="18"></label>
+          <label>Total supply<input id="token-supply" placeholder="1000000" required></label>
+          <label class="full">Deploy method
+            <select id="deploy-method">
+              <option value="metamask">MetaMask (you pay gas)</option>
+              <option value="backend">Platform wallet (server pays gas)</option>
+            </select>
+          </label>
+          <div class="full actions">
+            <button type="submit" class="btn primary" id="btn-deploy">Deploy Token</button>
+          </div>
+        </form>
+        <p id="create-msg" class="msg"></p>
+        <div id="deploy-result" class="result hidden"></div>
+      </div>
+    </section>
+
+    <section id="pane-dashboard" class="pane hidden">
+      <div class="card">
+        <div class="row-between">
+          <h2>Launched tokens</h2>
+          <button id="btn-refresh" class="btn secondary">Refresh</button>
+        </div>
+        <div class="lookup-row">
+          <input id="lookup-addr" placeholder="Look up any BEP-20 contract (0x…)" />
+          <button id="btn-lookup" class="btn secondary" type="button">Look up</button>
+        </div>
+        <p id="lookup-msg" class="msg"></p>
+        <div id="token-list" class="token-list">
+          <p class="msg">Loading...</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="settings-modal" class="modal hidden">
+    <div class="modal-card">
+      <h2>Settings</h2>
+      <label>API key (production)
+        <input id="settings-api-key" type="password" placeholder="BSC_LAUNCHER_API_KEY" autocomplete="off">
+      </label>
+      <p class="msg">Required for deploy/register when the server has <code>BSC_LAUNCHER_API_KEY</code> set. Stored in this browser only.</p>
+      <div class="modal-actions">
+        <button id="btn-settings-save" class="btn primary" type="button">Save</button>
+        <button id="btn-settings-close" class="btn secondary" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>Tokens appear on <a href="https://bscscan.com" target="_blank" rel="noopener">BSCScan</a> after on-chain deployment. Prices from DexScreener when listed on a DEX.</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

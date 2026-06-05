@@ -19,6 +19,7 @@ jobs:
       - run: go build -o bin/onex ./cmd/onex
       - run: go build -o bin/onex-bridge ./cmd/onex-bridge
       - run: go build -o bin/onex-ai ./cmd/onex-ai
+      - run: go build -o bin/bsc-launcher ./bsc-launcher/server
       - run: go test ./internal/ai/...
 
   docker:
@@ -27,3 +28,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker build -t onex-blockchain:ci .
+      - run: docker build -f bsc-launcher/Dockerfile -t bsc-launcher:ci .
