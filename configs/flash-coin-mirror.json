@@ -2,7 +2,8 @@
   "name": "Flash Coin",
   "symbol": "FLASH",
   "decimals": 8,
-  "supply": "100000000000",
+  "supply": "1000",
+  "supplyNote": "Human decimal amount (e.g. 1000 = 1,000 FLASH); not base units",
   "originChain": "onex-mainnet-1",
   "mirrorChains": [
     "ethereum",
@@ -13,5 +14,6 @@
     "avalanche",
     "base"
   ],
-  "wrapAmountPerChain": "10000000000"
+  "wrapAmountPerChain": "100",
+  "wrapAmountNote": "Human decimal amount per mirror chain"
 }

@@ -11,7 +11,7 @@ import json
 bin=open('contracts/out/contracts_FlashCoin_sol_FlashCoin.bin').read().strip()
 abi=json.load(open('contracts/out/contracts_FlashCoin_sol_FlashCoin.abi'))
 json.dump({'contract':'FlashCoin','bytecode':bin,'abi':abi},
-          open('internal/bridge/chains/flashcoin.json','w'), separators=(',',':'))
+          open('internal/bridge/chains/flashcoin.json','w'), indent=2)
 print('Wrote internal/bridge/chains/flashcoin.json')
 "@
 

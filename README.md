@@ -34,6 +34,17 @@ Chains: OneX, Ethereum, BSC, Polygon, Arbitrum, Optimism, Avalanche, Base, Solan
 
 See [docs/TOKEN-PLATFORM.md](docs/TOKEN-PLATFORM.md) for deploy, wrap, API, and CLI.
 
+### Flash Coin mirror
+
+Cross-chain **FLASH** / **wFLASH** with real ERC-20 contracts on 7 EVM mainnets. See [docs/FLASH-COIN.md](docs/FLASH-COIN.md).
+
+```bat
+powershell -File scripts\finish-flash-coin.ps1
+scripts\deploy-flash-coin-live.ps1
+```
+
+Dashboard: http://127.0.0.1:9340/ (Token Lab → Flash Coin mirrors)
+
 ### OneX AI
 
 - **Wallet tab “AI”** — chat with portfolio-aware help

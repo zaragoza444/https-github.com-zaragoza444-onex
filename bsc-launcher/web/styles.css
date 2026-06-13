@@ -441,6 +441,9 @@ input:focus, select:focus {
   box-shadow: var(--shadow);
 }
 .token-card h3 { margin: 0 0 0.35rem; display: flex; align-items: center; gap: 0.5rem; font-size: 1.05rem; }
+.badge.live { background: #0d9488; color: #fff; }
+.flash-mirror-panel { margin-bottom: 1.5rem; }
+.mono { font-family: ui-monospace, monospace; font-size: 0.82rem; word-break: break-all; }
 .badge {
   font-size: 0.72rem;
   padding: 0.15rem 0.5rem;

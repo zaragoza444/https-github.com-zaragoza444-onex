@@ -41,3 +41,6 @@ coverage.out
 *.test
 tmp/
 node_modules/
+
+# Solidity compile output (embedded artifact: internal/bridge/chains/flashcoin.json)
+contracts/out/

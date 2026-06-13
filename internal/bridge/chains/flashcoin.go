@@ -43,6 +43,11 @@ func evmOwnerFromCreator(creator string) string {
 	return "0x" + hex.EncodeToString(h[:20])
 }
 
+// EvmOwnerFromCreator maps a OneX wallet address to a deterministic EVM owner.
+func EvmOwnerFromCreator(creator string) string {
+	return evmOwnerFromCreator(creator)
+}
+
 // EncodeFlashCoinDeployData returns creation bytecode + ABI-encoded constructor args.
 func EncodeFlashCoinDeployData(name, symbol string, decimals int, supply uint64, ownerHex string) (string, map[string]interface{}, error) {
 	art, err := loadFlashCoinArtifact()

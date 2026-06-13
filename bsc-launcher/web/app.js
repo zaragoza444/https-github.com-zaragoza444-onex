@@ -944,7 +944,37 @@ async function enrichToken(token) {
   return { token, bscscan, price };
 }
 
+async function renderFlashMirror() {
+  const el = document.getElementById('flash-mirror-list');
+  if (!el) return;
+  const book = await api('/api/flash-mirror').catch(() => ({}));
+  const list = book.deployments || [];
+  if (!list.length) {
+    el.innerHTML = '<p class="status-msg">No mirror data. Run <code>onex flash-coin-mirror</code> then <code>onex flash-coin-deploy-live</code> with your deployer key.</p>';
+    return;
+  }
+  el.innerHTML = list.map(dep => {
+    const live = dep.status === 'live' || dep.verifiedOnChain;
+    const badge = live ? '<span class="badge live">LIVE</span>' : '<span class="badge">PREDICTED</span>';
+    const addr = dep.contractAddress || dep.predictedAddress || '—';
+    const exp = (dep.explorer || '').replace(/\/$/, '');
+    const tokenUrl = exp ? `${exp}/token/${addr}` : '#';
+    const txUrl = dep.txHash && exp ? `${exp}/tx/${dep.txHash}` : '';
+    return `
+      <div class="token-card">
+        <h3>${book.symbol || 'wFLASH'} ${badge} <span class="badge">${dep.chainName || dep.chainId}</span></h3>
+        <p class="token-meta">${book.name || 'Flash Coin'} mirror · supply ${dep.supplyHuman || '100'}</p>
+        <p class="token-meta mono">${addr}</p>
+        <div class="token-links">
+          ${exp ? `<a href="${tokenUrl}" target="_blank" rel="noopener">Explorer</a>` : ''}
+          ${txUrl ? `<a href="${txUrl}" target="_blank" rel="noopener">Deploy TX</a>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
 async function renderDashboard() {
+  await renderFlashMirror();
   const el = document.getElementById('token-list');
   const list = await api('/api/tokens');
   if (list.error) {

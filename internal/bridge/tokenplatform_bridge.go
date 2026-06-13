@@ -301,6 +301,24 @@ func (b *Bridge) WrapPlatformToken(originChainID, originTokenID, targetChainID, 
 				break
 			}
 		}
+		deploy, err := adapter.Deploy(chains.DeployInput{
+			Chain: chainToDeployChain(*targetChain), Name: origin.Name + " (Wrapped)",
+			Symbol: wrappedSymbol, Decimals: origin.Decimals, Supply: amount,
+			Creator: b.WalletAddress(), TokenID: wrapped.ID,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+		for i := range tokens {
+			if tokens[i].ChainID == targetChainID && tokens[i].ID == wrapped.ID {
+				tokens[i].ContractAddress = deploy.ContractAddress
+				tokens[i].DeployStatus = deploy.DeployStatus
+				tokens[i].DeployTxHash = deploy.DeployTxHash
+				tokens[i].DeployPayload = deploy.DeployPayload
+				wrapped = &tokens[i]
+				break
+			}
+		}
 	}
 
 	wrapID := tokenplatform.SanitizeTokenID("W" + newID())

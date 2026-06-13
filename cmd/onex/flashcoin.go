@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type flashCoinMirrorConfig struct {
@@ -47,22 +48,33 @@ func runFlashCoinMirror(args []string) {
 		cfg.Decimals = 8
 	}
 	if cfg.WrapAmountPerChain == "" {
-		cfg.WrapAmountPerChain = "10000000000"
+		cfg.WrapAmountPerChain = "100"
 	}
 
 	base := bridgeURL(*bridge)
-	fmt.Printf("Deploying %s (%s) on %s...\n", cfg.Name, cfg.Symbol, cfg.OriginChain)
-	deploy, code := bridgePost(base, "/bridge/platform/deploy", map[string]interface{}{
-		"chainId": cfg.OriginChain, "name": cfg.Name, "symbol": cfg.Symbol,
-		"decimals": cfg.Decimals, "supply": cfg.Supply,
-	})
-	printJSON(deploy, code)
-	if code >= 400 {
-		os.Exit(1)
-	}
-	tokenID, _ := deploy["id"].(string)
-	if tokenID == "" {
-		tokenID = cfg.Symbol
+	symbol := strings.ToUpper(cfg.Symbol)
+
+	var tokenID string
+	var deploy map[string]interface{}
+	if existingID, existing, ok := findExistingPlatformToken(base, cfg.OriginChain, symbol); ok {
+		tokenID = existingID
+		deploy = existing
+		fmt.Printf("Reusing %s (%s) on %s — id %s\n", cfg.Name, symbol, cfg.OriginChain, tokenID)
+	} else {
+		fmt.Printf("Deploying %s (%s) on %s...\n", cfg.Name, symbol, cfg.OriginChain)
+		var code int
+		deploy, code = bridgePost(base, "/bridge/platform/deploy", map[string]interface{}{
+			"chainId": cfg.OriginChain, "name": cfg.Name, "symbol": symbol,
+			"decimals": cfg.Decimals, "supply": cfg.Supply,
+		})
+		printJSON(deploy, code)
+		if code >= 400 {
+			os.Exit(1)
+		}
+		tokenID, _ = deploy["id"].(string)
+		if tokenID == "" {
+			tokenID = symbol
+		}
 	}
 
 	results := []map[string]interface{}{{"step": "deploy", "chain": cfg.OriginChain, "token": tokenID, "result": deploy}}
@@ -92,6 +104,36 @@ func runFlashCoinMirror(args []string) {
 		fmt.Printf("Saved mirror manifest: %s\n", outPath)
 	}
 	printJSON(summary, 200)
+}
+
+func findExistingPlatformToken(base, chainID, symbol string) (string, map[string]interface{}, bool) {
+	out, code := bridgeGet(base, "/bridge/platform/tokens")
+	if code >= 400 {
+		return "", nil, false
+	}
+	raw, err := json.Marshal(out)
+	if err != nil {
+		return "", nil, false
+	}
+	var tokens []map[string]interface{}
+	if err := json.Unmarshal(raw, &tokens); err != nil {
+		return "", nil, false
+	}
+	wantChain := strings.TrimSpace(chainID)
+	wantSymbol := strings.ToUpper(strings.TrimSpace(symbol))
+	for _, t := range tokens {
+		ch, _ := t["chainId"].(string)
+		sym, _ := t["symbol"].(string)
+		if ch != wantChain || strings.ToUpper(sym) != wantSymbol {
+			continue
+		}
+		id, _ := t["id"].(string)
+		if id == "" {
+			continue
+		}
+		return id, t, true
+	}
+	return "", nil, false
 }
 
 func findFlashCoinConfig() string {
