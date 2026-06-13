@@ -1,0 +1,17 @@
+{
+  "name": "Flash Coin",
+  "symbol": "FLASH",
+  "decimals": 8,
+  "supply": "100000000000",
+  "originChain": "onex-mainnet-1",
+  "mirrorChains": [
+    "ethereum",
+    "bsc",
+    "polygon",
+    "arbitrum",
+    "optimism",
+    "avalanche",
+    "base"
+  ],
+  "wrapAmountPerChain": "10000000000"
+}

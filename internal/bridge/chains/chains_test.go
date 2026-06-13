@@ -20,8 +20,11 @@ func TestEVMDeploy(t *testing.T) {
 	if !strings.HasPrefix(res.ContractAddress, "0x") {
 		t.Fatalf("expected 0x address, got %s", res.ContractAddress)
 	}
-	if res.DeployStatus != "deployed" {
+	if res.DeployStatus != "ready" {
 		t.Fatalf("status %s", res.DeployStatus)
+	}
+	if res.DeployPayload["data"] == nil {
+		t.Fatal("expected deploy data for real contract")
 	}
 }
 

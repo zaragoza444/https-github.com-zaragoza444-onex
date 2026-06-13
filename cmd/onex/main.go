@@ -37,6 +37,8 @@ func main() {
 		runTokenInfo(os.Args[2:])
 	case "platform-status":
 		runPlatformStatus(os.Args[2:])
+	case "flash-coin-mirror":
+		runFlashCoinMirror(os.Args[2:])
 	default:
 		printUsage()
 		os.Exit(1)
@@ -55,7 +57,8 @@ Token Platform (requires onex-bridge running):
   onex token-list [-bridge URL]
   onex token-wrap -from-chain CHAIN -from-token ID -to-chain CHAIN -amount AMT [-bridge URL]
   onex token-info -chain CHAIN -id TOKEN_ID [-bridge URL]
-  onex platform-status [-bridge URL]`)
+  onex platform-status [-bridge URL]
+  onex flash-coin-mirror [-config PATH] [-bridge URL]`)
 }
 
 func runWalletCreate(args []string) {
