@@ -97,3 +97,25 @@ func (s *TokenStore) Find(address string) (*TokenRecord, error) {
 	}
 	return nil, fmt.Errorf("token not found")
 }
+
+func (s *TokenStore) Upsert(rec TokenRecord) error {
+	rec.ContractAddress = strings.ToLower(rec.ContractAddress)
+	list, err := s.Load()
+	if err != nil {
+		return err
+	}
+	for i, t := range list {
+		if strings.EqualFold(t.ContractAddress, rec.ContractAddress) {
+			if rec.CreatedAt == 0 {
+				rec.CreatedAt = t.CreatedAt
+			}
+			list[i] = rec
+			return s.Save(list)
+		}
+	}
+	if rec.CreatedAt == 0 {
+		rec.CreatedAt = time.Now().Unix()
+	}
+	list = append(list, rec)
+	return s.Save(list)
+}

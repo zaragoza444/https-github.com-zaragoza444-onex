@@ -142,7 +142,7 @@ func runFlashCoinDeployLive(args []string) {
 		name := cfg.Name + " (Wrapped)"
 		fmt.Printf("Deploying %s on %s...\n", symbol, ch.Name)
 
-		res, err := chains.DeployFlashCoinLive(ctx, ch.RPC, ch.NetworkID, name, symbol, cfg.Decimals, wrapSupply, "", key)
+		res, err := chains.DeployFlashCoinCreate2Live(ctx, ch.RPC, ch.NetworkID, name, symbol, cfg.Decimals, wrapSupply, cfg.CanonicalOwner, "FLASH", key)
 		if err != nil {
 			log.Printf("deploy %s failed: %v", chainID, err)
 			failed++

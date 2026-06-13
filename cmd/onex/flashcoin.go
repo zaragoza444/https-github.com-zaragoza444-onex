@@ -18,6 +18,8 @@ type flashCoinMirrorConfig struct {
 	OriginChain        string   `json:"originChain"`
 	MirrorChains       []string `json:"mirrorChains"`
 	WrapAmountPerChain string   `json:"wrapAmountPerChain"`
+	MirrorMode         string   `json:"mirrorMode"`
+	CanonicalOwner     string   `json:"canonicalOwner"`
 }
 
 func runFlashCoinMirror(args []string) {
@@ -48,7 +50,7 @@ func runFlashCoinMirror(args []string) {
 		cfg.Decimals = 8
 	}
 	if cfg.WrapAmountPerChain == "" {
-		cfg.WrapAmountPerChain = "100"
+		cfg.WrapAmountPerChain = "1000000000"
 	}
 
 	base := bridgeURL(*bridge)

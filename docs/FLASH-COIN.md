@@ -1,27 +1,26 @@
 # Flash Coin — cross-chain mirror
 
-Flash Coin (`FLASH`) is a OneX hub token mirrored as real ERC-20 `wFLASH` contracts on EVM mainnets.
+Flash Coin (`FLASH`) is a OneX hub token mirrored as **one real contract address** on every EVM mainnet — the same model as canonical tokens like USDT and BNB (real on-chain contracts, not fake per-chain placeholders).
+
+## How it differs from per-chain ERC-20
+
+| Old model | New model (CREATE2) |
+|-----------|---------------------|
+| Different predicted address per chain | **Same `0x…` address on all EVM chains** |
+| Separate ERC-20 deploy each chain | **One canonical contract** via CREATE2 factory |
+| Placeholder hashes | **Real bytecode** verifiable on explorers |
+
+Contract source: `contracts/FlashCoin.sol`  
+Deploy factory: `0x4e59b44847b379578588920cA78FbF26c0B4956C` (standard CREATE2 deployer on Ethereum, BSC, Polygon, etc.)
 
 ## Architecture
 
-```mermaid
-flowchart LR
-  ONEX[OneX FLASH token] -->|wrap 100 FLASH/chain| BRIDGE[Token Platform bridge]
-  BRIDGE --> ETH[Ethereum wFLASH]
-  BRIDGE --> BSC[BNB Chain wFLASH]
-  BRIDGE --> POL[Polygon wFLASH]
-  BRIDGE --> ARB[Arbitrum wFLASH]
-  BRIDGE --> OP[Optimism wFLASH]
-  BRIDGE --> AVAX[Avalanche wFLASH]
-  BRIDGE --> BASE[Base wFLASH]
 ```
-
-| Layer | What it is |
-|-------|------------|
-| **Bridge mirror** | Off-chain wrap records + deterministic predicted EVM addresses |
-| **Live deploy** | Real `FlashCoin.sol` contract creation on each chain |
-
-Contract source: `contracts/FlashCoin.sol` (minimal ERC-20, constructor mint).
+OneX FLASH  ──wrap──►  wFLASH @ 0xSAME… on Ethereum
+                    └►  wFLASH @ 0xSAME… on BSC
+                    └►  wFLASH @ 0xSAME… on Polygon
+                    └►  … (all 7 EVM mirrors share one address)
+```
 
 ## Quick start
 
@@ -32,7 +31,7 @@ go build -o bin/onex.exe ./cmd/onex
 powershell -File scripts\compile-flashcoin.ps1
 ```
 
-### 2. Generate bridge mirror (predicted addresses)
+### 2. Generate bridge mirror (predicted same address)
 
 Requires `onex-bridge` at http://127.0.0.1:9338:
 
@@ -41,41 +40,28 @@ run-onex-wallet.bat
 powershell -File scripts\generate-flash-coin-mirror.ps1
 ```
 
-Or manually:
+All mirror chains in `flash-coin-mirror-result.json` will show the **same** `contractAddress`.
 
-```bat
-onex flash-coin-mirror -config configs/flash-coin-mirror.json
-```
+### 3. Live mainnet deploy (real contracts)
 
-Output: `configs/flash-coin-mirror-result.json`
-
-### 3. Live mainnet deploy (real addresses)
-
-1. Copy `bsc-launcher/.env.example` → `bsc-launcher/.env`
-2. Set `FLASH_DEPLOYER_PRIVATE_KEY=0x...` (or `BSC_DEPLOYER_PRIVATE_KEY`)
-3. Fund that wallet with native gas on all mirror chains
+1. Set `FLASH_DEPLOYER_PRIVATE_KEY` in `bsc-launcher/.env`
+2. Optionally set `canonicalOwner` in `configs/flash-coin-mirror.json` (defaults to deployer wallet)
+3. Fund deployer with gas on all mirror chains
 4. Run:
 
 ```bat
 scripts\deploy-flash-coin-live.ps1
 ```
 
-Output: `configs/flash-coin-live-addresses.json`
-
-Deploy is resumable — already-verified chains are skipped. Re-run after funding more chains.
+Deploy uses CREATE2 — first chain deploys; others reuse the same address if already live. Re-run to resume.
 
 ### 4. Dashboard
-
-Start Token Lab:
 
 ```bat
 bsc-launcher\run-onex-token-lab.bat
 ```
 
-Open http://127.0.0.1:9340/ → **Dashboard** → **Flash Coin mirrors**
-
-- **PREDICTED** — deterministic address from bridge (not on-chain)
-- **LIVE** — confirmed bytecode after `flash-coin-deploy-live`
+http://127.0.0.1:9340/ → **Flash Coin mirrors** — **LIVE** when bytecode exists at the canonical address.
 
 ## Configuration
 
@@ -83,22 +69,15 @@ Open http://127.0.0.1:9340/ → **Dashboard** → **Flash Coin mirrors**
 
 | Field | Example | Notes |
 |-------|---------|-------|
-| `supply` | `"1000"` | Human decimals (not base units) |
-| `wrapAmountPerChain` | `"100"` | wFLASH minted per live deploy |
-| `mirrorChains` | 7 EVM mainnets | See `configs/chains.json` |
+| `supply` | `"1000"` | Human decimals on OneX |
+| `wrapAmountPerChain` | `"100"` | Minted per live deploy |
+| `mirrorMode` | `"create2-same-address"` | Same real contract all chains |
+| `canonicalOwner` | `"0x…"` | Token owner (empty = deployer) |
 
-## CLI reference
-
-```bat
-onex flash-coin-mirror [-config PATH] [-bridge URL]
-onex flash-coin-deploy-live [-config PATH] [-out PATH]
-onex flash-coin-deploy-live -verify [-out PATH]
-```
-
-## One-shot finish script
+## CLI
 
 ```bat
-powershell -File scripts\finish-flash-coin.ps1
+onex flash-coin-mirror
+onex flash-coin-deploy-live
+onex flash-coin-deploy-live -verify
 ```
-
-Builds binaries, compiles contract, runs mirror if bridge is up, prints live-deploy instructions.

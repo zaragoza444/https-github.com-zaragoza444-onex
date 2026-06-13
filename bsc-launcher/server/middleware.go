@@ -22,11 +22,29 @@ func withSecurityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https: wss:; frame-ancestors 'none'")
 		if r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https") {
 			w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func clientIP(r *http.Request) string {
+	if x := strings.TrimSpace(r.Header.Get("X-Real-IP")); x != "" {
+		return x
+	}
+	if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
+		if i := strings.Index(fwd, ","); i > 0 {
+			return strings.TrimSpace(fwd[:i])
+		}
+		return strings.TrimSpace(fwd)
+	}
+	host := r.RemoteAddr
+	if i := strings.LastIndex(host, ":"); i > 0 {
+		return host[:i]
+	}
+	return host
 }
 
 func withCORS(origins []string) middleware {
@@ -92,9 +110,6 @@ func (s *Server) withAPIAuth(next http.Handler) http.Handler {
 			return
 		}
 		key := strings.TrimSpace(r.Header.Get("X-API-Key"))
-		if key == "" {
-			key = strings.TrimSpace(r.URL.Query().Get("apiKey"))
-		}
 		if key != s.cfg.APIKey {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return

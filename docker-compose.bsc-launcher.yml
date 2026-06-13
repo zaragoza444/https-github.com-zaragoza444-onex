@@ -1,6 +1,6 @@
 # Standalone BSC Token Launcher — production
 # Usage:
-#   cp bsc-launcher/.env.example bsc-launcher/.env
+#   cp bsc-launcher/.env.production.example bsc-launcher/.env
 #   docker compose -f docker-compose.bsc-launcher.yml up -d
 
 services:
@@ -18,6 +18,7 @@ services:
       BSC_LAUNCHER_LISTEN: :9340
       BSC_LAUNCHER_DATA_DIR: /data
       BSC_LAUNCHER_ROOT: /app/bsc-launcher
+      BSC_LAUNCHER_CONFIG_DIR: /app/configs
     volumes:
       - bsc-launcher-data:/data
     restart: unless-stopped

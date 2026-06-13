@@ -14,6 +14,9 @@ import (
 
 func main() {
 	cfg := LoadConfig()
+	if err := cfg.ValidateProduction(); err != nil {
+		log.Fatal(err)
+	}
 	if err := os.MkdirAll(cfg.DataDir, 0o755); err != nil {
 		log.Fatal(err)
 	}
@@ -34,8 +37,13 @@ func main() {
 	mux.HandleFunc("/api/liquidity/quote", srv.handleLiquidityQuote)
 	mux.HandleFunc("/api/liquidity/pair", srv.handleLiquidityPair)
 	mux.HandleFunc("/api/liquidity/register", srv.handleLiquidityRegister)
+	mux.HandleFunc("/api/liquidity/copy", srv.handleLiquidityCopy)
 	mux.HandleFunc("/api/liquidity", srv.handleLiquidityList)
+	mux.HandleFunc("/api/fix-pending", srv.handleFixPending)
 	mux.HandleFunc("/api/flash-mirror", srv.handleFlashMirror)
+	mux.HandleFunc("/api/dex/registry", srv.handleDexRegistry)
+	mux.HandleFunc("/api/listings/bridge", srv.handleListingBridge)
+	mux.HandleFunc("/api/listings/flash", srv.handleFlashListingBridge)
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/api/") {

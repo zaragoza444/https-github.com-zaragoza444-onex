@@ -40,10 +40,19 @@ func (c *marketClient) setCached(key string, v float64) {
 }
 
 func (c *marketClient) BNBUSD() (float64, error) {
-	if v, ok := c.getCached("bnb"); ok {
+	return c.NativeUSD("bsc")
+}
+
+func (c *marketClient) NativeUSD(chainSlug string) (float64, error) {
+	key := "native:" + normalizeRegistryChain(chainSlug)
+	if v, ok := c.getCached(key); ok {
 		return v, nil
 	}
-	u := "https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd"
+	cgID := nativeCoinGeckoID(chainSlug)
+	if cgID == "" {
+		return 0, fmt.Errorf("no price feed for %s", chainSlug)
+	}
+	u := "https://api.coingecko.com/api/v3/simple/price?ids=" + cgID + "&vs_currencies=usd"
 	req, err := http.NewRequest(http.MethodGet, u, nil)
 	if err != nil {
 		return 0, err
@@ -58,17 +67,33 @@ func (c *marketClient) BNBUSD() (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	var out struct {
-		Binancecoin struct {
-			USD float64 `json:"usd"`
-		} `json:"binancecoin"`
+	var out map[string]struct {
+		USD float64 `json:"usd"`
 	}
 	if err := json.Unmarshal(body, &out); err != nil {
 		return 0, err
 	}
-	if out.Binancecoin.USD <= 0 {
-		return 0, fmt.Errorf("bnb price unavailable")
+	entry, ok := out[cgID]
+	if !ok || entry.USD <= 0 {
+		return 0, fmt.Errorf("%s price unavailable", chainSlug)
 	}
-	c.setCached("bnb", out.Binancecoin.USD)
-	return out.Binancecoin.USD, nil
+	c.setCached(key, entry.USD)
+	return entry.USD, nil
+}
+
+func nativeCoinGeckoID(chainSlug string) string {
+	switch normalizeRegistryChain(chainSlug) {
+	case "bsc":
+		return "binancecoin"
+	case "ethereum", "arbitrum", "optimism", "base":
+		return "ethereum"
+	case "polygon":
+		return "matic-network"
+	case "avalanche":
+		return "avalanche-2"
+	case "tron":
+		return "tron"
+	default:
+		return "ethereum"
+	}
 }

@@ -1,0 +1,15 @@
+{
+  "name": "BSCScan $1B USDT listing test",
+  "chain": "bsc",
+  "dex": "pancake-v2",
+  "quote": "usdt",
+  "targetUsdPerToken": 1,
+  "tokenAmount": 1000000000,
+  "quoteAmount": 1000000000,
+  "marketCapUsd": 1000000000,
+  "note": "1 billion token supply — BSCScan shows ~$1B market cap when pool has 1B tokens + 1B USDT at $1 each on PancakeSwap V2.",
+  "flashCoinAddress": "0x8944A53814b99E14c7BAE33814548a1F32bDCA8b",
+  "deployerAddress": "0x05868c29D58d1EC275Cf078356c03F79B1975600",
+  "usdtAddress": "0x55d398326f99059fF775485246999027B3197955",
+  "explorer": "https://bscscan.com"
+}

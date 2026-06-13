@@ -21,12 +21,12 @@ type Chain struct {
 func supportedChains() []Chain {
 	return []Chain{
 		{Slug: "bsc", Name: "BNB Smart Chain", ChainID: 56, RPCURL: "https://bsc-dataseed.binance.org", Explorer: "https://bscscan.com", NativeSymbol: "BNB", DexChainID: "bsc", TokenType: "erc20", LiquiditySupported: true, Live: true},
-		{Slug: "eth", Name: "Ethereum", ChainID: 1, RPCURL: "https://ethereum-rpc.publicnode.com", Explorer: "https://etherscan.io", NativeSymbol: "ETH", DexChainID: "ethereum", TokenType: "erc20", Live: true},
-		{Slug: "base", Name: "Base", ChainID: 8453, RPCURL: "https://mainnet.base.org", Explorer: "https://basescan.org", NativeSymbol: "ETH", DexChainID: "base", TokenType: "erc20", Live: true},
-		{Slug: "polygon", Name: "Polygon", ChainID: 137, RPCURL: "https://polygon-rpc.com", Explorer: "https://polygonscan.com", NativeSymbol: "MATIC", DexChainID: "polygon", TokenType: "erc20", Live: true},
-		{Slug: "arbitrum", Name: "Arbitrum One", ChainID: 42161, RPCURL: "https://arb1.arbitrum.io/rpc", Explorer: "https://arbiscan.io", NativeSymbol: "ETH", DexChainID: "arbitrum", TokenType: "erc20", Live: true},
-		{Slug: "optimism", Name: "Optimism", ChainID: 10, RPCURL: "https://mainnet.optimism.io", Explorer: "https://optimistic.etherscan.io", NativeSymbol: "ETH", DexChainID: "optimism", TokenType: "erc20", Live: true},
-		{Slug: "avalanche", Name: "Avalanche C-Chain", ChainID: 43114, RPCURL: "https://api.avax.network/ext/bc/C/rpc", Explorer: "https://snowtrace.io", NativeSymbol: "AVAX", DexChainID: "avalanche", TokenType: "erc20", Live: true},
+		{Slug: "eth", Name: "Ethereum", ChainID: 1, RPCURL: "https://ethereum-rpc.publicnode.com", Explorer: "https://etherscan.io", NativeSymbol: "ETH", DexChainID: "ethereum", TokenType: "erc20", LiquiditySupported: true, Live: true},
+		{Slug: "base", Name: "Base", ChainID: 8453, RPCURL: "https://mainnet.base.org", Explorer: "https://basescan.org", NativeSymbol: "ETH", DexChainID: "base", TokenType: "erc20", LiquiditySupported: true, Live: true},
+		{Slug: "polygon", Name: "Polygon", ChainID: 137, RPCURL: "https://polygon-rpc.com", Explorer: "https://polygonscan.com", NativeSymbol: "MATIC", DexChainID: "polygon", TokenType: "erc20", LiquiditySupported: true, Live: true},
+		{Slug: "arbitrum", Name: "Arbitrum One", ChainID: 42161, RPCURL: "https://arb1.arbitrum.io/rpc", Explorer: "https://arbiscan.io", NativeSymbol: "ETH", DexChainID: "arbitrum", TokenType: "erc20", LiquiditySupported: true, Live: true},
+		{Slug: "optimism", Name: "Optimism", ChainID: 10, RPCURL: "https://mainnet.optimism.io", Explorer: "https://optimistic.etherscan.io", NativeSymbol: "ETH", DexChainID: "optimism", TokenType: "erc20", LiquiditySupported: true, Live: true},
+		{Slug: "avalanche", Name: "Avalanche C-Chain", ChainID: 43114, RPCURL: "https://api.avax.network/ext/bc/C/rpc", Explorer: "https://snowtrace.io", NativeSymbol: "AVAX", DexChainID: "avalanche", TokenType: "erc20", LiquiditySupported: true, Live: true},
 		{Slug: "linea", Name: "Linea", ChainID: 59144, RPCURL: "https://rpc.linea.build", Explorer: "https://lineascan.build", NativeSymbol: "ETH", DexChainID: "linea", TokenType: "erc20", Live: true},
 		{Slug: "blast", Name: "Blast", ChainID: 81457, RPCURL: "https://rpc.blast.io", Explorer: "https://blastscan.io", NativeSymbol: "ETH", DexChainID: "blast", TokenType: "erc20", Live: true},
 		{Slug: "scroll", Name: "Scroll", ChainID: 534352, RPCURL: "https://rpc.scroll.io", Explorer: "https://scrollscan.com", NativeSymbol: "ETH", DexChainID: "scroll", TokenType: "erc20", Live: true},

@@ -2,10 +2,13 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/onex-blockchain/onex/internal/bridge/chains"
 )
 
 type Config struct {
@@ -15,13 +18,16 @@ type Config struct {
 	ChainID         int64
 	Explorer        string
 	DeployerKey     string
+	DeployerAddress string
 	BSCScanAPIKey   string
 	APIKey          string
 	CORSOrigins     []string
 	DataDir         string
+	ConfigDir       string
 	WebDir          string
 	RateLimitPerMin int
 	MaxBodyBytes    int64
+	BuildVersion    string
 }
 
 func LoadConfig() Config {
@@ -56,15 +62,52 @@ func LoadConfig() Config {
 		RPCURL:          envOr("BSC_RPC_URL", "https://bsc-dataseed.binance.org"),
 		ChainID:         56,
 		Explorer:        envOr("BSC_EXPLORER_URL", "https://bscscan.com"),
-		DeployerKey:     strings.TrimPrefix(strings.TrimSpace(os.Getenv("BSC_DEPLOYER_PRIVATE_KEY")), "0x"),
+		DeployerKey:     firstDeployerKey(),
+		DeployerAddress: chains.LoadDeployerAddress(),
 		BSCScanAPIKey:   scanKey,
 		APIKey:          strings.TrimSpace(os.Getenv("BSC_LAUNCHER_API_KEY")),
 		CORSOrigins:     cors,
 		DataDir:         dataDir,
+		ConfigDir:       resolveConfigDir(root),
 		WebDir:          filepath.Join(root, "web"),
-		RateLimitPerMin:  rateLimit,
+		RateLimitPerMin: rateLimit,
 		MaxBodyBytes:    1 << 20, // 1 MiB
+		BuildVersion:    envOr("BSC_LAUNCHER_BUILD", "dev"),
 	}
+}
+
+func resolveConfigDir(launcherRoot string) string {
+	if v := strings.TrimSpace(os.Getenv("BSC_LAUNCHER_CONFIG_DIR")); v != "" {
+		return filepath.Clean(v)
+	}
+	for _, base := range []string{filepath.Dir(launcherRoot), launcherRoot} {
+		p := filepath.Join(base, "configs")
+		if fileExists(filepath.Join(p, "chains.json")) {
+			return p
+		}
+	}
+	return filepath.Join(filepath.Dir(launcherRoot), "configs")
+}
+
+func firstDeployerKey() string {
+	key, err := chains.LoadDeployerKey()
+	if err != nil {
+		return ""
+	}
+	return key
+}
+
+func (c Config) ValidateProduction() error {
+	if !c.IsProduction() {
+		return nil
+	}
+	if c.APIKey == "" {
+		return fmt.Errorf("production requires BSC_LAUNCHER_API_KEY")
+	}
+	if len(c.CORSOrigins) == 0 {
+		return fmt.Errorf("production requires BSC_LAUNCHER_CORS_ORIGINS")
+	}
+	return nil
 }
 
 func parseOrigins(raw string) []string {
@@ -98,6 +141,9 @@ func loadDotEnv(path string) {
 		}
 		key, val, ok := strings.Cut(line, "=")
 		if !ok {
+			if chains.IsAddressHex(line) && os.Getenv("FLASH_DEPLOYER_ADDRESS") == "" {
+				_ = os.Setenv("FLASH_DEPLOYER_ADDRESS", chains.FormatAddress(line))
+			}
 			continue
 		}
 		key = strings.TrimSpace(key)

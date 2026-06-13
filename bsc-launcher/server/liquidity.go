@@ -15,22 +15,28 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-const (
-	pancakeRouter  = "0x10ED43C718714eb63d5aA57B78B54704E256024E"
-	pancakeFactory = "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
-	wbnbAddress    = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
-	usdtAddress    = "0x55d398326f99059fF775485246999027B3197955"
-)
-
 type DexConfig struct {
-	Router  string            `json:"router"`
-	Factory string            `json:"factory"`
-	WBNB    string            `json:"wbnb"`
-	USDT    string            `json:"usdt"`
-	Name    string            `json:"name"`
-	Quotes  []QuoteToken      `json:"quotes"`
-	RouterABI []map[string]interface{} `json:"routerAbi"`
-	FactoryABI []map[string]interface{} `json:"factoryAbi"`
+	ID            string                   `json:"id"`
+	ChainSlug     string                   `json:"chainSlug"`
+	ChainName     string                   `json:"chainName"`
+	NetworkID     int64                    `json:"networkId"`
+	Explorer      string                   `json:"explorer"`
+	DexChainID    string                   `json:"dexChainId"`
+	Router        string                   `json:"router"`
+	Factory       string                   `json:"factory"`
+	WrappedNative string                   `json:"wrappedNative"`
+	USDT          string                   `json:"usdt"`
+	Name          string                   `json:"name"`
+	Version       int                      `json:"version"`
+	Type          string                   `json:"type"`
+	LiquidityMode string                   `json:"liquidityMode"`
+	LiquidityURL  string                   `json:"liquidityUrl"`
+	InfoURL       string                   `json:"infoUrl"`
+	SwapURL       string                   `json:"swapUrl"`
+	DexScreenerID string                   `json:"dexscreenerId"`
+	Quotes        []QuoteToken             `json:"quotes"`
+	RouterABI     []map[string]interface{} `json:"routerAbi,omitempty"`
+	FactoryABI    []map[string]interface{} `json:"factoryAbi,omitempty"`
 }
 
 type QuoteToken struct {
@@ -41,6 +47,8 @@ type QuoteToken struct {
 }
 
 type LiquidityRecord struct {
+	ChainSlug    string `json:"chainSlug"`
+	DexID        string `json:"dexId"`
 	TokenAddress string `json:"tokenAddress"`
 	QuoteID      string `json:"quoteId"`
 	PairAddress  string `json:"pairAddress"`
@@ -116,54 +124,58 @@ func loadABIFile(name string) ([]map[string]interface{}, error) {
 }
 
 func dexConfig() (DexConfig, error) {
-	routerABI, err := loadABIFile("PancakeRouter.json")
-	if err != nil {
-		return DexConfig{}, err
-	}
-	factoryABI, err := loadABIFile("PancakeFactory.json")
-	if err != nil {
-		return DexConfig{}, err
-	}
-	return DexConfig{
-		Router:     pancakeRouter,
-		Factory:    pancakeFactory,
-		WBNB:       wbnbAddress,
-		USDT:       usdtAddress,
-		Name:       "PancakeSwap V2",
-		RouterABI:  routerABI,
-		FactoryABI: factoryABI,
-		Quotes: []QuoteToken{
-			{ID: "bnb", Symbol: "BNB", Address: wbnbAddress, Decimals: 18},
-			{ID: "usdt", Symbol: "USDT", Address: usdtAddress, Decimals: 18},
-		},
-	}, nil
+	return DexConfig{}, fmt.Errorf("use dexConfigFor(chain, dex)")
 }
 
-func quoteAddress(quoteID string) (common.Address, error) {
-	switch strings.ToLower(quoteID) {
-	case "bnb", "wbnb":
-		return common.HexToAddress(wbnbAddress), nil
-	case "usdt":
-		return common.HexToAddress(usdtAddress), nil
-	default:
-		return common.Address{}, fmt.Errorf("unsupported quote: %s", quoteID)
+func (s *Server) chainRPC(chainSlug string) (string, error) {
+	chain, err := chainBySlug(chainSlug)
+	if err == nil && chain.RPCURL != "" {
+		return chain.RPCURL, nil
 	}
+	if s.dexRegistry != nil {
+		cfg, e := s.dexRegistry.chainConfig(chainSlug)
+		if e == nil {
+			if c, e2 := chainByID(cfg.NetworkID); e2 == nil && c.RPCURL != "" {
+				return c.RPCURL, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("no RPC for chain %s", chainSlug)
 }
 
-func (s *Server) getPairAddress(ctx context.Context, tokenAddr, quoteID string) (string, error) {
-	quote, err := quoteAddress(quoteID)
+func (s *Server) getPairAddress(ctx context.Context, chainSlug, dexID, tokenAddr, quoteID string) (string, error) {
+	if s.dexRegistry == nil {
+		return "", fmt.Errorf("dex registry unavailable")
+	}
+	_, dex, err := s.dexRegistry.dex(chainSlug, dexID)
+	if err != nil {
+		return "", err
+	}
+	if dex.LiquidityMode != "router-v2" || dex.Factory == "" {
+		return "", nil
+	}
+	quote, err := s.dexRegistry.quoteToken(chainSlug, quoteID)
 	if err != nil {
 		return "", err
 	}
 	token := common.HexToAddress(tokenAddr)
+	quoteAddr := common.HexToAddress(quote.Address)
 
-	client, err := s.rpcClient(ctx, s.cfg.RPCURL)
+	rpcURL, err := s.chainRPC(chainSlug)
+	if err != nil {
+		return "", err
+	}
+	client, err := s.rpcClient(ctx, rpcURL)
 	if err != nil {
 		return "", err
 	}
 	defer client.Close()
 
-	factoryABI, err := loadABIFile("PancakeFactory.json")
+	factoryABIFile := dex.FactoryABI
+	if factoryABIFile == "" {
+		factoryABIFile = "PancakeFactory.json"
+	}
+	factoryABI, err := loadABIFile(factoryABIFile)
 	if err != nil {
 		return "", err
 	}
@@ -171,12 +183,11 @@ func (s *Server) getPairAddress(ctx context.Context, tokenAddr, quoteID string) 
 	if err != nil {
 		return "", err
 	}
-
-	data, err := parsed.Pack("getPair", token, quote)
+	data, err := parsed.Pack("getPair", token, quoteAddr)
 	if err != nil {
 		return "", err
 	}
-	factory := common.HexToAddress(pancakeFactory)
+	factory := common.HexToAddress(dex.Factory)
 	out, err := client.CallContract(ctx, ethereum.CallMsg{To: &factory, Data: data}, nil)
 	if err != nil {
 		return "", err

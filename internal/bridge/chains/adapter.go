@@ -12,13 +12,15 @@ type DeployChain struct {
 
 // DeployInput describes a token launch on a specific chain.
 type DeployInput struct {
-	Chain    DeployChain
-	Name     string
-	Symbol   string
-	Decimals int
-	Supply   uint64
-	Creator  string
-	TokenID  string
+	Chain             DeployChain
+	Name              string
+	Symbol            string
+	Decimals          int
+	Supply            uint64
+	Creator           string
+	TokenID           string
+	SameAddressMirror bool   // CREATE2: identical real contract address on all EVM chains
+	MirrorOriginID    string // origin token id for CREATE2 salt (e.g. FLASH)
 }
 
 // DeployResult holds on-chain deployment metadata returned by a chain adapter.

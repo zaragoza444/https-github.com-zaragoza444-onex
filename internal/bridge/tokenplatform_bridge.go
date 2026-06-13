@@ -270,6 +270,8 @@ func (b *Bridge) WrapPlatformToken(originChainID, originTokenID, targetChainID, 
 			Chain: chainToDeployChain(*targetChain), Name: origin.Name + " (Wrapped)",
 			Symbol: wrappedSymbol, Decimals: origin.Decimals, Supply: amount,
 			Creator: b.WalletAddress(), TokenID: wrappedID,
+			SameAddressMirror: targetChain.Type == "evm",
+			MirrorOriginID:    originTokenID,
 		})
 		if err != nil {
 			return nil, nil, err
@@ -305,6 +307,8 @@ func (b *Bridge) WrapPlatformToken(originChainID, originTokenID, targetChainID, 
 			Chain: chainToDeployChain(*targetChain), Name: origin.Name + " (Wrapped)",
 			Symbol: wrappedSymbol, Decimals: origin.Decimals, Supply: amount,
 			Creator: b.WalletAddress(), TokenID: wrapped.ID,
+			SameAddressMirror: targetChain.Type == "evm",
+			MirrorOriginID:    originTokenID,
 		})
 		if err != nil {
 			return nil, nil, err

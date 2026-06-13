@@ -3,19 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="OneX Token Lab — the most customizable BEP-20 token generator on BNB Smart Chain. No code, MetaMask deploy, owner dashboard.">
-  <title>OneX — Token Generator</title>
-  <link rel="stylesheet" href="/styles.css?v=6">
+  <meta name="description" content="OneX Mission Control — multi-chain token operations, mirrors, markets, and liquidity.">
+  <title>OneX // Mission Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css?v=10">
 </head>
-<body>
-  <nav class="topnav">
+<body class="nasa-mc">
+  <div class="hud-grid" aria-hidden="true"></div>
+  <nav class="topnav mission-bar">
     <a href="#" class="nav-brand" data-nav="landing">
-      <span class="nav-logo">OneX</span>
-      <span class="nav-tag">Token Lab</span>
+      <span class="nav-logo" aria-hidden="true">◈</span>
+      <span class="nav-brand-text">
+        <span class="nav-logo-label">ONEX</span>
+        <span class="nav-tag">MISSION CONTROL</span>
+      </span>
     </a>
+    <div class="mission-clock" aria-label="Mission time">
+      <div class="clock-row"><span class="clock-label">UTC</span><span id="clock-utc" class="clock-value">00:00:00</span></div>
+      <div class="clock-row"><span class="clock-label">MET</span><span id="clock-met" class="clock-value">T+ 00:00:00</span></div>
+    </div>
     <div class="nav-links">
-      <a href="#" data-nav="generate">Generate</a>
-      <a href="#" data-nav="dashboard">Dashboard</a>
+      <a href="#" data-nav="generate">Deploy</a>
+      <a href="#" data-nav="mirrors">Mirrors</a>
+      <a href="#" data-nav="markets">Uplink</a>
+      <a href="#" data-nav="dashboard">Console</a>
       <a href="#" data-nav="liquidity">Liquidity</a>
     </div>
     <div class="nav-actions">
@@ -29,11 +42,56 @@
 
   <!-- Landing (20lab-style) -->
   <div id="view-landing" class="view">
-    <section class="hero">
-      <p class="hero-kicker">The most customizable token generator</p>
-      <h1>Customizable token for your project</h1>
-      <p class="hero-lead">Choose the features you need and take full control of your tokens. Deploy OneX ERC-20 tokens on BSC, Ethereum, Base, Polygon, Arbitrum, and more — MetaMask deploy, multi-chain explorer links, PancakeSwap liquidity on BSC.</p>
-      <button type="button" class="btn btn-primary btn-lg" data-nav="generate">Create a Token</button>
+    <section class="hero mission-hero">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <p class="hero-kicker">// FLIGHT STATUS: <span class="pulse-ok">NOMINAL</span></p>
+          <h1>Token operations<br><span class="hero-accent">mission control</span></h1>
+          <p class="hero-lead">Deploy, mirror, and list tokens across 7 EVM chains. PancakeSwap · SushiSwap · SunSwap · CoinGecko · CMC · block explorers — one command deck.</p>
+          <button type="button" class="btn btn-primary btn-lg" data-nav="generate">Initiate token deploy</button>
+        </div>
+        <div class="hero-earth" aria-hidden="true">
+          <div class="earth-orbit">
+            <div class="earth-globe">
+              <div class="earth-sphere">
+                <div class="earth-map"></div>
+                <div class="earth-clouds"></div>
+              </div>
+              <div class="earth-ring"></div>
+            </div>
+            <div class="earth-label">EARTH OBS · LIVE</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="telemetry-strip" aria-label="Live telemetry">
+      <div class="telemetry-strip-head">
+        <span class="telemetry-strip-title">// LIVE TELEMETRY</span>
+        <span id="telemetry-ts" class="telemetry-strip-ts">SYNC —</span>
+      </div>
+      <div class="telemetry-grid" id="telemetry-landing">
+        <div class="tel-card" data-tel="chains">
+          <span class="tel-label">CHAIN UPLINK</span>
+          <strong class="tel-value" id="tel-chains">—</strong>
+          <canvas class="tel-spark" width="120" height="32" data-color="cyan"></canvas>
+        </div>
+        <div class="tel-card" data-tel="live">
+          <span class="tel-label">ON-CHAIN</span>
+          <strong class="tel-value" id="tel-live">—</strong>
+          <canvas class="tel-spark" width="120" height="32" data-color="green"></canvas>
+        </div>
+        <div class="tel-card" data-tel="tokens">
+          <span class="tel-label">TOKEN OPS</span>
+          <strong class="tel-value" id="tel-tokens">—</strong>
+          <canvas class="tel-spark" width="120" height="32" data-color="cyan"></canvas>
+        </div>
+        <div class="tel-card" data-tel="latency">
+          <span class="tel-label">NET LATENCY</span>
+          <strong class="tel-value" id="tel-latency">—</strong>
+          <canvas class="tel-spark" width="120" height="32" data-color="amber"></canvas>
+        </div>
+      </div>
     </section>
 
     <section class="chain-strip">
@@ -369,39 +427,127 @@
 
   <!-- Dashboard -->
   <div id="view-dashboard" class="view hidden">
-    <div class="page-head row-between">
-      <div>
-        <h1>Token owner dashboard</h1>
-        <p class="page-sub">Monitor tokens you created with OneX Token Lab.</p>
+    <div class="dashboard-shell">
+      <header class="dashboard-top">
+        <div>
+          <h1>Operator console</h1>
+          <p class="page-sub">Telemetry for tokens launched from this mission node.</p>
+        </div>
+        <div class="dashboard-actions">
+          <button id="btn-refresh" class="btn btn-outline" type="button">Refresh</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-nav="mirrors">Flash mirrors</button>
+        </div>
+      </header>
+
+      <section class="telemetry-strip telemetry-console" aria-label="Console telemetry">
+        <div class="telemetry-strip-head">
+          <span class="telemetry-strip-title">// CONSOLE TELEMETRY</span>
+          <span class="telemetry-strip-ts" id="telemetry-console-ts">LIVE</span>
+        </div>
+        <div class="telemetry-grid">
+          <div class="tel-card">
+            <span class="tel-label">MIRROR NODES</span>
+            <strong class="tel-value" id="tel-console-chains">—</strong>
+            <canvas class="tel-spark" width="120" height="32" data-tel-id="console-chains" data-color="cyan"></canvas>
+          </div>
+          <div class="tel-card">
+            <span class="tel-label">VERIFIED LIVE</span>
+            <strong class="tel-value" id="tel-console-live">—</strong>
+            <canvas class="tel-spark" width="120" height="32" data-tel-id="console-live" data-color="green"></canvas>
+          </div>
+          <div class="tel-card">
+            <span class="tel-label">ACTIVE TOKENS</span>
+            <strong class="tel-value" id="tel-console-tokens">—</strong>
+            <canvas class="tel-spark" width="120" height="32" data-tel-id="console-tokens" data-color="cyan"></canvas>
+          </div>
+          <div class="tel-card">
+            <span class="tel-label">SIGNAL STR</span>
+            <strong class="tel-value" id="tel-console-signal">98%</strong>
+            <canvas class="tel-spark" width="120" height="32" data-tel-id="console-signal" data-color="amber"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <div class="dashboard-stats" id="dashboard-stats">
+        <div class="dash-stat"><strong id="stat-tokens">—</strong><span>Tokens</span></div>
+        <div class="dash-stat"><strong id="stat-chains">—</strong><span>Mirror chains</span></div>
+        <div class="dash-stat"><strong id="stat-live">—</strong><span>On-chain</span></div>
       </div>
-      <button id="btn-refresh" class="btn btn-outline">Refresh</button>
+
+      <div class="dashboard-grid">
+        <section class="dashboard-panel dashboard-panel-featured">
+          <div class="panel-head">
+            <h2>Flash Coin</h2>
+            <a href="#" class="panel-link" data-nav="mirrors">View all mirrors →</a>
+          </div>
+          <div id="flash-mirror-summary" class="flash-mirror-summary"><p class="status-msg">Loading…</p></div>
+        </section>
+
+        <section class="dashboard-panel">
+          <div class="panel-head">
+            <h2>Contract lookup</h2>
+          </div>
+          <div class="lookup-row">
+            <input id="lookup-addr" placeholder="Any EVM contract (0x…)" />
+            <button id="btn-lookup" class="btn btn-outline" type="button">Look up</button>
+          </div>
+          <p id="lookup-msg" class="status-msg"></p>
+        </section>
+      </div>
+
+      <section class="dashboard-panel dashboard-panel-wide">
+        <div class="panel-head">
+          <h2>Your tokens</h2>
+        </div>
+        <div id="token-list" class="token-grid"><p class="status-msg">Loading…</p></div>
+      </section>
     </div>
-    <div class="lookup-row">
-      <input id="lookup-addr" placeholder="Look up any BEP-20 contract (0x…)" />
-      <button id="btn-lookup" class="btn btn-outline" type="button">Look up</button>
+  </div>
+
+  <!-- Flash mirrors -->
+  <div id="view-mirrors" class="view hidden">
+    <div class="dashboard-shell">
+      <header class="dashboard-top">
+        <div>
+          <h1>Mirror telemetry</h1>
+          <p class="page-sub">Flash Coin — one contract address across all EVM chains.</p>
+        </div>
+        <div class="dashboard-actions">
+          <button id="btn-mirror-refresh" class="btn btn-outline" type="button">Refresh</button>
+          <button id="btn-mirror-reload" class="btn btn-secondary" type="button">Reload full details</button>
+          <button id="btn-mirror-verify" class="btn btn-secondary" type="button">Verify on-chain</button>
+          <button id="btn-fix-pending" class="btn btn-primary" type="button">Fix all pending</button>
+        </div>
+      </header>
+      <div id="flash-mirror-list" class="flash-mirror-body"><p class="status-msg">Loading…</p></div>
     </div>
-    <p id="lookup-msg" class="status-msg"></p>
-    <section id="flash-mirror-panel" class="flash-mirror-panel">
-      <h2 class="section-title">Flash Coin mirrors</h2>
-      <p class="page-sub">Live on-chain wFLASH contracts (real addresses after <code>onex flash-coin-deploy-live</code>).</p>
-      <div id="flash-mirror-list" class="token-list"><p class="status-msg">Loading…</p></div>
-    </section>
-    <div id="token-list" class="token-list"><p class="status-msg">Loading…</p></div>
   </div>
 
   <!-- Liquidity -->
   <div id="view-liquidity" class="view hidden">
     <div class="page-head">
       <h1>Add liquidity</h1>
-      <p class="page-sub">List your token on BSCScan with a target USD price via PancakeSwap V2.</p>
+      <p class="page-sub">DEX uplink — PancakeSwap V2/V3/V4 · SushiSwap · Uniswap · SunSwap across 7 chains.</p>
+      <div id="liq-wallet-banner" class="flash-market-strip hidden"></div>
     </div>
     <div class="wizard-panel">
       <form id="liquidity-form">
         <div class="field-grid">
+          <label class="field">
+            <span>Chain</span>
+            <select id="liq-chain">
+              <option value="bsc">BNB Chain</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>DEX</span>
+            <select id="liq-dex"></select>
+          </label>
           <label class="field full">
             <span>Token</span>
-            <select id="liq-token" required>
-              <option value="">Select launched token…</option>
+            <input id="liq-token-addr" placeholder="0x… or pick from launched tokens" />
+            <select id="liq-token" class="liq-token-pick">
+              <option value="">— or select launched token —</option>
             </select>
           </label>
           <label class="field">
@@ -410,41 +556,88 @@
           </label>
           <label class="field">
             <span>Pair with</span>
-            <select id="liq-quote">
-              <option value="usdt" selected>USDT (best for $1)</option>
-              <option value="bnb">BNB</option>
-            </select>
+            <select id="liq-quote"></select>
           </label>
           <label class="field">
             <span>Token amount in pool</span>
             <input id="liq-token-amount" placeholder="10000" required>
           </label>
           <label class="field">
-            <span id="liq-quote-label">USDT amount</span>
+            <span id="liq-quote-label">Quote amount</span>
             <input id="liq-quote-amount" placeholder="10000" required>
           </label>
         </div>
         <div class="liq-actions-row">
           <button type="button" class="btn btn-outline" id="btn-calc-dollar">Calculate $1 listing</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-bscscan-1b">BSCScan $1B USDT test</button>
+          <button type="button" class="btn btn-outline btn-sm" id="btn-copy-liquidity">Copy liquidity params</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-open-dex" type="button">Open in DEX</button>
           <span id="liq-price-preview" class="status-msg"></span>
         </div>
         <p id="liq-pair-info" class="status-msg"></p>
         <p id="liq-msg" class="status-msg"></p>
         <div id="liq-result" class="result hidden"></div>
-        <button type="submit" class="btn btn-primary" id="btn-add-liquidity">Add Liquidity &amp; show on BSCScan</button>
+        <button type="submit" class="btn btn-primary" id="btn-add-liquidity">Add liquidity (MetaMask V2)</button>
       </form>
       <h3 class="section-title">Liquidity history</h3>
       <div id="liq-history" class="token-list"><p class="status-msg">No pools yet.</p></div>
     </div>
   </div>
 
+  <!-- Markets & listings -->
+  <div id="view-markets" class="view hidden">
+    <div class="dashboard-shell">
+      <header class="dashboard-top">
+        <div>
+          <h1>Market uplink</h1>
+          <p class="page-sub">CoinGecko · CoinMarketCap · Etherscan · BSCScan — 7-chain listing bridge.</p>
+        </div>
+        <div class="dashboard-actions">
+          <button id="btn-markets-refresh" class="btn btn-outline" type="button">Refresh Flash Coin</button>
+        </div>
+      </header>
+      <div class="field-grid markets-lookup">
+        <label class="field">
+          <span>Chain</span>
+          <select id="markets-chain">
+            <option value="bsc">BNB Chain</option>
+            <option value="ethereum">Ethereum</option>
+            <option value="polygon">Polygon</option>
+            <option value="arbitrum">Arbitrum</option>
+            <option value="optimism">Optimism</option>
+            <option value="avalanche">Avalanche</option>
+            <option value="base">Base</option>
+          </select>
+        </label>
+        <label class="field full">
+          <span>Token address</span>
+          <input id="markets-token" placeholder="0x…" />
+        </label>
+        <label class="field">
+          <span>Name</span>
+          <input id="markets-name" placeholder="Flash Coin" />
+        </label>
+        <label class="field">
+          <span>Symbol</span>
+          <input id="markets-symbol" placeholder="wFLASH" />
+        </label>
+        <div class="field full">
+          <button id="btn-markets-bridge" class="btn btn-primary" type="button">Generate listing bridge</button>
+        </div>
+      </div>
+      <div id="markets-result" class="markets-result"><p class="status-msg">Load Flash Coin mirrors or enter a token to bridge listings.</p></div>
+      <h3 class="section-title">DEX registry (all chains)</h3>
+      <div id="markets-dex-grid" class="dex-grid"><p class="status-msg">Loading…</p></div>
+    </div>
+  </div>
+
   <footer class="site-footer">
-    <p>OneX Token Lab — multi-chain ERC-20 generator. Live on BSC, Ethereum, Base, Polygon, Arbitrum, Optimism, Avalanche, Linea, Blast, Scroll · Prices via DexScreener.</p>
+    <p><span class="telemetry">ONEX MISSION CONTROL</span> · multi-chain token ops · telemetry via DexScreener · build <span id="footer-build">—</span></p>
   </footer>
 
   <div id="settings-modal" class="modal hidden">
     <div class="modal-card settings-card">
-      <h2>Production Settings</h2>
+      <h2>Mission settings</h2>
       <div class="settings-env-row">
         <span>Server mode</span>
         <strong id="settings-env-label" class="settings-env-badge">—</strong>
@@ -467,6 +660,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
-  <script src="/app.js?v=6"></script>
+  <script src="/app.js?v=19"></script>
 </body>
 </html>

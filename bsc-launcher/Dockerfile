@@ -13,8 +13,10 @@ WORKDIR /app
 COPY --from=build /bsc-launcher /usr/local/bin/bsc-launcher
 COPY bsc-launcher/abi /app/bsc-launcher/abi
 COPY bsc-launcher/web /app/bsc-launcher/web
+COPY configs /app/configs
 RUN mkdir -p /data && chown -R launcher:launcher /data /app
 ENV BSC_LAUNCHER_ROOT=/app/bsc-launcher
+ENV BSC_LAUNCHER_CONFIG_DIR=/app/configs
 ENV BSC_LAUNCHER_LISTEN=:9340
 ENV BSC_LAUNCHER_DATA_DIR=/data
 ENV BSC_LAUNCHER_ENV=production

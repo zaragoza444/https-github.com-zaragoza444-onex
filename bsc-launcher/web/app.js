@@ -1,11 +1,151 @@
 let config = null;
+let dexRegistry = null;
+let activeDex = null;
 let provider = null;
 let signer = null;
 let wizardStep = 1;
 let validated = false;
 
 const API_KEY_STORAGE = 'onex-token-lab-api-key';
-const VIEWS = ['landing', 'generate', 'wizard', 'dashboard', 'liquidity'];
+const VIEWS = ['landing', 'generate', 'wizard', 'dashboard', 'mirrors', 'markets', 'liquidity'];
+
+const MISSION_EPOCH = Date.now();
+const telStreams = {};
+let telAnimFrame = null;
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+function formatUTC(d) {
+  return `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}:${pad2(d.getUTCSeconds())}`;
+}
+
+function formatMET(ms) {
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return `T+ ${pad2(h)}:${pad2(m)}:${pad2(sec)}`;
+}
+
+function startMissionClock() {
+  const utcEl = document.getElementById('clock-utc');
+  const metEl = document.getElementById('clock-met');
+  if (!utcEl || !metEl) return;
+  const tick = () => {
+    const now = new Date();
+    utcEl.textContent = formatUTC(now);
+    metEl.textContent = formatMET(Date.now() - MISSION_EPOCH);
+  };
+  tick();
+  setInterval(tick, 1000);
+}
+
+function telColor(name) {
+  if (name === 'green') return '#39ff14';
+  if (name === 'amber') return '#ffb347';
+  return '#00d4ff';
+}
+
+function pushTelSample(id, value) {
+  if (!telStreams[id]) telStreams[id] = [];
+  const stream = telStreams[id];
+  stream.push(Number(value) || 0);
+  if (stream.length > 40) stream.shift();
+}
+
+function drawTelSpark(canvas) {
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const id = canvas.dataset.telId || canvas.closest('.tel-card')?.dataset?.tel;
+  const stream = telStreams[id] || [];
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  if (stream.length < 2) return;
+  const min = Math.min(...stream);
+  const max = Math.max(...stream);
+  const range = max - min || 1;
+  const color = telColor(canvas.dataset.color || 'cyan');
+  const points = stream.map((v, i) => ({
+    x: (i / (stream.length - 1)) * (w - 4) + 2,
+    y: h - 4 - ((v - min) / range) * (h - 8),
+  }));
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 6;
+  ctx.beginPath();
+  points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.beginPath();
+  points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+  ctx.lineTo(w - 2, h);
+  ctx.lineTo(2, h);
+  ctx.closePath();
+  ctx.globalAlpha = 0.18;
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+function animateTelemetry() {
+  document.querySelectorAll('.tel-spark').forEach(drawTelSpark);
+  telAnimFrame = requestAnimationFrame(animateTelemetry);
+}
+
+function seedTelStream(id, base, variance) {
+  if (telStreams[id]?.length) return;
+  telStreams[id] = Array.from({ length: 24 }, (_, i) =>
+    base + Math.sin(i * 0.4) * variance + (Math.random() - 0.5) * variance * 0.5
+  );
+}
+
+function initTelemetry() {
+  seedTelStream('chains', 7, 1.5);
+  seedTelStream('live', 0, 2);
+  seedTelStream('tokens', 0, 3);
+  seedTelStream('latency', 42, 12);
+  seedTelStream('console-chains', 7, 1);
+  seedTelStream('console-live', 0, 2);
+  seedTelStream('console-tokens', 0, 3);
+  seedTelStream('console-signal', 98, 3);
+  updateTelemetryValues(7, 0, 0);
+  const latEl = document.getElementById('tel-latency');
+  if (latEl) latEl.textContent = '42 ms';
+
+  setInterval(() => {
+    const lat = 28 + Math.random() * 35;
+    pushTelSample('latency', lat);
+    const el = document.getElementById('tel-latency');
+    if (el) el.textContent = `${Math.round(lat)} ms`;
+
+    pushTelSample('console-signal', 94 + Math.random() * 5);
+    const sig = document.getElementById('tel-console-signal');
+    if (sig) sig.textContent = `${Math.round(94 + Math.random() * 5)}%`;
+
+    const ts = document.getElementById('telemetry-ts');
+    if (ts) ts.textContent = `SYNC ${formatUTC(new Date())} UTC`;
+    const cts = document.getElementById('telemetry-console-ts');
+    if (cts) cts.textContent = `LIVE ${formatUTC(new Date())} UTC`;
+  }, 2000);
+
+  if (!telAnimFrame) animateTelemetry();
+}
+
+function updateTelemetryValues(chains, live, tokens) {
+  const set = (id, val, streamId) => {
+    const el = document.getElementById(id);
+    if (el && val != null) el.textContent = String(val);
+    if (streamId != null && val != null) pushTelSample(streamId, val);
+  };
+  set('tel-chains', chains, 'chains');
+  set('tel-live', live, 'live');
+  set('tel-tokens', tokens, 'tokens');
+  set('tel-console-chains', chains, 'console-chains');
+  set('tel-console-live', live, 'console-live');
+  set('tel-console-tokens', tokens, 'console-tokens');
+}
 
 const LAB_ADJECTIVES = ['Alpha', 'Nova', 'Quantum', 'Golden', 'Swift', 'Prime', 'Hyper', 'Neo', 'Ultra', 'Meta', 'Solar', 'Apex'];
 const LAB_NOUNS = ['Chain', 'Coin', 'Labs', 'Vault', 'Swap', 'Flow', 'Wave', 'Node', 'Pay', 'Fund', 'Mint', 'Core'];
@@ -331,6 +471,96 @@ function fmtUsd(n) {
   return '$' + Number(n).toLocaleString(undefined, { maximumFractionDigits: 6 });
 }
 
+function registryChainSlug(slug) {
+  const m = { eth: 'ethereum', ethereum: 'ethereum', bnb: 'bsc', bsc: 'bsc', matic: 'polygon', arb: 'arbitrum', op: 'optimism', avax: 'avalanche' };
+  return m[slug] || slug || 'bsc';
+}
+
+function explorerForChainSlug(slug) {
+  const c = (config?.chains || []).find(ch => registryChainSlug(ch.slug) === registryChainSlug(slug));
+  return (c?.explorer || config?.explorer || 'https://bscscan.com').replace(/\/$/, '');
+}
+
+async function copyText(text, btn, label) {
+  if (!text) return;
+  await navigator.clipboard.writeText(text);
+  if (btn) {
+    const orig = btn.textContent;
+    btn.textContent = label || 'Copied';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  }
+}
+
+function getLiqChainSlug() {
+  return registryChainSlug(document.getElementById('liq-chain')?.value || 'bsc');
+}
+
+function getLiqDexId() {
+  return document.getElementById('liq-dex')?.value || 'pancake-v2';
+}
+
+function getLiqTokenAddr() {
+  const manual = document.getElementById('liq-token-addr')?.value?.trim();
+  if (manual?.startsWith('0x')) return manual;
+  return document.getElementById('liq-token')?.value || '';
+}
+
+async function loadDexRegistry() {
+  dexRegistry = await api('/api/dex/registry');
+  return dexRegistry;
+}
+
+function populateLiqChains() {
+  const sel = document.getElementById('liq-chain');
+  if (!sel || !dexRegistry?.chains) return;
+  const order = ['bsc', 'ethereum', 'polygon', 'arbitrum', 'optimism', 'avalanche', 'base'];
+  sel.innerHTML = order.filter(id => dexRegistry.chains[id]).map(id => {
+    const c = dexRegistry.chains[id];
+    return `<option value="${id}">${c.name}</option>`;
+  }).join('');
+  populateLiqDexes();
+}
+
+function populateLiqDexes() {
+  const chain = getLiqChainSlug();
+  const sel = document.getElementById('liq-dex');
+  const cfg = dexRegistry?.chains?.[chain];
+  if (!sel || !cfg) return;
+  sel.innerHTML = (cfg.dexes || []).map(d =>
+    `<option value="${d.id}">${d.name} (V${d.version})</option>`
+  ).join('');
+  populateLiqQuotes();
+  refreshActiveDex();
+}
+
+function populateLiqQuotes() {
+  const chain = getLiqChainSlug();
+  const cfg = dexRegistry?.chains?.[chain];
+  const sel = document.getElementById('liq-quote');
+  if (!sel || !cfg?.quotes) return;
+  sel.innerHTML = cfg.quotes.map(q =>
+    `<option value="${q.id}">${q.symbol}${q.id === 'usdt' || q.id === 'usdc' ? ' (best for $1)' : ''}</option>`
+  ).join('');
+  if ([...sel.options].some(o => o.value === 'usdt')) sel.value = 'usdt';
+  updateQuoteLabel();
+}
+
+async function refreshActiveDex() {
+  const chain = getLiqChainSlug();
+  const dex = getLiqDexId();
+  activeDex = await api(`/api/dex/registry?chain=${encodeURIComponent(chain)}&dex=${encodeURIComponent(dex)}`);
+  const btn = document.getElementById('btn-add-liquidity');
+  if (btn) {
+    if (activeDex?.liquidityMode === 'router-v2') {
+      btn.textContent = `Add liquidity on ${activeDex.name} (MetaMask)`;
+      btn.disabled = false;
+    } else {
+      btn.textContent = `Open ${activeDex?.name || 'DEX'} UI (V3/V4)`;
+    }
+  }
+  checkPair();
+}
+
 function fmtPct(n) {
   if (n == null || isNaN(n)) return '—';
   const sign = n >= 0 ? '+' : '';
@@ -346,9 +576,13 @@ function showView(name) {
     a.classList.toggle('active', a.dataset.nav === name);
   });
   if (name === 'dashboard') renderDashboard();
+  if (name === 'mirrors') renderFlashMirror();
+  if (name === 'markets') renderMarkets();
   if (name === 'liquidity') {
+    populateLiqChains();
     fillLiquidityTokens();
     renderLiquidityHistory();
+    renderLiquidityWalletBanner();
     checkPair();
   }
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -498,10 +732,31 @@ function applyProductionSettings() {
   }
 }
 
+function renderLiquidityWalletBanner() {
+  const el = document.getElementById('liq-wallet-banner');
+  if (!el || !config) return;
+  const addr = config.deployerAddress || '0x05868c29D58d1EC275Cf078356c03F79B1975600';
+  const mode = config.poolLiveMode || 'metamask';
+  el.classList.remove('hidden');
+  el.innerHTML = `
+    <div class="flash-market-item"><span>Pool wallet</span><strong class="mono">${esc(addr)}</strong></div>
+    <div class="flash-market-item"><span>Mode</span><strong>${mode === 'cli' ? 'CLI + key' : 'MetaMask'}</strong></div>
+    <div class="flash-market-item"><span>Fund on BSC</span><strong>BNB + USDT</strong></div>
+    <p class="flash-market-note">${mode === 'metamask'
+      ? 'Connect MetaMask with this wallet, then click <strong>BSCScan $1B USDT test</strong> and <strong>Add liquidity</strong>.'
+      : 'CLI pool deploy enabled via FLASH_DEPLOYER_PRIVATE_KEY.'}
+      <a href="https://bscscan.com/address/${esc(addr)}" target="_blank" rel="noopener">BSCScan</a></p>`;
+}
+
 async function loadConfig() {
   config = await api('/api/config');
   if (config.error) throw new Error(config.error);
+  await loadDexRegistry().catch(() => { dexRegistry = null; });
   populateChainSelect();
+  populateLiqChains();
+  renderLiquidityWalletBanner();
+  const buildEl = document.getElementById('footer-build');
+  if (buildEl && config.build) buildEl.textContent = config.build;
   const backendOpt = document.querySelector('#deploy-method option[value="backend"]');
   if (backendOpt && !config.backendDeployEnabled) {
     backendOpt.disabled = true;
@@ -696,11 +951,39 @@ async function markPairOnToken(tokenAddr, pairAddr) {
   } catch (_) { /* optional */ }
 }
 
+function presetBscscan1BUsdt(tokenAddr) {
+  showView('liquidity');
+  const chainSel = document.getElementById('liq-chain');
+  if (chainSel) chainSel.value = 'bsc';
+  populateLiqDexes();
+  const dexSel = document.getElementById('liq-dex');
+  if (dexSel) dexSel.value = 'pancake-v2';
+  refreshActiveDex();
+  const addr = tokenAddr || '0x8944A53814b99E14c7BAE33814548a1F32bDCA8b';
+  const addrEl = document.getElementById('liq-token-addr');
+  if (addrEl) addrEl.value = addr;
+  document.getElementById('liq-target-usd').value = '1';
+  const quote = document.getElementById('liq-quote');
+  if (quote) quote.value = 'usdt';
+  document.getElementById('liq-token-amount').value = '1000000000';
+  updateQuoteLabel();
+  calculateLiquidityQuote();
+  checkPair();
+  const preview = document.getElementById('liq-price-preview');
+  if (preview) {
+    preview.innerHTML += ' · <strong>BSCScan mcap ≈ $1,000,000,000</strong>';
+  }
+}
+
 function presetDollarListing(tokenAddr) {
+  showView('liquidity');
   const sel = document.getElementById('liq-token');
+  const addr = document.getElementById('liq-token-addr');
+  if (addr && tokenAddr) addr.value = tokenAddr;
   if (sel && tokenAddr) sel.value = tokenAddr;
   document.getElementById('liq-target-usd').value = '1';
-  document.getElementById('liq-quote').value = 'usdt';
+  const quote = document.getElementById('liq-quote');
+  if (quote) quote.value = 'usdt';
   updateQuoteLabel();
   if (!document.getElementById('liq-token-amount').value) {
     document.getElementById('liq-token-amount').value = '10000';
@@ -713,19 +996,22 @@ async function calculateLiquidityQuote() {
   const tokenAmount = document.getElementById('liq-token-amount').value.trim();
   const targetUsd = document.getElementById('liq-target-usd').value.trim() || '1';
   const quote = document.getElementById('liq-quote').value;
+  const chain = getLiqChainSlug();
   const preview = document.getElementById('liq-price-preview');
   if (!tokenAmount) {
     setMsg(preview, 'Enter token amount first', 'error');
     return;
   }
   const q = await api('/api/liquidity/quote?tokenAmount=' + encodeURIComponent(tokenAmount) +
-    '&targetUsd=' + encodeURIComponent(targetUsd) + '&quote=' + encodeURIComponent(quote));
+    '&targetUsd=' + encodeURIComponent(targetUsd) + '&quote=' + encodeURIComponent(quote) +
+    '&chain=' + encodeURIComponent(chain));
   if (q.error) {
     setMsg(preview, q.error, 'error');
     return;
   }
   document.getElementById('liq-quote-amount').value = q.quoteAmount;
-  preview.innerHTML = `Listing price: <span class="price-tag">$${q.targetUsd}</span> per token · add <strong>${q.quoteAmount} ${q.quoteSymbol}</strong>`;
+  const mcap = q.marketCapUsd ? fmtUsd(q.marketCapUsd) : '';
+  preview.innerHTML = `Listing price: <span class="price-tag">$${q.targetUsd}</span> per token · add <strong>${q.quoteAmount} ${q.quoteSymbol}</strong>${mcap ? ` · mcap <strong>${mcap}</strong>` : ''}`;
   preview.className = 'status-msg ok';
 }
 
@@ -747,17 +1033,29 @@ async function ensureAllowance(tokenContract, owner, spender, amount) {
 
 async function addLiquidityMetaMask() {
   if (!signer) await connectWallet();
-  const tokenAddr = document.getElementById('liq-token').value;
+  const chainSlug = getLiqChainSlug();
+  const chain = (config?.chains || []).find(c => registryChainSlug(c.slug) === chainSlug)
+    || { chainId: 56, rpcUrl: 'https://bsc-dataseed.binance.org', name: 'BNB Chain', explorer: 'https://bscscan.com' };
+  await ensureChain(chain);
+
+  const dex = activeDex || await api(`/api/dex/registry?chain=${encodeURIComponent(chainSlug)}&dex=${encodeURIComponent(getLiqDexId())}`);
+  if (dex?.liquidityMode === 'link-only') {
+    window.open(dex.liquidityUrl, '_blank', 'noopener');
+    throw new Error(`Open ${dex.name} in browser — V3/V4 liquidity is added in the DEX UI.`);
+  }
+  if (!dex?.router) throw new Error('DEX router not configured');
+
+  const tokenAddr = getLiqTokenAddr();
   const quoteId = document.getElementById('liq-quote').value;
   const tokenAmountHuman = document.getElementById('liq-token-amount').value.trim();
   const quoteAmountHuman = document.getElementById('liq-quote-amount').value.trim();
-  if (!tokenAddr) throw new Error('Select a token');
+  if (!tokenAddr) throw new Error('Enter or select a token address');
 
   const list = await api('/api/tokens');
   const tok = Array.isArray(list) ? list.find(t => t.contractAddress.toLowerCase() === tokenAddr.toLowerCase()) : null;
-  const decimals = tok?.decimals ?? 18;
+  const decimals = tok?.decimals ?? 8;
 
-  const router = new ethers.Contract(config.dex.router, config.dex.routerAbi, signer);
+  const router = new ethers.Contract(dex.router, dex.routerAbi, signer);
   const token = new ethers.Contract(tokenAddr, ERC20_ABI, signer);
   const owner = await signer.getAddress();
   const amountToken = ethers.parseUnits(tokenAmountHuman, decimals);
@@ -765,21 +1063,21 @@ async function addLiquidityMetaMask() {
   const dl = deadline();
 
   let tx;
-  if (quoteId === 'bnb') {
+  if (quoteId === 'bnb' || quoteId === 'wbnb' || quoteId === 'weth' || quoteId === 'wmatic' || quoteId === 'wavax') {
     const amountETH = ethers.parseEther(quoteAmountHuman);
-    await ensureAllowance(token, owner, config.dex.router, amountToken);
-    setMsg(document.getElementById('liq-msg'), 'Confirm add liquidity (BNB pair) in MetaMask…');
+    await ensureAllowance(token, owner, dex.router, amountToken);
+    setMsg(document.getElementById('liq-msg'), 'Confirm add liquidity (native pair) in MetaMask…');
     tx = await router.addLiquidityETH(
       tokenAddr, amountToken, minAmount(amountToken), minAmount(amountETH), to, dl,
       { value: amountETH }
     );
   } else {
-    const quote = config.dex.quotes.find(q => q.id === quoteId);
+    const quote = (dex.quotes || []).find(q => q.id === quoteId);
     if (!quote) throw new Error('Unknown quote token');
     const amountQuote = ethers.parseUnits(quoteAmountHuman, quote.decimals);
     const quoteToken = new ethers.Contract(quote.address, ERC20_ABI, signer);
-    await ensureAllowance(token, owner, config.dex.router, amountToken);
-    await ensureAllowance(quoteToken, owner, config.dex.router, amountQuote);
+    await ensureAllowance(token, owner, dex.router, amountToken);
+    await ensureAllowance(quoteToken, owner, dex.router, amountQuote);
     setMsg(document.getElementById('liq-msg'), 'Confirm add liquidity (USDT pair) in MetaMask…');
     tx = await router.addLiquidity(
       tokenAddr, quote.address, amountToken, amountQuote,
@@ -787,14 +1085,17 @@ async function addLiquidityMetaMask() {
     );
   }
 
-  setMsg(document.getElementById('liq-msg'), 'Waiting for BSC confirmation…');
+  setMsg(document.getElementById('liq-msg'), `Waiting for ${chain.name} confirmation…`);
   await tx.wait();
 
-  const pair = await api('/api/liquidity/pair?token=' + encodeURIComponent(tokenAddr) + '&quote=' + quoteId);
+  const pairQ = `token=${encodeURIComponent(tokenAddr)}&quote=${quoteId}&chain=${encodeURIComponent(chainSlug)}&dex=${encodeURIComponent(getLiqDexId())}`;
+  const pair = await api('/api/liquidity/pair?' + pairQ);
   const reg = await api('/api/liquidity/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      chainSlug,
+      dexId: getLiqDexId(),
       tokenAddress: tokenAddr,
       quoteId,
       pairAddress: pair.pairAddress || '',
@@ -814,21 +1115,92 @@ async function addLiquidityMetaMask() {
 function showLiquidityResult(data) {
   const el = document.getElementById('liq-result');
   const liq = data.liquidity || data;
-  const bscToken = data.explorerTokenUrl || (config.explorer + '/token/' + liq.tokenAddress);
+  const exp = data.explorerTokenUrl || (config.explorer + '/token/' + liq.tokenAddress);
+  const target = document.getElementById('liq-target-usd')?.value || '1';
+  const amt = document.getElementById('liq-token-amount')?.value || '0';
+  const mcap = fmtUsd(Number(amt) * Number(target));
   el.innerHTML = `
-    <p class="status-msg ok">Pool live — BSCScan will show ~$${document.getElementById('liq-target-usd')?.value || '1'} per token in ~5–15 min</p>
+    <p class="status-msg ok">Pool live — BSCScan shows ~$${target}/token · mcap ~${mcap} in ~5–15 min</p>
     <p class="token-meta">Pair: ${liq.pairAddress || 'indexing…'}</p>
     <p class="token-links">
-      <a href="${bscToken}" target="_blank" rel="noopener"><strong>View price on BSCScan</strong></a>
-      ${data.pancakeSwapUrl ? `<a href="${data.pancakeSwapUrl}" target="_blank" rel="noopener">PancakeSwap</a>` : ''}
+      <a href="${exp}" target="_blank" rel="noopener"><strong>View on BSCScan</strong></a>
+      ${data.dexUrl ? `<a href="${data.dexUrl}" target="_blank" rel="noopener">DEX</a>` : ''}
       ${data.dexscreenerUrl ? `<a href="${data.dexscreenerUrl}" target="_blank" rel="noopener">DexScreener</a>` : ''}
       <a href="${data.explorerTxUrl || config.explorer + '/tx/' + liq.txHash}" target="_blank" rel="noopener">View TX</a>
     </p>`;
   el.classList.remove('hidden');
 }
 
+async function renderMarkets() {
+  const grid = document.getElementById('markets-dex-grid');
+  if (grid) {
+    const reg = dexRegistry || await loadDexRegistry();
+    const chains = reg?.chains || {};
+    grid.innerHTML = Object.entries(chains).map(([id, c]) => {
+      const dexes = (c.dexes || []).map(d => `${d.name}`).join(', ');
+      return `<div class="token-card"><h3>${esc(c.name)}</h3><p class="token-meta">${esc(dexes)}</p></div>`;
+    }).join('') || '<p class="status-msg">No DEX registry.</p>';
+  }
+  const book = await fetchFlashMirror({ reload: true }).catch(() => ({}));
+  const addr = book.canonicalAddress || '0x8944A53814b99E14c7BAE33814548a1F32bDCA8b';
+  const tok = document.getElementById('markets-token');
+  const name = document.getElementById('markets-name');
+  const sym = document.getElementById('markets-symbol');
+  if (tok && !tok.value) tok.value = addr;
+  if (name && !name.value) name.value = book.name || 'Flash Coin';
+  if (sym && !sym.value) sym.value = book.symbol || 'wFLASH';
+}
+
+async function runMarketsBridge() {
+  const el = document.getElementById('markets-result');
+  const chain = document.getElementById('markets-chain')?.value || 'bsc';
+  const token = document.getElementById('markets-token')?.value?.trim();
+  const name = document.getElementById('markets-name')?.value?.trim();
+  const symbol = document.getElementById('markets-symbol')?.value?.trim();
+  if (!token) {
+    if (el) el.innerHTML = '<p class="status-msg error">Enter token address</p>';
+    return;
+  }
+  if (el) el.innerHTML = '<p class="status-msg">Building listing bridge…</p>';
+  const data = await api('/api/listings/bridge', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chainSlug: chain, tokenAddress: token, name, symbol, save: true }),
+  });
+  if (data.error) {
+    if (el) el.innerHTML = `<p class="status-msg error">${esc(data.error)}</p>`;
+    return;
+  }
+  const providers = (data.providers || []).map(p =>
+    `<div class="token-card"><h3>${esc(p.name)} <span class="badge">${esc(p.status)}</span></h3>
+     <p class="token-meta">Score ${data.readiness?.score || 0} · ${esc((data.readiness?.missing || []).join(', '))}</p>
+     <div class="token-links"><a href="${esc(p.submitUrl)}" target="_blank" rel="noopener">Submit</a></div></div>`
+  ).join('');
+  if (el) el.innerHTML = `
+    <div class="flash-mirror-meta">Readiness ${data.readiness?.ready ? '<span class="badge live">READY</span>' : '<span class="badge predicted">PENDING</span>'} · Liq ${fmtUsd(data.readiness?.liquidityUsd || 0)}</div>
+    ${providers}`;
+}
+
+async function runFlashMarketsBridge() {
+  const el = document.getElementById('markets-result');
+  if (el) el.innerHTML = '<p class="status-msg">Loading Flash Coin 7-chain bridge…</p>';
+  const data = await api('/api/listings/flash').catch(() => ({}));
+  if (!data.chains?.length) {
+    if (el) el.innerHTML = '<p class="status-msg error">No flash mirror data</p>';
+    return;
+  }
+  if (el) el.innerHTML = data.chains.map(c => `
+    <div class="token-card">
+      <h3>${esc(c.chainName)} <span class="badge ${c.listing?.readiness?.ready ? 'live' : 'predicted'}">${c.listing?.readiness?.ready ? 'Ready' : 'Pending'}</span></h3>
+      <p class="token-meta mono">${esc(c.address)}</p>
+      <p class="token-meta">Transfer: ${c.listing?.readiness ? (c.listing.readiness.transferable !== false ? 'YES' : 'NO') : '—'} · Score ${c.listing?.readiness?.score || 0}</p>
+      <div class="token-links"><a href="${esc(c.listing?.explorerTokenUrl || '')}" target="_blank" rel="noopener">Explorer</a></div>
+    </div>`).join('');
+}
+
 async function fillLiquidityTokens() {
   const sel = document.getElementById('liq-token');
+  const addrEl = document.getElementById('liq-token-addr');
   if (!sel) return;
   const list = await api('/api/tokens');
   if (!Array.isArray(list) || !list.length) {
@@ -837,19 +1209,30 @@ async function fillLiquidityTokens() {
   }
   sel.innerHTML = '<option value="">Select launched token…</option>' +
     list.map(t => `<option value="${t.contractAddress}">${t.symbol} — ${t.name}</option>`).join('');
+  const flash = list.find(t => t.deployMethod === 'mirror' || (t.symbol || '').toLowerCase() === 'wflash');
+  if (flash) {
+    sel.value = flash.contractAddress;
+    if (addrEl && !addrEl.value.trim()) addrEl.value = flash.contractAddress;
+  }
 }
 
 async function checkPair() {
   const info = document.getElementById('liq-pair-info');
-  const token = document.getElementById('liq-token')?.value;
-  const quote = document.getElementById('liq-quote')?.value || 'bnb';
+  const token = getLiqTokenAddr();
+  const quote = document.getElementById('liq-quote')?.value || 'usdt';
+  const chain = getLiqChainSlug();
+  const dex = getLiqDexId();
   if (!token || !info) return;
-  const pair = await api('/api/liquidity/pair?token=' + encodeURIComponent(token) + '&quote=' + quote);
+  const pair = await api(`/api/liquidity/pair?token=${encodeURIComponent(token)}&quote=${quote}&chain=${chain}&dex=${dex}`);
   if (pair.exists) {
-    info.innerHTML = `Pool exists: <a href="${pair.pancakeSwapUrl}" target="_blank" rel="noopener">${shortAddr(pair.pairAddress)}</a>`;
+    const url = pair.dexUrl || pair.liquidityUrl || '#';
+    info.innerHTML = `Pool exists: <a href="${url}" target="_blank" rel="noopener">${shortAddr(pair.pairAddress)}</a>`;
     info.className = 'status-msg ok';
+  } else if (pair.liquidityMode === 'link-only') {
+    info.innerHTML = `No pool — <a href="${pair.liquidityUrl}" target="_blank" rel="noopener">Open ${esc(pair.dexName || 'DEX')} UI</a>`;
+    info.className = 'status-msg';
   } else {
-    info.textContent = 'No pool yet — this will create a new PancakeSwap V2 pair.';
+    info.textContent = `No pool yet — creates new ${pair.dexName || 'V2'} pair on ${chain}.`;
     info.className = 'status-msg';
   }
 }
@@ -862,14 +1245,87 @@ async function renderLiquidityHistory() {
     el.innerHTML = '<p class="status-msg">No pools yet.</p>';
     return;
   }
-  el.innerHTML = list.map(l => `
+  el.innerHTML = list.map(l => {
+    const exp = explorerForChainSlug(l.chainSlug || 'bsc');
+    const chainLabel = (l.chainSlug || 'bsc').toUpperCase();
+    const payload = encodeURIComponent(JSON.stringify(l));
+    return `
     <div class="token-card">
       <strong>${shortAddr(l.tokenAddress)} / ${(l.quoteId || 'bnb').toUpperCase()}</strong>
-      <p class="status-msg">${l.tokenAmount} tokens + ${l.quoteAmount} ${(l.quoteId || 'bnb').toUpperCase()}</p>
+      <p class="status-msg">${chainLabel} · ${esc(l.dexId || 'dex')} · ${l.tokenAmount} tokens + ${l.quoteAmount} ${(l.quoteId || 'bnb').toUpperCase()}</p>
       <div class="token-links">
-        <a href="${config.explorer}/tx/${l.txHash}" target="_blank" rel="noopener">TX</a>
+        ${l.txHash ? `<a href="${exp}/tx/${l.txHash}" target="_blank" rel="noopener">TX</a>` : ''}
+        ${l.pairAddress ? `<a href="${exp}/address/${l.pairAddress}" target="_blank" rel="noopener">Pair</a>` : ''}
+        <button type="button" class="btn btn-ghost btn-sm btn-copy-liq-card" data-liq="${payload}">Copy params</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.btn-copy-liq-card').forEach(btn => {
+    btn.addEventListener('click', () => {
+      try {
+        const l = JSON.parse(decodeURIComponent(btn.getAttribute('data-liq')));
+        const text = [
+          'OneX Liquidity',
+          `Chain: ${l.chainSlug || 'bsc'}`,
+          `DEX: ${l.dexId || 'pancake-v2'}`,
+          `Token: ${l.tokenAddress}`,
+          `Token amount: ${l.tokenAmount}`,
+          `Quote: ${l.quoteId || 'bnb'} ${l.quoteAmount}`,
+          `Pair: ${l.pairAddress || '—'}`,
+          `TX: ${l.txHash || '—'}`,
+        ].join('\n');
+        copyText(text, btn, 'Copied');
+      } catch (_) { /* ignore */ }
+    });
+  });
+}
+
+async function copyLiquidityParams() {
+  const btn = document.getElementById('btn-copy-liquidity');
+  const token = getLiqTokenAddr();
+  const tokenAmt = document.getElementById('liq-token-amount')?.value || '1000000000';
+  const quoteAmt = document.getElementById('liq-quote-amount')?.value || tokenAmt;
+  const chain = getLiqChainSlug();
+  const data = await api('/api/liquidity/copy?chain=' + encodeURIComponent(chain) +
+    '&token=' + encodeURIComponent(token) +
+    '&tokenAmount=' + encodeURIComponent(tokenAmt) +
+    '&quoteAmount=' + encodeURIComponent(quoteAmt));
+  if (data.error) {
+    setMsg(document.getElementById('liq-msg'), data.error, 'error');
+    return;
+  }
+  await copyText(data.copyText || JSON.stringify(data, null, 2), btn, 'Copied');
+  setMsg(document.getElementById('liq-msg'), 'Liquidity params copied to clipboard.', 'ok');
+}
+
+async function fixAllPending() {
+  const el = document.getElementById('flash-mirror-list');
+  const btn = document.getElementById('btn-fix-pending');
+  if (btn) btn.disabled = true;
+  if (el) el.innerHTML = '<p class="status-msg">Fixing pending — registering Flash Coin, reloading mirrors…</p>';
+  try {
+    const res = await api('/api/fix-pending?reload=1', { method: 'POST' });
+    if (res.error) throw new Error(res.error);
+    const book = await fetchFlashMirror(false);
+    if (el) {
+      el.innerHTML = flashMirrorCardHTML(book, false);
+      wireFlashCopyButtons(el);
+    }
+    await fillLiquidityTokens();
+    const addr = res.canonicalAddress || res.flashCoinAddress;
+    if (res.pendingChains > 0 && addr) {
+      presetBscscan1BUsdt(addr);
+      setMsg(document.getElementById('liq-msg'),
+        `${res.pendingChains} chain(s) still need on-chain deploy — add BSC liquidity via MetaMask to activate mirrors.`,
+        '');
+    }
+    setGlobalStatus(`Pending fix: ${res.liveChains || 0} live · ${res.pendingChains || 0} pending`,
+      res.pendingChains ? '' : 'ok');
+  } catch (err) {
+    if (el) el.innerHTML = `<p class="status-msg error">${esc(err.message || String(err))}</p>`;
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 async function handleLiquidity(e) {
@@ -944,43 +1400,343 @@ async function enrichToken(token) {
   return { token, bscscan, price };
 }
 
-async function renderFlashMirror() {
-  const el = document.getElementById('flash-mirror-list');
-  if (!el) return;
-  const book = await api('/api/flash-mirror').catch(() => ({}));
+async function fetchFlashMirror(opts) {
+  const o = typeof opts === 'object' ? opts : { verify: !!opts };
+  const params = new URLSearchParams();
+  if (o.verify) params.set('verify', '1');
+  if (o.reload) params.set('reload', '1');
+  const q = params.toString() ? '?' + params.toString() : '';
+  return api('/api/flash-mirror' + q).catch(() => ({}));
+}
+
+function fmtXfer(dep) {
+  return dep.transferable ? '<span class="badge live">YES</span>' : '<span class="badge predicted">NO</span>';
+}
+
+function fmtMirrorVal(v) {
+  if (v === null || v === undefined || v === '') return '—';
+  return esc(String(v));
+}
+
+function fmtMirrorPrice(dep) {
+  if (dep.priceUsd > 0) return fmtUsd(dep.priceUsd);
+  if (dep.impliedPriceUsd > 0) return `${fmtUsd(dep.impliedPriceUsd)} <span class="badge predicted">target</span>`;
+  return '—';
+}
+
+function fmtMirrorMcap(dep) {
+  const onChain = dep.onChainMarketCapUsd || (dep.priceUsd > 0 ? dep.marketCapUsd : 0);
+  if (onChain > 0) return `${fmtUsd(onChain)} <span class="badge live">on-chain</span>`;
+  if (dep.impliedMarketCapUsd > 0) return `${fmtUsd(dep.impliedMarketCapUsd)} <span class="badge predicted">implied</span>`;
+  if (dep.marketCapUsd > 0) return fmtUsd(dep.marketCapUsd);
+  return '—';
+}
+
+function pickMarketDep(list) {
+  return list.find(d => d.chainId === 'bsc')
+    || list.find(d => d.priceUsd > 0 || d.liquidityUsd > 0)
+    || list[0];
+}
+
+function mirrorMarketStrip(book) {
+  const list = book.deployments || [];
+  const dep = pickMarketDep(list);
+  if (!dep) return '';
+  const chain = dep.chainName || dep.chainId || 'BSC';
+  return `
+    <div class="flash-market-strip">
+      <div class="flash-market-item"><span>Market price</span><strong>${fmtMirrorPrice(dep)}</strong></div>
+      <div class="flash-market-item"><span>On-chain cap</span><strong>${fmtMirrorMcap(dep)}</strong></div>
+      <div class="flash-market-item"><span>Liquidity</span><strong>${fmtMirrorUsd(dep.liquidityUsd)}</strong></div>
+      <div class="flash-market-item"><span>Holders</span><strong>${dep.holders > 0 ? dep.holders : '—'}</strong></div>
+      <div class="flash-market-item"><span>Chain</span><strong>${esc(chain)}</strong></div>
+      ${!dep.hasLiquidity && dep.impliedMarketCapUsd > 0 ? '<p class="flash-market-note">Implied cap = supply × $1 listing target. Add liquidity on BSC for live DexScreener / BSCScan values.</p>' : ''}
+    </div>`;
+}
+
+function fmtMirrorUsd(v) {
+  return v > 0 ? fmtUsd(v) : '—';
+}
+
+function mirrorTxLink(dep) {
+  const exp = (dep.explorer || '').replace(/\/$/, '');
+  if (!dep.txHash || !exp) return '—';
+  const url = `${exp}/tx/${dep.txHash}`;
+  return `<a href="${url}" target="_blank" rel="noopener" class="mono">${esc(shortAddr(dep.txHash))}</a>`;
+}
+
+function mirrorPairLink(dep) {
+  const exp = (dep.explorer || '').replace(/\/$/, '');
+  if (!dep.pairAddress || !exp) return fmtMirrorVal(dep.pairAddress);
+  return `<a href="${exp}/address/${dep.pairAddress}" target="_blank" rel="noopener" class="mono">${esc(shortAddr(dep.pairAddress))}</a>`;
+}
+
+function mirrorDetailGrid(dep, book) {
+  const addr = dep.contractAddress || dep.predictedAddress || book.canonicalAddress || '';
+  const exp = (dep.explorer || '').replace(/\/$/, '');
+  const fields = [
+    ['Chain ID', dep.chainId],
+    ['Token name', dep.tokenName || book.name],
+    ['Symbol', dep.symbol || book.symbol],
+    ['Standard', dep.tokenStandard || 'real-token'],
+    ['Decimals', dep.decimals ?? book.decimals ?? 8],
+    ['Contract', addr],
+    ['Predicted', dep.predictedAddress || addr],
+    ['Supply (human)', dep.totalSupplyHuman || dep.supplyHuman || dep.wrapAmountHuman || book.wrapAmountPerChain],
+    ['Supply (raw)', dep.totalSupply || '—'],
+    ['Wrap / chain', dep.wrapAmountHuman || book.wrapAmountPerChain || '1000000000'],
+    ['Owner', dep.ownerAddress || '—'],
+    ['Owner balance (raw)', dep.ownerBalance || '—'],
+    ['Owner balance', dep.ownerBalanceHuman || '—'],
+    ['Transferable', dep.transferable ? 'YES' : 'NO'],
+    ['Price USD', dep.priceUsd > 0 ? fmtUsd(dep.priceUsd) : (dep.impliedPriceUsd > 0 ? fmtUsd(dep.impliedPriceUsd) + ' (target)' : '—')],
+    ['On-chain cap', dep.onChainMarketCapUsd > 0 ? fmtUsd(dep.onChainMarketCapUsd) : '—'],
+    ['Implied cap', dep.impliedMarketCapUsd > 0 ? fmtUsd(dep.impliedMarketCapUsd) : '—'],
+    ['Market cap', dep.marketCapUsd > 0 ? fmtUsd(dep.marketCapUsd) : '—'],
+    ['Liquidity USD', dep.liquidityUsd > 0 ? fmtUsd(dep.liquidityUsd) : '—'],
+    ['Has liquidity', dep.hasLiquidity ? 'YES' : 'NO'],
+    ['Holders', dep.holders > 0 ? String(dep.holders) : '—'],
+    ['DEX', dep.dexId || '—'],
+    ['Pair', dep.pairAddress || '—'],
+    ['Status', dep.status || 'predicted'],
+    ['On-chain', dep.verifiedOnChain ? 'verified' : 'pending'],
+    ['RPC', dep.rpc || '—'],
+    ['Explorer', dep.explorerTokenUrl || (exp && addr ? `${exp}/token/${addr}` : '—')],
+    ['TX', dep.txHash || '—'],
+    ['Deployed', dep.deployedAt || '—'],
+  ];
+  return `
+    <div class="flash-detail-card">
+      <h4>${esc(dep.chainName || dep.chainId)} <span class="flash-chain-status ${dep.verifiedOnChain ? 'live' : 'predicted'}">${dep.verifiedOnChain ? '● Live' : '○ Predicted'}</span></h4>
+      <dl class="flash-detail-dl">
+        ${fields.map(([k, v]) => `<dt>${esc(k)}</dt><dd class="mono">${typeof v === 'string' && v.startsWith('http') ? `<a href="${esc(v)}" target="_blank" rel="noopener">${esc(v)}</a>` : esc(String(v ?? '—'))}</dd>`).join('')}
+      </dl>
+      ${addr ? `<button type="button" class="btn btn-outline btn-sm btn-copy-chain-addr" data-addr="${addr}">Copy contract</button>` : ''}
+    </div>`;
+}
+
+function flashMirrorCardHTML(book, compact) {
   const list = book.deployments || [];
   if (!list.length) {
-    el.innerHTML = '<p class="status-msg">No mirror data. Run <code>onex flash-coin-mirror</code> then <code>onex flash-coin-deploy-live</code> with your deployer key.</p>';
-    return;
+    return '<p class="flash-mirror-empty">No mirror data. Run <code>onex flash-coin-mirror</code>.</p>';
   }
-  el.innerHTML = list.map(dep => {
-    const live = dep.status === 'live' || dep.verifiedOnChain;
-    const badge = live ? '<span class="badge live">LIVE</span>' : '<span class="badge">PREDICTED</span>';
-    const addr = dep.contractAddress || dep.predictedAddress || '—';
-    const exp = (dep.explorer || '').replace(/\/$/, '');
-    const tokenUrl = exp ? `${exp}/token/${addr}` : '#';
-    const txUrl = dep.txHash && exp ? `${exp}/tx/${dep.txHash}` : '';
+  const canonical = book.canonicalAddress || list[0]?.contractAddress || '';
+  const liveCount = list.filter(d => d.status === 'live' || d.verifiedOnChain).length;
+  const allLive = liveCount === list.length;
+  const statusBadge = allLive
+    ? '<span class="badge live">All live</span>'
+    : liveCount > 0
+      ? `<span class="badge predicted">${liveCount}/${list.length} live</span>`
+      : '<span class="badge predicted">Pending deploy</span>';
+
+  if (compact) {
     return `
-      <div class="token-card">
-        <h3>${book.symbol || 'wFLASH'} ${badge} <span class="badge">${dep.chainName || dep.chainId}</span></h3>
-        <p class="token-meta">${book.name || 'Flash Coin'} mirror · supply ${dep.supplyHuman || '100'}</p>
-        <p class="token-meta mono">${addr}</p>
-        <div class="token-links">
-          ${exp ? `<a href="${tokenUrl}" target="_blank" rel="noopener">Explorer</a>` : ''}
-          ${txUrl ? `<a href="${txUrl}" target="_blank" rel="noopener">Deploy TX</a>` : ''}
+      <div class="flash-summary-compact">
+        <div class="flash-summary-row">
+          ${statusBadge}
+          <span class="badge same">${esc(book.symbol || 'wFLASH')}</span>
+          <span class="flash-summary-meta">${list.length} chains · ${liveCount} on-chain</span>
         </div>
+        ${canonical ? `<code class="mono flash-summary-addr">${esc(canonical)}</code>` : ''}
       </div>`;
+  }
+
+  const rows = list.map((dep, i) => {
+    const live = dep.status === 'live' || dep.verifiedOnChain;
+    const addr = dep.contractAddress || dep.predictedAddress || book.canonicalAddress || '';
+    const exp = (dep.explorer || '').replace(/\/$/, '');
+    const tokenUrl = dep.explorerTokenUrl || (exp && addr ? `${exp}/token/${addr}` : '');
+    const supply = dep.totalSupplyHuman || dep.supplyHuman || dep.wrapAmountHuman || book.wrapAmountPerChain || '1000000000';
+    const supplyRaw = dep.totalSupply || '—';
+    const ownerBal = dep.ownerBalanceHuman || dep.ownerBalance || '—';
+    const owner = dep.ownerAddress ? shortAddr(dep.ownerAddress) : '—';
+    const price = fmtMirrorPrice(dep);
+    const mcap = fmtMirrorMcap(dep);
+    const liq = fmtMirrorUsd(dep.liquidityUsd);
+    const holders = dep.holders > 0 ? String(dep.holders) : '—';
+    const dex = dep.dexId || '—';
+    const deployed = dep.deployedAt ? dep.deployedAt.slice(0, 10) : '—';
+    const links = [
+      tokenUrl ? `<a href="${tokenUrl}" target="_blank" rel="noopener">Explorer</a>` : '',
+    ].filter(Boolean).join(' · ') || '—';
+    return `
+      <tr class="flash-row-main" data-chain-idx="${i}">
+        <td class="flash-chain-name">${esc(dep.chainName || dep.chainId)}</td>
+        <td><span class="flash-chain-status ${live ? 'live' : 'predicted'}">${live ? '● Live' : '○ Pending'}</span></td>
+        <td class="flash-addr-cell">
+          <code class="mono flash-full-addr">${esc(addr)}</code>
+          ${addr ? `<button type="button" class="btn btn-ghost btn-sm btn-copy-row-addr" data-addr="${esc(addr)}" title="Copy contract address">Copy</button>` : ''}
+        </td>
+        <td>${esc(String(dep.decimals ?? book.decimals ?? 8))}</td>
+        <td>${esc(supply)}</td>
+        <td class="mono flash-raw">${fmtMirrorVal(supplyRaw)}</td>
+        <td class="mono">${esc(owner)}</td>
+        <td class="mono">${fmtMirrorVal(ownerBal)}</td>
+        <td>${price}</td>
+        <td>${mcap}</td>
+        <td>${liq}</td>
+        <td>${holders}</td>
+        <td>${esc(dex)}</td>
+        <td>${mirrorPairLink(dep)}</td>
+        <td>${mirrorTxLink(dep)}</td>
+        <td>${fmtMirrorVal(deployed)}</td>
+        <td>${fmtXfer(dep)}</td>
+        <td class="token-links">${links}</td>
+      </tr>`;
   }).join('');
+
+  const detailGrid = list.map(dep => mirrorDetailGrid(dep, book)).join('');
+
+  const pendingCount = list.length - liveCount;
+  const pendingBanner = pendingCount > 0 ? `
+    <div class="flash-pending-banner status-msg">
+      ${pendingCount} chain(s) pending on-chain verification.
+      <button type="button" class="btn btn-primary btn-sm" id="btn-fix-pending-inline">Fix all pending</button>
+      <button type="button" class="btn btn-outline btn-sm" id="btn-copy-liq-inline">Copy BSC liquidity</button>
+    </div>` : '';
+
+  const poolMode = config?.poolLiveMode || 'metamask';
+  const deployer = config?.deployerAddress || '';
+  const footMsg = poolMode === 'metamask'
+    ? `Pending chains need on-chain deploy + liquidity. Use <strong>Fix all pending</strong>, then add pool on BSC via MetaMask${deployer ? ` (<code>${esc(shortAddr(deployer))}</code>)` : ''}.`
+    : 'Live deploy: set <code>FLASH_DEPLOYER_PRIVATE_KEY</code> in <code>bsc-launcher/.env</code>, then run <code>scripts/make-pool-live.ps1</code>';
+
+  const metaRow = `
+    <div class="flash-mirror-meta">
+      <span>Origin <strong>${esc(book.originToken || 'FLASH')}</strong> · ${esc(book.originSupplyHuman || '1000000000')} supply</span>
+      <span>Wrap <strong>${esc(book.wrapAmountPerChain || '1000000000')}</strong> / chain</span>
+      <span>Decimals <strong>${esc(String(book.decimals ?? 8))}</strong></span>
+      <span>Standard <strong>${esc(depTokenStandard(book))}</strong></span>
+      ${book.payloadReloaded ? '<span class="badge live">Payload reloaded</span>' : ''}
+    </div>`;
+
+  return `
+    <div class="flash-mirror-card">
+      <div class="flash-mirror-hero">
+        <div class="flash-mirror-brand">
+          <h3>${esc(book.name || 'Flash Coin')} ${statusBadge}</h3>
+          <p>${esc(book.originToken || 'FLASH')} on OneX → ${list.length} EVM chains · ${esc(book.mirrorMode || 'create2-same-address')}</p>
+        </div>
+        <div class="flash-mirror-stats">
+          <div class="stat"><strong>${list.length}</strong><span>Chains</span></div>
+          <div class="stat"><strong>${liveCount}</strong><span>On-chain</span></div>
+          <div class="stat"><strong>${list.filter(d => d.transferable).length}</strong><span>Transferable</span></div>
+        </div>
+      </div>
+      ${mirrorMarketStrip(book)}
+      ${pendingBanner}
+      ${metaRow}
+      ${canonical ? `
+      <div class="flash-mirror-address" id="mirror-contract-address">
+        <label>Contract address (all 7 chains)</label>
+        <div class="flash-mirror-address-row">
+          <code class="mono" id="flash-canonical-addr">${esc(canonical)}</code>
+          <button type="button" class="btn btn-outline btn-sm btn-copy-flash-addr">Copy address</button>
+          <a class="btn btn-ghost btn-sm" href="https://bscscan.com/token/${esc(canonical)}" target="_blank" rel="noopener">BSCScan</a>
+        </div>
+      </div>` : ''}
+      <div class="flash-mirror-table-wrap">
+        <table class="flash-mirror-table flash-mirror-table-full">
+          <thead><tr>
+            <th>Chain</th><th>Status</th><th>Contract</th><th>Dec</th>
+            <th>Supply</th><th>Supply raw</th><th>Owner</th><th>Owner bal</th>
+            <th>Price</th><th>Mkt cap</th><th>Liquidity</th><th>Holders</th><th>DEX</th><th>Pair</th><th>TX</th><th>Deployed</th><th>Xfer</th><th>Links</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="flash-detail-grid">
+        <h4 class="flash-detail-grid-title">Full contract details (all chains)</h4>
+        ${detailGrid}
+      </div>
+      <div class="flash-mirror-foot">${footMsg}</div>
+    </div>`;
+}
+
+function wireFlashCopyButtons(root) {
+  root?.querySelectorAll('.btn-copy-flash-addr').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const code = root.querySelector('#flash-canonical-addr')?.textContent?.trim();
+      if (!code) return;
+      copyText(code, btn, 'Copied');
+    });
+  });
+  root?.querySelectorAll('.btn-copy-row-addr').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const addr = btn.getAttribute('data-addr');
+      if (!addr) return;
+      copyText(addr, btn, 'Copied');
+    });
+  });
+  root?.querySelectorAll('.btn-copy-chain-addr').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const addr = btn.getAttribute('data-addr');
+      if (!addr) return;
+      copyText(addr, btn, 'Copied');
+    });
+  });
+  root?.querySelector('#btn-fix-pending-inline')?.addEventListener('click', fixAllPending);
+  root?.querySelector('#btn-copy-liq-inline')?.addEventListener('click', async () => {
+    presetBscscan1BUsdt();
+    await copyLiquidityParams();
+  });
+}
+
+async function renderFlashMirror(opts = {}) {
+  const el = document.getElementById('flash-mirror-list');
+  if (!el) return;
+  const reload = !!opts.reload;
+  const verify = !!opts.verify;
+  el.innerHTML = reload || verify
+    ? '<p class="status-msg">Reloading mirror contract addresses and on-chain details…</p>'
+    : '<p class="status-msg">Loading mirror contract addresses…</p>';
+  const book = await fetchFlashMirror(reload || verify ? { reload, verify } : false);
+  el.innerHTML = flashMirrorCardHTML(book, false);
+  wireFlashCopyButtons(el);
+}
+
+async function renderFlashMirrorSummary() {
+  const el = document.getElementById('flash-mirror-summary');
+  if (!el) return;
+  const book = await fetchFlashMirror(false);
+  el.innerHTML = flashMirrorCardHTML(book, true);
+  const statChains = document.getElementById('stat-chains');
+  const statLive = document.getElementById('stat-live');
+  const list = book.deployments || [];
+  const liveCount = list.filter(d => d.status === 'live' || d.verifiedOnChain).length;
+  if (statChains) statChains.textContent = String(list.length || '—');
+  if (statLive) statLive.textContent = String(liveCount);
+  const tokenCount = document.getElementById('stat-tokens')?.textContent;
+  const tokens = tokenCount && tokenCount !== '—' ? Number(tokenCount) : 0;
+  updateTelemetryValues(list.length, liveCount, tokens);
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function depTokenStandard(book) {
+  const d = (book.deployments || [])[0];
+  return d?.tokenStandard || 'real-token';
 }
 
 async function renderDashboard() {
-  await renderFlashMirror();
+  await renderFlashMirrorSummary();
   const el = document.getElementById('token-list');
+  const statTokens = document.getElementById('stat-tokens');
   const list = await api('/api/tokens');
   if (list.error) {
     el.innerHTML = `<p class="status-msg error">${list.error}</p>`;
     return;
   }
+  if (statTokens) statTokens.textContent = String(list.length || 0);
+  const chains = document.getElementById('stat-chains')?.textContent;
+  const live = document.getElementById('stat-live')?.textContent;
+  updateTelemetryValues(
+    chains && chains !== '—' ? Number(chains) : 7,
+    live && live !== '—' ? Number(live) : 0,
+    list.length
+  );
   if (!list.length) {
     el.innerHTML = '<p class="status-msg">No tokens yet. <a href="#" data-nav="generate">Create your first token</a>.</p>';
     el.querySelector('[data-nav]')?.addEventListener('click', (e) => { e.preventDefault(); showView('generate'); });
@@ -1141,6 +1897,19 @@ document.getElementById('wizard-form')?.addEventListener('submit', (e) => {
 document.getElementById('btn-deploy')?.addEventListener('click', handleDeploy);
 document.getElementById('btn-connect')?.addEventListener('click', connectWallet);
 document.getElementById('btn-refresh')?.addEventListener('click', renderDashboard);
+document.getElementById('btn-mirror-refresh')?.addEventListener('click', () => renderFlashMirror());
+document.getElementById('btn-mirror-verify')?.addEventListener('click', async () => {
+  const el = document.getElementById('flash-mirror-list');
+  if (el) el.innerHTML = '<p class="status-msg">Verifying contracts on-chain (7 chains)…</p>';
+  const book = await fetchFlashMirror({ verify: true, reload: true });
+  if (el) {
+    el.innerHTML = flashMirrorCardHTML(book, false);
+    wireFlashCopyButtons(el);
+  }
+});
+document.getElementById('btn-mirror-reload')?.addEventListener('click', () => renderFlashMirror({ reload: true, verify: true }));
+document.getElementById('btn-fix-pending')?.addEventListener('click', fixAllPending);
+document.getElementById('btn-copy-liquidity')?.addEventListener('click', copyLiquidityParams);
 document.getElementById('btn-lookup')?.addEventListener('click', lookupAddress);
 document.getElementById('btn-settings')?.addEventListener('click', openSettings);
 document.getElementById('btn-settings-save')?.addEventListener('click', saveSettings);
@@ -1157,6 +1926,21 @@ document.getElementById('btn-calc-dollar')?.addEventListener('click', () => {
   updateQuoteLabel();
   calculateLiquidityQuote();
 });
+document.getElementById('btn-bscscan-1b')?.addEventListener('click', () => presetBscscan1BUsdt());
+document.getElementById('btn-markets-bridge')?.addEventListener('click', runMarketsBridge);
+document.getElementById('btn-markets-refresh')?.addEventListener('click', runFlashMarketsBridge);
+document.getElementById('liq-chain')?.addEventListener('change', () => { populateLiqDexes(); });
+document.getElementById('liq-dex')?.addEventListener('change', refreshActiveDex);
+document.getElementById('liq-token-addr')?.addEventListener('input', debounce(checkPair, 400));
+document.getElementById('liq-token')?.addEventListener('change', () => {
+  const v = document.getElementById('liq-token')?.value;
+  const addr = document.getElementById('liq-token-addr');
+  if (addr && v) addr.value = v;
+  checkPair();
+});
+document.getElementById('btn-open-dex')?.addEventListener('click', () => {
+  if (activeDex?.liquidityUrl) window.open(activeDex.liquidityUrl, '_blank', 'noopener');
+});
 
 document.getElementById('token-name')?.addEventListener('input', syncContractName);
 document.querySelectorAll('input[name="contract-name-mode"]').forEach(r => {
@@ -1171,15 +1955,23 @@ bindToggle('tax-burn', 'tax-burn-pct');
 
 loadConfig()
   .then(() => {
+    startMissionClock();
+    initTelemetry();
     const n = (config.chains || []).filter(c => c.live).length;
     const prod = config.env === 'production';
     const keyOk = !config.apiKeyRequired || !!getApiKey();
     if (prod && !keyOk) {
-      setGlobalStatus('Production — open Settings and paste API key', 'error');
+      setGlobalStatus('AUTH REQUIRED — configure API key in settings', 'error');
     } else {
-      setGlobalStatus(`Live · ${n} chains · ${config.env || 'development'}`, 'ok');
+      setGlobalStatus(`SYS NOMINAL · ${n} chains · ${config.env || 'development'}`, 'ok');
     }
-    showView('landing');
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('preset') === 'bscscan1b' || params.get('view') === 'liquidity') {
+      presetBscscan1BUsdt();
+    } else {
+      showView('landing');
+    }
+    api('/api/fix-pending').catch(() => {});
   })
   .catch(err => {
     setGlobalStatus(err.message || 'Failed to load', 'error');

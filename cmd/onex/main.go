@@ -41,6 +41,8 @@ func main() {
 		runFlashCoinMirror(os.Args[2:])
 	case "flash-coin-deploy-live":
 		runFlashCoinDeployLive(os.Args[2:])
+	case "make-pool-live":
+		runMakePoolLive(os.Args[2:])
 	default:
 		printUsage()
 		os.Exit(1)
@@ -61,7 +63,8 @@ Token Platform (requires onex-bridge running):
   onex token-info -chain CHAIN -id TOKEN_ID [-bridge URL]
   onex platform-status [-bridge URL]
   onex flash-coin-mirror [-config PATH] [-bridge URL]
-  onex flash-coin-deploy-live [-config PATH] [-out PATH] [-verify]`)
+  onex flash-coin-deploy-live [-config PATH] [-out PATH] [-verify]
+  onex make-pool-live [-config PATH] [-chain bsc] [-dex pancake-v2] [-deploy]`)
 }
 
 func runWalletCreate(args []string) {
