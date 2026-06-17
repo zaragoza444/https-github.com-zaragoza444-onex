@@ -47,6 +47,7 @@ services:
       ONEX_CORS_ORIGINS: ${ONEX_CORS_ORIGINS:-*}
       # Persist bridge + token platform storage under the same mounted volume.
       ONEX_HOME_DIR: /bridge-data
+      ONEX_LEDGER_MODE: production
     depends_on:
       onexd:
         condition: service_healthy

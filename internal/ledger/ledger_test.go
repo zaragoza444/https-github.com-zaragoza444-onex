@@ -81,6 +81,15 @@ func TestBankProviderResolved(t *testing.T) {
 	}
 }
 
+func TestLoadConfigDefaultsProduction(t *testing.T) {
+	t.Setenv("ONEX_LEDGER_MODE", "")
+	t.Setenv("SHIVA_LEDGER_MODE", "")
+	cfg := LoadConfig()
+	if !cfg.Production() {
+		t.Fatalf("expected production default, got mode=%q", cfg.Mode)
+	}
+}
+
 func TestEngineReadProductionSkipsPortfolio(t *testing.T) {
 	eng := NewEngine()
 	cfg := Config{Mode: "production", FiatCurrency: "USD"}

@@ -56,12 +56,12 @@ func (b *Bridge) tokenMetaMap() map[string]ledger.TokenMeta {
 
 // LedgerStatus returns production middleware readiness.
 func (b *Bridge) LedgerStatus() map[string]interface{} {
-	return b.ledgerConfig().Status()
+	return b.resolvedLedgerConfig().Status()
 }
 
 // ReadRealLedger aggregates bank, on-chain, and optional portfolio ledgers into real fiat/crypto values.
 func (b *Bridge) ReadRealLedger(ctx context.Context, source, evmHolder string, importJSON []byte) (ledger.Snapshot, error) {
-	cfg := b.ledgerConfig()
+	cfg := b.resolvedLedgerConfig()
 	in := ledger.ReadInput{
 		Config:     cfg,
 		Source:     source,

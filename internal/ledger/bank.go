@@ -103,6 +103,10 @@ func parseBankJSON(data []byte) ([]Entry, error) {
 
 // ParseImportLedger normalizes externally supplied ledger rows.
 func ParseImportLedger(data []byte) ([]Entry, error) {
+	return parseImportFile(data)
+}
+
+func parseImportFile(data []byte) ([]Entry, error) {
 	var file ImportFile
 	if err := json.Unmarshal(data, &file); err != nil {
 		return nil, err

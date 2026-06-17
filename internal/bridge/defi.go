@@ -70,6 +70,7 @@ func (b *Bridge) GetPortfolio() (*Portfolio, error) {
 		return nil, err
 	}
 	_ = b.syncOneXBalance(p)
+	b.syncRealPortfolio(p)
 	_ = b.portfolio().Save(p)
 	return p, nil
 }

@@ -42,6 +42,8 @@ services:
         value: /app
       - key: ONEX_HOME_DIR
         value: /bridge-data
+      - key: ONEX_LEDGER_MODE
+        value: production
       - key: ONEX_API_KEY
         sync: false
       - key: ONEX_CORS_ORIGINS

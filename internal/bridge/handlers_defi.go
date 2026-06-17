@@ -295,7 +295,23 @@ func (s *Server) handlePortfolio(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, map[string]string{"error": err.Error()})
 		return
 	}
-	writeJSON(w, p)
+	if !s.b.isProduction() {
+		writeJSON(w, p)
+		return
+	}
+	evm := r.URL.Query().Get("evm")
+	if evm == "" {
+		evm = s.b.resolvedLedgerConfig().EVMHolder
+	}
+	snap, _ := s.b.ReadRealLedger(r.Context(), "all", evm, s.b.LoadLatestImport())
+	writeJSON(w, map[string]interface{}{
+		"address":  p.Address,
+		"mode":     "production",
+		"portfolio": p,
+		"ledger":   snap,
+		"realUsd":  snap.TotalUSD,
+		"entries":  len(snap.Entries),
+	})
 }
 
 func (s *Server) handleDepositInfo(w http.ResponseWriter, r *http.Request) {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/onex-blockchain/onex/internal/bridge/amm"
 	"github.com/onex-blockchain/onex/internal/bridge/tokenplatform"
+	"github.com/onex-blockchain/onex/internal/ledger"
 	"github.com/onex-blockchain/onex/internal/types"
 	"github.com/onex-blockchain/onex/internal/wallet"
 )
@@ -22,6 +23,7 @@ type Bridge struct {
 	custom   *customTokenStore
 	amm      *amm.Store
 	platform *tokenplatform.Store
+	book     *ledger.BookStore
 }
 
 func New(cfg Config) *Bridge {

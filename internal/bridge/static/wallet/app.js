@@ -544,21 +544,26 @@ async function refreshAll() {
   await bridgeStatus();
   await loadMarketPrices();
   try {
-    portfolio = await api('/bridge/portfolio');
+    const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+    portfolio = await api('/bridge/portfolio' + evmQ);
     if (portfolio.error) {
       document.getElementById('portfolio-grid').innerHTML = `
         <div class="empty-state"><p>${portfolio.error}</p>
         <button type="button" class="btn-primary" onclick="createWallet()">Create wallet</button></div>`;
       return;
     }
-    renderPortfolio();
+    if (portfolio.mode === 'production' && portfolio.ledger) {
+      renderRealPortfolio(portfolio);
+    } else {
+      renderPortfolio();
+    }
     updateSwapCTA();
     renderNFTs();
     renderTasks();
     renderLoans();
     renderStakes();
     renderPlatformTokens();
-    const addr = portfolio.address || '';
+    const addr = portfolio.address || portfolio.portfolio?.address || '';
     const addrEl = document.getElementById('addr');
     const shortEl = document.getElementById('addr-short');
     if (addrEl) addrEl.textContent = addr;
@@ -611,6 +616,58 @@ function renderPortfolio() {
   }).join('');
   hydrateTokenCharts(lastPortfolioSymbols, chartPeriod);
   updateHomeBalance(rows);
+}
+
+function renderRealPortfolio(wrapped) {
+  const snap = wrapped.ledger || {};
+  const entries = snap.entries || [];
+  const grid = document.getElementById('portfolio-grid');
+  portfolio = wrapped.portfolio || portfolio;
+  if (!entries.length) {
+    grid.innerHTML = `<div class="empty-state"><p>No real assets yet</p>
+      <p class="msg">Bank + on-chain only. Set EVM address in Settings or import a ledger.</p>
+      <button type="button" class="btn-secondary" onclick="showTab('ledger')">Real Ledger</button></div>`;
+    updateHomeBalanceReal(snap.totalUsd || 0, 0);
+    return;
+  }
+  const sorted = [...entries].sort((a, b) => (b.fiatUsd || 0) - (a.fiatUsd || 0));
+  grid.innerHTML = sorted.map(e => {
+    const sym = e.asset || '?';
+    const chain = chains.find(c => c.id === e.chainId);
+    const color = chain?.color || (e.mode === 'bank' || e.mode === 'fiat' ? '#4a9eff' : '#00e5b0');
+    const sub = [e.source, e.mode, e.account].filter(Boolean).join(' · ');
+    return `<div class="asset-row" role="button" tabindex="0" onclick="showTab('ledger')">
+      <div class="asset-icon" style="background:${color}22;color:${color}">${sym.slice(0, 2)}</div>
+      <div class="asset-info">
+        <div class="asset-symbol">${sym} <span class="ledger-mode ${e.mode === 'simulated' ? 'sim' : 'real'}">${e.mode}</span></div>
+        <div class="asset-name">${sub}</div>
+      </div>
+      <div class="asset-right">
+        <div class="asset-amount">${e.human || '—'}</div>
+        <div class="asset-fiat">${fmtUsd(e.fiatUsd)}</div>
+      </div>
+    </div>`;
+  }).join('');
+  updateHomeBalanceReal(snap.totalUsd || wrapped.realUsd || 0, entries.length);
+  lastPortfolioSymbols = sorted.map(e => e.asset).filter(Boolean);
+}
+
+function updateHomeBalanceReal(totalUsd, count) {
+  const totalEl = document.getElementById('balance-total');
+  const subEl = document.getElementById('balance-sub');
+  const display = totalUsd > 0 ? fmtUsd(totalUsd) : (count ? '$0.00' : '—');
+  if (totalEl) totalEl.textContent = display;
+  if (subEl) {
+    subEl.textContent = count ? `${count} real assets · production` : 'Production · connect bank or EVM';
+    subEl.className = 'balance-sub balance-change positive';
+  }
+  if (totalUsd > 0) {
+    seedChartIfEmpty(display);
+    recordBalanceSnapshot(display);
+    renderPortfolioChart();
+  }
+  const web3Addr = document.getElementById('web3-addr');
+  if (web3Addr && portfolio?.address) web3Addr.textContent = portfolio.address;
 }
 
 async function openTokenDetail(sym) {
@@ -1229,7 +1286,7 @@ function setLedgerSource(src) {
 function ledgerModeLabel(snap) {
   if (!snap) return '—';
   if (snap.mode === 'production' || snap.mode === 'prod') return 'production';
-  return snap.mode || 'demo';
+  return snap.mode || 'production';
 }
 
 function modeBadgeClass(mode) {
@@ -1245,7 +1302,7 @@ async function loadLedgerStatus() {
     if (el) el.textContent = j.error;
     return;
   }
-  if (badge) badge.textContent = j.production ? 'production' : (j.mode || 'demo');
+  if (badge) badge.textContent = j.production ? 'production' : (j.mode || 'production');
   const bank = j.bank || {};
   const parts = [];
   if (bank.configured) parts.push(`Provider: ${bank.provider || 'custom'}`);
@@ -1273,6 +1330,79 @@ async function refreshLedger() {
   }
   ledgerSnapshot = snap;
   renderLedger(snap);
+  await loadLedgerAccounts();
+}
+
+async function loadLedgerAccounts() {
+  const evm = getEvmHolder();
+  const q = evm ? `?evm=${encodeURIComponent(evm)}` : '';
+  const [j, dest] = await Promise.all([
+    api('/bridge/ledger/accounts' + q),
+    api('/bridge/ledger/destinations'),
+  ]);
+  const from = document.getElementById('ledger-xfer-from');
+  const to = document.getElementById('ledger-xfer-to');
+  if (!from || !to || j.error) return;
+  const accts = j.accounts || [];
+  const opts = accts.map(a =>
+    `<option value="${a.id}">${a.asset} ${a.balance} (${a.source})</option>`
+  ).join('');
+  from.innerHTML = '<option value="">From account…</option>' + opts;
+  to.innerHTML = '<option value="">To account (internal)…</option>' + opts;
+
+  const chainSel = document.getElementById('ledger-xfer-chain');
+  if (chainSel && dest.chains) {
+    chainSel.innerHTML = '<option value="">— or pick chain —</option>' +
+      dest.chains.map(c => `<option value="${c.id}">${c.name} (${c.symbol})</option>`).join('');
+  }
+  const bankSel = document.getElementById('ledger-xfer-bank');
+  if (bankSel && dest.banks) {
+    bankSel.innerHTML = '<option value="">— or pick bank —</option>' +
+      dest.banks.map(b => `<option value="${b.id}">${b.name} (${b.country})</option>`).join('');
+  }
+}
+
+async function doLedgerTransfer() {
+  const from = document.getElementById('ledger-xfer-from')?.value;
+  const to = document.getElementById('ledger-xfer-to')?.value;
+  const amount = document.getElementById('ledger-xfer-amount')?.value;
+  const external = document.getElementById('ledger-xfer-external')?.value?.trim();
+  const chain = document.getElementById('ledger-xfer-chain')?.value;
+  const bank = document.getElementById('ledger-xfer-bank')?.value;
+  const rail = document.getElementById('ledger-xfer-rail')?.value;
+  const address = document.getElementById('ledger-xfer-address')?.value?.trim();
+  const convertTo = document.getElementById('ledger-xfer-convert')?.value;
+  const msg = document.getElementById('ledger-xfer-msg');
+  if (!from || !amount) {
+    if (msg) msg.textContent = 'Select from account and amount';
+    return;
+  }
+  if (!to && !external && !address) {
+    if (msg) msg.textContent = 'Select destination: internal, chain+bank+address, or full external string';
+    return;
+  }
+  const evm = getEvmHolder();
+  const q = evm ? `?evm=${encodeURIComponent(evm)}` : '';
+  const body = { fromAccount: from, amount, convertTo: convertTo || undefined };
+  if (to) body.toAccount = to;
+  if (external) body.externalTo = external;
+  if (address) {
+    body.externalAddress = address;
+    if (chain) body.externalChain = chain;
+    if (bank) body.externalBank = bank;
+    if (rail) body.bankRail = rail;
+  }
+  const j = await api('/bridge/ledger/transfer' + q, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (msg) {
+    const ext = j.external ? ` → ${j.external.label || j.external.chainId || j.external.bankRail}` : '';
+    msg.textContent = j.error ? j.error :
+      `Transfer ${j.status}: ${j.transfer?.amount} ${j.transfer?.asset}${ext} (${j.settlement || ''})`;
+  }
+  if (!j.error) refreshLedger();
 }
 
 function renderLedger(snap) {

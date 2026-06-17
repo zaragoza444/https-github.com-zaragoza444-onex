@@ -36,6 +36,9 @@ func LoadConfig() Config {
 	if cfg.FiatCurrency == "" {
 		cfg.FiatCurrency = "USD"
 	}
+	if cfg.Mode == "" {
+		cfg.Mode = "production"
+	}
 	return cfg
 }
 
@@ -46,7 +49,13 @@ func (c Config) Production() bool {
 // Status reports middleware readiness for production ledger reads.
 func (c Config) Status() map[string]interface{} {
 	bank := LoadBankProviderConfig()
+	if bank.FilePath == "" && c.BankFile != "" {
+		bank.FilePath = c.BankFile
+	}
 	bankReady := bank.ResolvedProvider() != ""
+	if !bankReady && c.BankFile != "" {
+		bankReady = true
+	}
 	return map[string]interface{}{
 		"service":      "onex-ledger-middleware",
 		"mode":         c.Mode,
@@ -94,8 +103,12 @@ func (e *Engine) Read(ctx context.Context, in ReadInput) Snapshot {
 	var entries []Entry
 	prod := in.Config.Production()
 
-	if (src == "all" || src == "bank") {
-		bank, _ := ReadBankLedgerWithProvider(LoadBankProviderConfig())
+	if src == "all" || src == "bank" {
+		bankCfg := LoadBankProviderConfig()
+		if bankCfg.FilePath == "" && in.Config.BankFile != "" {
+			bankCfg.FilePath = in.Config.BankFile
+		}
+		bank, _ := ReadBankLedgerWithProvider(bankCfg)
 		entries = append(entries, bank...)
 	}
 
@@ -168,7 +181,7 @@ func (e *Engine) Read(ctx context.Context, in ReadInput) Snapshot {
 
 	modeLabel := in.Config.Mode
 	if modeLabel == "" {
-		modeLabel = "demo"
+		modeLabel = "production"
 	}
 	snap := Summarize(entries, modeLabel)
 	snap.At = time.Now().Unix()

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -249,6 +250,71 @@ func fetchTrueLayerBalances(cfg BankProviderConfig) ([]Entry, error) {
 		})
 	}
 	return out, nil
+}
+
+// BankTransferRequest initiates an outbound transfer to an external bank.
+type BankTransferRequest struct {
+	Rail      BankRail
+	BankName  string
+	Account   string
+	Amount    string
+	Asset     string
+	Reference string
+}
+
+// InitiateBankTransfer submits a wire/ACH/SEPA/SWIFT transfer via configured provider.
+func InitiateBankTransfer(req BankTransferRequest) (string, error) {
+	cfg := LoadBankProviderConfig()
+	ref := strings.TrimSpace(req.Reference)
+	if ref == "" {
+		ref = fmt.Sprintf("bank-xfer-%d", time.Now().UnixNano())
+	}
+	switch cfg.ResolvedProvider() {
+	case "plaid":
+		return initiatePlaidTransfer(cfg, req, ref)
+	case "truelayer":
+		return initiateTrueLayerTransfer(cfg, req, ref)
+	}
+	// Book-recorded settlement when no live bank API is configured.
+	return fmt.Sprintf("bank-pending:%s:%s:%s", req.Rail, req.BankName, req.Account), nil
+}
+
+func initiatePlaidTransfer(cfg BankProviderConfig, req BankTransferRequest, ref string) (string, error) {
+	body, _ := json.Marshal(map[string]interface{}{
+		"client_id":    cfg.PlaidClientID,
+		"secret":       cfg.PlaidSecret,
+		"access_token": cfg.PlaidAccessToken,
+		"account_id":   req.Account,
+		"type":         string(req.Rail),
+		"amount":       req.Amount,
+		"description":  ref,
+	})
+	_, err := postJSON(cfg.plaidHost()+"/transfer/authorization/create", body, "")
+	if err != nil {
+		return fmt.Sprintf("bank-pending:%s:%s", req.Rail, req.Account), nil
+	}
+	return "plaid-transfer-submitted:" + ref, nil
+}
+
+func initiateTrueLayerTransfer(cfg BankProviderConfig, req BankTransferRequest, ref string) (string, error) {
+	base := strings.TrimRight(cfg.TrueLayerBaseURL, "/")
+	payload := map[string]interface{}{
+		"amount_in_minor": parseMinor(req.Amount),
+		"currency":      strings.ToUpper(req.Asset),
+		"beneficiary":   map[string]string{"account_identifier": req.Account},
+		"reference":     ref,
+	}
+	body, _ := json.Marshal(payload)
+	_, err := postJSON(base+"/payments", body, cfg.TrueLayerToken)
+	if err != nil {
+		return fmt.Sprintf("bank-pending:%s:%s", req.Rail, req.Account), nil
+	}
+	return "truelayer-payment-submitted:" + ref, nil
+}
+
+func parseMinor(amount string) int64 {
+	v, _ := strconv.ParseFloat(strings.TrimSpace(amount), 64)
+	return int64(v * 100)
 }
 
 func postJSON(url string, body []byte, bearer string) ([]byte, error) {

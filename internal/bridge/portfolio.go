@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/onex-blockchain/onex/internal/legacy"
+	"github.com/onex-blockchain/onex/internal/ledger"
 )
 
 type Portfolio struct {
@@ -129,17 +130,22 @@ func (ps *PortfolioStore) Save(p *Portfolio) error {
 }
 
 func defaultPortfolio(addr string) *Portfolio {
-	return &Portfolio{
-		Address: addr,
-		Balances: map[string]string{
-			"ethereum:USDT":  "5000000000",
-			"ethereum:ETH":   "100000000",
-			"bsc:BNB":        "2000000000",
-			"polygon:USDC-POLY": "3000000000",
-			"onex-mainnet-1:wONEX": "10000000000",
-		},
-		Tasks: defaultTasks(),
+	p := &Portfolio{
+		Address:  addr,
+		Balances: map[string]string{},
+		Tasks:    defaultTasks(),
 	}
+	if ledger.LoadConfig().Production() {
+		return p
+	}
+	p.Balances = map[string]string{
+		"ethereum:USDT":        "5000000000",
+		"ethereum:ETH":         "100000000",
+		"bsc:BNB":              "2000000000",
+		"polygon:USDC-POLY":    "3000000000",
+		"onex-mainnet-1:wONEX": "10000000000",
+	}
+	return p
 }
 
 func defaultTasks() []TaskItem {
