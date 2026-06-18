@@ -369,6 +369,44 @@
             <select id="ledger-conv-to" onchange="ledgerConvQuoteDebounced()"></select>
           </div>
           <p class="ledger-conv-preview" id="ledger-conv-preview">Enter amount for live quote</p>
+
+          <div class="ledger-convert-advanced">
+            <label class="ledger-check-row">
+              <input type="checkbox" id="ledger-conv-create-contract" onchange="toggleLedgerConvTokenPanel()">
+              Deploy token contract on chain
+            </label>
+            <div id="ledger-conv-token-panel" class="hidden">
+              <label class="field-label">Chain</label>
+              <select id="ledger-conv-token-chain"></select>
+              <div class="ledger-convert-row">
+                <input id="ledger-conv-token-name" placeholder="Token name" />
+                <input id="ledger-conv-token-symbol" placeholder="Symbol" />
+              </div>
+              <input id="ledger-conv-token-supply" placeholder="Supply" value="1000000" inputmode="decimal" />
+            </div>
+
+            <label class="field-label">Receiver wallet</label>
+            <div class="ledger-convert-row">
+              <select id="ledger-conv-receiver-saved" onchange="onLedgerConvReceiverPick()">
+                <option value="">Saved receivers…</option>
+              </select>
+              <input id="ledger-conv-receiver" placeholder="0x… receiver on chain" oninput="ledgerConvQuoteDebounced()" />
+              <button type="button" class="dex-max ledger-max" onclick="fillLedgerConvMyAddress()">My address</button>
+            </div>
+            <div class="ledger-convert-row">
+              <select id="ledger-conv-receiver-chain" onchange="ledgerConvQuoteDebounced()"></select>
+              <button type="button" class="dex-max ledger-max" onclick="saveLedgerConvReceiver()">Save receiver</button>
+            </div>
+            <label class="ledger-check-row">
+              <input type="checkbox" id="ledger-conv-settle" checked onchange="ledgerConvQuoteDebounced()">
+              Settle converted amount to receiver on chain
+            </label>
+            <label class="ledger-check-row">
+              <input type="checkbox" id="ledger-conv-save-receiver">
+              Remember receiver wallet
+            </label>
+          </div>
+
           <button type="button" class="btn-primary" id="ledger-conv-btn" onclick="doLedgerConvert()">Convert from ledger</button>
           <p class="msg" id="ledger-conv-result"></p>
         </div>
@@ -521,6 +559,7 @@
             <button type="button" class="platform-tab active" data-ptab="create" onclick="setPlatformTab('create')">Create</button>
             <button type="button" class="platform-tab" data-ptab="tokens" onclick="setPlatformTab('tokens')">My tokens</button>
             <button type="button" class="platform-tab" data-ptab="wrap" onclick="setPlatformTab('wrap')">Wrap</button>
+            <button type="button" class="platform-tab" data-ptab="markets" onclick="setPlatformTab('markets')">Markets</button>
             <button type="button" class="platform-tab" data-ptab="history" onclick="setPlatformTab('history')">History</button>
           </div>
           <div id="platform-create" class="platform-pane">
@@ -549,6 +588,26 @@
               <input id="wrap-amount" placeholder="Amount to wrap" />
               <button type="button" class="btn-primary" onclick="wrapToken()">Wrap cross-chain</button>
               <p class="msg" id="wrap-msg"></p>
+            </div>
+          </div>
+          <div id="platform-markets" class="platform-pane hidden">
+            <div class="card">
+              <div class="card-title">Market uplink</div>
+              <p class="msg">Production mode — all listings active on CoinGecko · CMC · Gecko Terminal · DexScreener · BSCScan · Etherscan with live price &amp; market cap.</p>
+              <label class="field-label">Chain</label>
+              <select id="listing-chain" class="chain-select"></select>
+              <label class="field-label">Token contract</label>
+              <input id="listing-token" placeholder="0x…" />
+              <div class="ledger-convert-row">
+                <input id="listing-name" placeholder="Token name" />
+                <input id="listing-symbol" placeholder="Symbol" />
+              </div>
+              <button type="button" class="btn-primary" onclick="runListingBridge()">Generate listing bridge</button>
+              <div id="listing-result" class="listing-result"></div>
+            </div>
+            <div class="card">
+              <div class="card-title">Deployed tokens — live market</div>
+              <div id="platform-market-list"></div>
             </div>
           </div>
           <div id="platform-history" class="platform-pane hidden">

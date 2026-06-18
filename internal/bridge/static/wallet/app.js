@@ -925,6 +925,9 @@ async function createToken() {
     return;
   }
   msg.textContent = `Deployed ${j.symbol} on ${j.chainId} · ${j.contractAddress || j.id}`;
+  if (j.contractAddress) {
+    await showDeployListingBridge(j.chainId, j.contractAddress, j.name, j.symbol);
+  }
   await loadTokens();
   fillChainSelects();
   fillWrapSelects();
@@ -937,7 +940,147 @@ function setPlatformTab(tab) {
   document.querySelectorAll('.platform-pane').forEach(p => p.classList.add('hidden'));
   document.getElementById('platform-' + tab)?.classList.remove('hidden');
   if (tab === 'tokens') renderPlatformTokens();
+  if (tab === 'markets') renderPlatformMarkets();
   if (tab === 'history') renderWrapHistory();
+}
+
+function fmtMarketUsd(v) {
+  if (v == null || v === 0) return '—';
+  if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+  if (v >= 1e3) return '$' + (v / 1e3).toFixed(2) + 'K';
+  if (v >= 1) return '$' + Number(v).toFixed(4);
+  return '$' + Number(v).toFixed(8);
+}
+
+function renderMarketStrip(m) {
+  if (!m) return '';
+  const ch = m.priceChange24h != null ? `${m.priceChange24h >= 0 ? '+' : ''}${Number(m.priceChange24h).toFixed(2)}%` : '—';
+  return `<div class="market-strip">
+    <span class="market-stat"><em>Price</em><strong>${fmtMarketUsd(m.priceUsd)}</strong><small>${ch} 24h</small></span>
+    <span class="market-stat"><em>Market cap</em><strong>${fmtMarketUsd(m.marketCapUsd)}</strong></span>
+    <span class="market-stat"><em>Liquidity</em><strong>${fmtMarketUsd(m.liquidityUsd)}</strong></span>
+  </div>`;
+}
+
+function renderListingProviders(listing) {
+  if (!listing?.providers?.length) return '';
+  const prod = listing.production || listing.mode === 'production';
+  return `<div class="listing-providers">${listing.providers.map(p => {
+    const cls = (p.status === 'active' || prod) ? 'active' : p.status;
+    return `<a class="listing-link ${cls}" href="${escapeHtml(p.submitUrl)}" target="_blank" rel="noopener" title="${escapeHtml(p.notes || '')}">${escapeHtml(p.name)}${p.status === 'active' ? ' ✓' : ''}</a>`;
+  }).join('')}</div>`;
+}
+
+function renderListingHead(j) {
+  const r = j.readiness || {};
+  const prod = j.production || j.mode === 'production';
+  if (prod) {
+    return `<div class="listing-head">
+      <span class="badge green">Production · all listings active</span>
+      <span class="msg">CoinGecko · CMC · Gecko Terminal · DexScreener · Explorer</span>
+    </div>`;
+  }
+  return `<div class="listing-head">
+    <span class="badge ${r.ready ? 'green' : 'amber'}">${r.ready ? 'Listing ready' : 'Pending liquidity'}</span>
+    <span class="msg">Score ${r.score || 0}${r.missing?.length ? ' · ' + r.missing.join(', ') : ''}</span>
+  </div>`;
+}
+
+async function showDeployListingBridge(chainId, address, name, symbol) {
+  const body = JSON.stringify({
+    chainId, tokenAddress: address, name, symbol,
+    supply: document.getElementById('mint-supply')?.value || '',
+  });
+  const j = await api('/bridge/listings/bridge', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+  });
+  const msg = document.getElementById('mint-msg');
+  if (j.error || !msg) return;
+  const m = j.market || {};
+  msg.innerHTML = `Deployed · ${renderMarketStrip(m)}${renderListingProviders(j)}`;
+  setPlatformTab('markets');
+  const chainSel = document.getElementById('listing-chain');
+  const tok = document.getElementById('listing-token');
+  if (chainSel) chainSel.value = chainId;
+  if (tok) tok.value = address;
+  renderListingResult(j);
+}
+
+async function runListingBridge() {
+  const chainId = document.getElementById('listing-chain')?.value;
+  const token = document.getElementById('listing-token')?.value?.trim();
+  const name = document.getElementById('listing-name')?.value?.trim();
+  const symbol = document.getElementById('listing-symbol')?.value?.trim();
+  const el = document.getElementById('listing-result');
+  if (!token) {
+    if (el) el.innerHTML = '<p class="msg">Enter token contract address</p>';
+    return;
+  }
+  if (el) el.innerHTML = '<p class="msg">Building listing bridge…</p>';
+  const j = await api('/bridge/listings/bridge', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chainId, tokenAddress: token, name, symbol,
+      supply: document.getElementById('mint-supply')?.value || '',
+    }),
+  });
+  if (j.error) {
+    if (el) el.innerHTML = `<p class="msg">${escapeHtml(j.error)}</p>`;
+    return;
+  }
+  renderListingResult(j);
+}
+
+function renderListingResult(j) {
+  const el = document.getElementById('listing-result');
+  if (!el) return;
+  el.innerHTML = `
+    ${renderListingHead(j)}
+    ${renderMarketStrip(j.market)}
+    ${renderListingProviders(j)}
+    <p class="token-meta"><a href="${escapeHtml(j.explorerTokenUrl || '#')}" target="_blank" rel="noopener">${escapeHtml(explorerLabelForChain(j.chainId))}</a></p>`;
+}
+
+function explorerLabelForChain(chainId) {
+  const m = { bsc: 'BSCScan', ethereum: 'Etherscan', 'dbis-138': 'DBIS Explorer', polygon: 'Polygonscan' };
+  return m[chainId] || 'Explorer';
+}
+
+async function renderPlatformMarkets() {
+  document.querySelectorAll('#listing-chain').forEach(sel => {
+    if (sel.options.length) return;
+    sel.innerHTML = chains.filter(c => c.type === 'evm' || c.id === 'dbis-138')
+      .map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  });
+  const listEl = document.getElementById('platform-market-list');
+  if (!listEl) return;
+  listEl.innerHTML = '<p class="msg">Loading market data…</p>';
+  const j = await api('/bridge/listings/platform');
+  if (j.error) {
+    listEl.innerHTML = `<p class="msg">${escapeHtml(j.error)}</p>`;
+    return;
+  }
+  const tokens = j.tokens || [];
+  if (!tokens.length) {
+    listEl.innerHTML = '<p class="msg">Deploy a token first — market data appears after on-chain liquidity.</p>';
+    return;
+  }
+  listEl.innerHTML = tokens.map(t => {
+    const m = t.market || {};
+    const lb = t.listing || {};
+    const prod = lb.production || lb.mode === 'production';
+    return `<div class="task-card ${prod ? 'listing-prod' : ''}">
+      <strong>${escapeHtml(t.symbol)}</strong> — ${escapeHtml(t.name)}
+      <span class="deploy-badge ${prod ? 'green' : ''}">${prod ? 'production · active' : escapeHtml(t.deployStatus || 'deployed')}</span>
+      <p class="msg">${escapeHtml(t.chainId)} · ${escapeHtml(t.contractAddress || t.id || '')}</p>
+      ${renderMarketStrip(m)}
+      ${renderListingProviders(lb)}
+    </div>`;
+  }).join('');
 }
 
 async function loadTokenPlatform() {
@@ -991,7 +1134,26 @@ async function renderPlatformTokens() {
       <p class="msg">${t.chainId} · ${t.chainType} · supply ${fmtAtomic(t.supply, t.decimals || 8)}</p>
       ${t.contractAddress ? `<p class="token-meta">${t.contractAddress}</p>` : ''}
       ${t.isWrapped ? '<p class="msg">Wrapped token</p>' : ''}
+      ${t.contractAddress ? `<button type="button" class="dex-max ledger-max" data-chain="${escapeHtml(t.chainId)}" data-addr="${escapeHtml(t.contractAddress)}" data-name="${escapeHtml(t.name)}" data-sym="${escapeHtml(t.symbol)}" onclick="prefillListingFromBtn(this)">Markets &amp; listings</button>` : ''}
     </div>`).join('') : '<p class="msg">No tokens yet. Deploy one in the Create tab.</p>';
+}
+
+function prefillListingFromBtn(btn) {
+  if (!btn?.dataset) return;
+  prefillListing(btn.dataset.chain, btn.dataset.addr, btn.dataset.name, btn.dataset.sym);
+}
+
+function prefillListing(chainId, address, name, symbol) {
+  setPlatformTab('markets');
+  const c = document.getElementById('listing-chain');
+  const t = document.getElementById('listing-token');
+  const n = document.getElementById('listing-name');
+  const s = document.getElementById('listing-symbol');
+  if (c) c.value = chainId;
+  if (t) t.value = address;
+  if (n) n.value = name || '';
+  if (s) s.value = symbol || '';
+  runListingBridge();
 }
 
 async function wrapToken() {
@@ -1340,6 +1502,127 @@ let ledgerXferTimer = null;
 let settlementKind = 'real_crypto';
 let settlementTimer = null;
 let ledgerImportTimer = null;
+let ledgerReceiverWallets = [];
+
+function buildLedgerConvertBody(active) {
+  const acctSel = document.getElementById('ledger-conv-from-acct');
+  const fromAsset = acctSel?.selectedOptions[0]?.dataset?.asset;
+  const body = {
+    fromAsset,
+    toAsset: document.getElementById('ledger-conv-to')?.value,
+    amount: document.getElementById('ledger-conv-amt')?.value,
+    fromAccount: acctSel?.value,
+    active: !!active,
+  };
+  const recv = document.getElementById('ledger-conv-receiver')?.value?.trim();
+  const recvChain = document.getElementById('ledger-conv-receiver-chain')?.value;
+  if (recv) {
+    body.receiverAddress = recv;
+    body.receiverChain = recvChain || ledgerDefaultBridgeChain;
+    body.settleToReceiver = document.getElementById('ledger-conv-settle')?.checked !== false;
+    if (active && document.getElementById('ledger-conv-save-receiver')?.checked) {
+      body.saveReceiver = true;
+      body.receiverLabel = recv.slice(0, 6) + '…' + recv.slice(-4);
+    }
+  }
+  if (document.getElementById('ledger-conv-create-contract')?.checked) {
+    body.createContract = true;
+    body.tokenDeploy = {
+      chainId: document.getElementById('ledger-conv-token-chain')?.value || recvChain || ledgerDefaultBridgeChain,
+      name: document.getElementById('ledger-conv-token-name')?.value || '',
+      symbol: document.getElementById('ledger-conv-token-symbol')?.value || body.toAsset,
+      supply: document.getElementById('ledger-conv-token-supply')?.value || '1000000',
+      decimals: 18,
+    };
+  }
+  return body;
+}
+
+function toggleLedgerConvTokenPanel() {
+  const on = document.getElementById('ledger-conv-create-contract')?.checked;
+  document.getElementById('ledger-conv-token-panel')?.classList.toggle('hidden', !on);
+  syncLedgerConvTokenFields();
+  ledgerConvQuoteDebounced();
+}
+
+function syncLedgerConvTokenFields() {
+  const to = document.getElementById('ledger-conv-to')?.value || '';
+  const sym = document.getElementById('ledger-conv-token-symbol');
+  const name = document.getElementById('ledger-conv-token-name');
+  if (sym && !sym.value) sym.value = to;
+  if (name && !name.value && to) name.value = to + ' Token';
+}
+
+async function loadLedgerReceivers() {
+  const j = await api('/bridge/ledger/receivers');
+  ledgerReceiverWallets = j.receivers || [];
+  refreshLedgerReceiverSelects();
+}
+
+function refreshLedgerReceiverSelects() {
+  const sel = document.getElementById('ledger-conv-receiver-saved');
+  if (!sel) return;
+  const opts = ['<option value="">Saved receivers…</option>'].concat(
+    ledgerReceiverWallets.map(w =>
+      `<option value="${w.id}" data-chain="${w.chainId}" data-addr="${w.address}">${escapeHtml(w.label || w.address.slice(0, 8))} · ${w.chainId}</option>`
+    )
+  );
+  sel.innerHTML = opts.join('');
+}
+
+function onLedgerConvReceiverPick() {
+  const sel = document.getElementById('ledger-conv-receiver-saved');
+  const opt = sel?.selectedOptions[0];
+  if (!opt?.dataset?.addr) return;
+  const addr = document.getElementById('ledger-conv-receiver');
+  const chain = document.getElementById('ledger-conv-receiver-chain');
+  if (addr) addr.value = opt.dataset.addr;
+  if (chain && opt.dataset.chain) chain.value = opt.dataset.chain;
+  ledgerConvQuoteDebounced();
+}
+
+async function fillLedgerConvMyAddress() {
+  let addr = getEvmHolder();
+  if (!addr) {
+    const caps = await api('/bridge/ledger/settlement/capabilities');
+    addr = caps.evmSenderAddress || portfolio?.address || '';
+  }
+  const input = document.getElementById('ledger-conv-receiver');
+  if (input && addr) {
+    input.value = addr;
+    ledgerConvQuoteDebounced();
+  }
+}
+
+async function saveLedgerConvReceiver() {
+  const addr = document.getElementById('ledger-conv-receiver')?.value?.trim();
+  const chainId = document.getElementById('ledger-conv-receiver-chain')?.value || ledgerDefaultBridgeChain;
+  if (!addr) return;
+  const j = await api('/bridge/ledger/receivers', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ address: addr, chainId, label: addr.slice(0, 6) + '…' + addr.slice(-4) }),
+  });
+  if (!j.error) {
+    await loadLedgerReceivers();
+    const msg = document.getElementById('ledger-conv-result');
+    if (msg) msg.textContent = 'Receiver saved';
+  }
+}
+
+function fillLedgerConvChainSelects() {
+  const chains = (typeof chainsList !== 'undefined' && chainsList?.length)
+    ? chainsList
+    : (window.ONEX_FALLBACK?.chains || []);
+  const evmChains = chains.filter(c => c.type === 'evm' || c.id === 'dbis-138');
+  const opts = evmChains.map(c => `<option value="${c.id}">${c.name || c.id}</option>`).join('');
+  for (const id of ['ledger-conv-receiver-chain', 'ledger-conv-token-chain']) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    el.innerHTML = opts;
+    if (ledgerDefaultBridgeChain) el.value = ledgerDefaultBridgeChain;
+  }
+}
 
 const CHAIN_NATIVE_ASSET = {
   'onex-mainnet-1': 'ONEX', ethereum: 'ETH', bsc: 'BNB', polygon: 'MATIC',
@@ -1371,6 +1654,8 @@ function refreshLedgerConvertUI(accounts) {
   const toOpts = LEDGER_CONVERT_ASSETS.map(a => `<option value="${a}">${a}</option>`).join('');
   toSel.innerHTML = toOpts;
   if (!toSel.value) toSel.value = 'USD';
+  fillLedgerConvChainSelects();
+  syncLedgerConvTokenFields();
   onLedgerConvAccountChange();
 }
 
@@ -1387,6 +1672,7 @@ function onLedgerConvAccountChange() {
     const alt = LEDGER_CONVERT_ASSETS.find(a => a !== asset);
     if (alt) toSel.value = alt;
   }
+  syncLedgerConvTokenFields();
   ledgerConvQuoteDebounced();
 }
 
@@ -1407,13 +1693,10 @@ function ledgerConvQuoteDebounced() {
 }
 
 async function ledgerConvQuote() {
-  const amt = document.getElementById('ledger-conv-amt')?.value;
-  const acctSel = document.getElementById('ledger-conv-from-acct');
-  const to = document.getElementById('ledger-conv-to')?.value;
+  const body = buildLedgerConvertBody(false);
   const preview = document.getElementById('ledger-conv-preview');
-  const fromAsset = acctSel?.selectedOptions[0]?.dataset?.asset;
-  if (!amt || !fromAsset || !to || fromAsset === to) {
-    if (preview) preview.textContent = fromAsset === to ? 'Pick a different target asset' : 'Enter amount for live quote';
+  if (!body.amount || !body.fromAsset || !body.toAsset || body.fromAsset === body.toAsset) {
+    if (preview) preview.textContent = body.fromAsset === body.toAsset ? 'Pick a different target asset' : 'Enter amount for live quote';
     return;
   }
   const evm = getEvmHolder();
@@ -1421,42 +1704,50 @@ async function ledgerConvQuote() {
   const j = await api('/bridge/ledger/convert' + q, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fromAsset, toAsset: to, amount: amt, fromAccount: acctSel?.value }),
+    body: JSON.stringify(body),
   });
   if (preview) {
-    preview.textContent = j.error ? j.error :
-      `≈ ${j.toAmount} ${j.toAsset} · ${fmtUsd(j.fiatUsd)} · rate ${Number(j.rate || 0).toFixed(6)}`;
+    if (j.error) {
+      preview.textContent = j.error;
+      return;
+    }
+    let extra = '';
+    if (j.receiver?.address) extra += ` → ${j.receiver.address.slice(0, 6)}…${j.receiver.address.slice(-4)}`;
+    if (j.createContract || body.createContract) extra += ' · deploy token';
+    preview.textContent = `≈ ${j.toAmount} ${j.toAsset} · ${fmtUsd(j.fiatUsd)} · rate ${Number(j.rate || 0).toFixed(6)}${extra}`;
   }
 }
 
 async function doLedgerConvert() {
-  const amt = document.getElementById('ledger-conv-amt')?.value;
-  const acctSel = document.getElementById('ledger-conv-from-acct');
-  const to = document.getElementById('ledger-conv-to')?.value;
+  const body = buildLedgerConvertBody(true);
   const out = document.getElementById('ledger-conv-result');
   const btn = document.getElementById('ledger-conv-btn');
-  const fromAsset = acctSel?.selectedOptions[0]?.dataset?.asset;
-  const fromAccount = acctSel?.value;
-  if (!amt || !fromAsset || !to || !fromAccount) return;
+  if (!body.amount || !body.fromAsset || !body.toAsset || !body.fromAccount) return;
   if (btn) { btn.disabled = true; btn.textContent = 'Converting…'; }
   const evm = getEvmHolder();
   const q = evm ? `?evm=${encodeURIComponent(evm)}` : '';
   const j = await api('/bridge/ledger/convert' + q, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      fromAsset, toAsset: to, amount: amt, fromAccount, active: true,
-    }),
+    body: JSON.stringify(body),
   });
   if (btn) { btn.disabled = false; btn.textContent = 'Convert from ledger'; }
   if (out) {
-    out.textContent = j.error ? j.error :
-      `✓ ${j.fromAmount} ${j.fromAsset} → ${j.toAmount} ${j.toAsset} (${j.status || 'completed'})`;
+    if (j.error) {
+      out.textContent = j.error;
+    } else {
+      let msg = `✓ ${j.fromAmount} ${j.fromAsset} → ${j.toAmount} ${j.toAsset}`;
+      if (j.tokenDeploy?.contractAddress) msg += ` · contract ${j.tokenDeploy.contractAddress.slice(0, 8)}…`;
+      if (j.receiver?.address) msg += ` · sent to ${j.receiver.address.slice(0, 6)}…${j.receiver.address.slice(-4)}`;
+      if (j.settlementRef) msg += ` · ${j.settlementRef}`;
+      out.textContent = msg;
+    }
   }
   if (!j.error) {
     document.getElementById('ledger-conv-amt').value = '';
     const preview = document.getElementById('ledger-conv-preview');
     if (preview) preview.textContent = 'Enter amount for live quote';
+    if (body.saveReceiver) await loadLedgerReceivers();
     refreshLedger();
   }
 }
@@ -1574,6 +1865,7 @@ async function loadLedgerAccounts() {
   renderLedgerXferHistory(hist.transfers || []);
   refreshSettlementUI(accounts, dest, caps, settlements.settlements || []);
   applyLedgerBridgeDefaults(ledgerStatus);
+  loadLedgerReceivers();
 }
 
 function applyLedgerBridgeDefaults(st) {

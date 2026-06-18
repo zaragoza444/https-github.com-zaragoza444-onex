@@ -24,6 +24,7 @@ type Bridge struct {
 	amm      *amm.Store
 	platform *tokenplatform.Store
 	book     *ledger.BookStore
+	recv     *receiverStore
 }
 
 func New(cfg Config) *Bridge {

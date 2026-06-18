@@ -95,24 +95,6 @@ func (b *Bridge) ReadRealLedger(ctx context.Context, source, evmHolder string, i
 	return ledger.NewEngine().Read(ctx, in), nil
 }
 
-// ConvertLedger converts between any supported fiat or crypto asset.
-// When req.Active is true, debits/credits the persisted ledger book.
-func (b *Bridge) ConvertLedger(ctx context.Context, evmHolder string, req ledger.ConvertRequest) (*ledger.ConvertResult, error) {
-	prices := b.ledgerPrices()
-	tokens := b.tokenMetaMap()
-	if !req.Active && strings.TrimSpace(req.FromAccount) == "" {
-		res, err := ledger.NewEngine().Convert(req, prices, tokens)
-		if res != nil && res.Status == "" {
-			res.Status = "quoted"
-		}
-		return res, err
-	}
-	if err := b.SyncLedgerBook(ctx, evmHolder); err != nil {
-		return nil, err
-	}
-	return b.ledgerBook().ConvertActive(req, prices, tokens)
-}
-
 // SaveLedgerImport persists imported ledger JSON for later reads.
 func (b *Bridge) SaveLedgerImport(data []byte) (string, error) {
 	dir := b.ledgerConfig().ImportDir

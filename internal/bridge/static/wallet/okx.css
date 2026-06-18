@@ -1228,6 +1228,68 @@ html.onex-mobile .quick-action-icon {
 
 .ledger-convert-card { margin-top: 16px; }
 
+.ledger-convert-advanced {
+  margin: 12px 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+}
+.ledger-check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin: 8px 0;
+  cursor: pointer;
+}
+.ledger-check-row input { margin: 0; }
+
+.market-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--bg-tertiary);
+}
+.market-stat {
+  display: flex;
+  flex-direction: column;
+  min-width: 88px;
+  font-size: 12px;
+}
+.market-stat em { font-style: normal; color: var(--text-tertiary); font-size: 10px; text-transform: uppercase; }
+.market-stat strong { font-size: 14px; color: var(--accent); }
+.market-stat small { color: var(--text-secondary); font-size: 10px; }
+.listing-providers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+.listing-link {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #00e5b018;
+  color: #00e5b0;
+  text-decoration: none;
+  border: 1px solid #00e5b033;
+}
+.listing-link.active, .listing-link.production, .listing-link.live, .listing-link.ready_to_submit {
+  background: #00e5b028;
+  color: #00e5b0;
+  border-color: #00e5b055;
+}
+.listing-link.pending, .listing-link.manual { background: #ff950018; color: #ff9500; border-color: #ff950033; }
+.task-card.listing-prod { border-color: #00e5b033; }
+.deploy-badge.green { background: #00e5b022; color: #00e5b0; }
+.listing-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.listing-result { margin-top: 12px; }
+.badge.amber { background: #ff950022; color: #ff9500; }
+
 .ledger-active-badge {
   font-size: 10px;
   font-weight: 700;

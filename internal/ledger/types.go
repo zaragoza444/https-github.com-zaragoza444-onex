@@ -51,6 +51,15 @@ type Snapshot struct {
 	ByFiat      map[string]float64 `json:"byFiat"`
 }
 
+// ConvertTokenDeploy creates an on-chain contract when converting.
+type ConvertTokenDeploy struct {
+	ChainID  string `json:"chainId,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Symbol   string `json:"symbol,omitempty"`
+	Decimals int    `json:"decimals,omitempty"`
+	Supply   string `json:"supply,omitempty"`
+}
+
 // ConvertRequest converts an amount between ledger assets.
 type ConvertRequest struct {
 	FromAsset    string `json:"fromAsset"`
@@ -59,6 +68,32 @@ type ConvertRequest struct {
 	FiatCurrency string `json:"fiatCurrency,omitempty"`
 	FromAccount  string `json:"fromAccount,omitempty"`
 	Active       bool   `json:"active,omitempty"`
+
+	// Optional: deploy ERC-20 / platform token and settle to receiver on chain.
+	CreateContract   bool                `json:"createContract,omitempty"`
+	TokenDeploy      *ConvertTokenDeploy `json:"tokenDeploy,omitempty"`
+	ReceiverAddress  string              `json:"receiverAddress,omitempty"`
+	ReceiverChain    string              `json:"receiverChain,omitempty"`
+	SettleToReceiver bool                `json:"settleToReceiver,omitempty"`
+	SaveReceiver     bool                `json:"saveReceiver,omitempty"`
+	ReceiverLabel    string              `json:"receiverLabel,omitempty"`
+}
+
+// ConvertTokenInfo is returned when a contract is deployed during convert.
+type ConvertTokenInfo struct {
+	ChainID         string `json:"chainId"`
+	Symbol          string `json:"symbol"`
+	Name            string `json:"name"`
+	ContractAddress string `json:"contractAddress,omitempty"`
+	DeployStatus    string `json:"deployStatus,omitempty"`
+	DeployTxHash    string `json:"deployTxHash,omitempty"`
+}
+
+// ConvertReceiverInfo describes the payout wallet used during convert.
+type ConvertReceiverInfo struct {
+	ChainID string `json:"chainId"`
+	Address string `json:"address"`
+	Label   string `json:"label,omitempty"`
 }
 
 // ConvertResult holds the converted amount and valuation.
@@ -77,6 +112,10 @@ type ConvertResult struct {
 	Status       string  `json:"status,omitempty"` // quoted, completed
 	TransferID   string  `json:"transferId,omitempty"`
 	FundClass    string  `json:"fundClass,omitempty"`
+
+	TokenDeploy   *ConvertTokenInfo    `json:"tokenDeploy,omitempty"`
+	Receiver      *ConvertReceiverInfo `json:"receiver,omitempty"`
+	SettlementRef string               `json:"settlementRef,omitempty"`
 }
 
 // TokenMeta describes a fungible asset for conversion.

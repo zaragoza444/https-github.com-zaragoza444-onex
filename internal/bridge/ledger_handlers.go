@@ -21,6 +21,7 @@ func (s *Server) registerLedgerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/bridge/ledger/settle", s.handleLedgerSettle)
 	mux.HandleFunc("/bridge/ledger/settlements", s.handleLedgerSettlements)
 	mux.HandleFunc("/bridge/ledger/settlement/capabilities", s.handleSettlementCapabilities)
+	mux.HandleFunc("/bridge/ledger/receivers", s.handleLedgerReceivers)
 	// Legacy Shiva paths
 	mux.HandleFunc("/bridge/shiva-ledger/status", s.handleLedgerStatus)
 	mux.HandleFunc("/bridge/shiva-ledger/real", s.handleLedgerReal)
@@ -227,4 +228,34 @@ func (s *Server) handleSettlementCapabilities(w http.ResponseWriter, r *http.Req
 		return
 	}
 	writeJSON(w, s.b.SettlementCapabilities())
+}
+
+func (s *Server) handleLedgerReceivers(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		list, err := s.b.ListReceiverWallets()
+		if err != nil {
+			writeJSON(w, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, map[string]interface{}{"receivers": list, "count": len(list)})
+	case http.MethodPost:
+		var req struct {
+			Label   string `json:"label"`
+			ChainID string `json:"chainId"`
+			Address string `json:"address"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		wlt, err := s.b.SaveReceiverWallet(req.Label, req.ChainID, req.Address)
+		if err != nil {
+			writeJSON(w, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, wlt)
+	default:
+		http.Error(w, "GET or POST only", http.StatusMethodNotAllowed)
+	}
 }
