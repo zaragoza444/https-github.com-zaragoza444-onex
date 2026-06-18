@@ -31,6 +31,17 @@
     <main class="screens">
       <!-- WALLET (Home) -->
       <section id="screen-wallet" class="screen active">
+        <div id="green-health-bar" class="green-health-bar hidden">
+          <div class="green-health-head">
+            <span class="green-health-dot" id="green-health-dot"></span>
+            <strong id="green-health-title">All systems operational</strong>
+          </div>
+          <div class="green-health-grid" id="green-health-grid"></div>
+        </div>
+        <div id="production-platform-banner" class="production-platform-banner hidden">
+          <p><strong>OneX Production Platform</strong> <span id="production-platform-badge">—</span></p>
+          <p class="msg" id="production-platform-detail">Ledger + token platform connected</p>
+        </div>
         <div id="external-banner" class="external-banner hidden">
           <p><strong>External wallet.</strong> Set your bridge URL for send, swap &amp; portfolio sync.</p>
           <button type="button" class="btn-secondary" onclick="openSheet('settings')">Connect bridge</button>
@@ -232,7 +243,7 @@
       <section id="screen-ledger" class="screen">
         <div class="ledger-header">
           <h1 class="trade-header">Real Ledger</h1>
-          <span class="ledger-mode-badge" id="ledger-mode-badge">—</span>
+          <span class="ledger-mode-badge green" id="ledger-mode-badge">—</span>
         </div>
         <p class="msg ledger-intro">Unified bank, on-chain, and imported balances — converted to real fiat &amp; crypto.</p>
 
@@ -270,6 +281,9 @@
         <div class="ledger-filters">
           <button type="button" class="ledger-filter active" data-src="all" onclick="setLedgerSource('all')">All</button>
           <button type="button" class="ledger-filter" data-src="bank" onclick="setLedgerSource('bank')">Bank</button>
+          <button type="button" class="ledger-filter" data-src="m0" onclick="setLedgerSource('m0')">M0</button>
+          <button type="button" class="ledger-filter" data-src="m1" onclick="setLedgerSource('m1')">M1</button>
+          <button type="button" class="ledger-filter" data-src="nsb" onclick="setLedgerSource('nsb')" title="National Sovereign Bank">NSB Sovereign</button>
           <button type="button" class="ledger-filter" data-src="onex" onclick="setLedgerSource('onex')">OneX</button>
           <button type="button" class="ledger-filter" data-src="evm" onclick="setLedgerSource('evm')">EVM</button>
           <button type="button" class="ledger-filter" data-src="import" onclick="setLedgerSource('import')">Import</button>
@@ -281,8 +295,72 @@
         </div>
         <div class="asset-list" id="ledger-entries"></div>
 
+        <div class="card ledger-settlement-card">
+          <div class="card-title">Settlement middleware <span class="ledger-active-badge">live</span></div>
+          <p class="msg">Convert fiat &amp; crypto ledger → real funds &amp; real crypto. Pipeline: quote → debit → convert → settle.</p>
+          <div class="ledger-settlement-caps" id="ledger-settlement-caps"></div>
+
+          <div class="ledger-xfer-tabs" id="ledger-settle-tabs">
+            <button type="button" class="ledger-xfer-tab active" data-skind="real_crypto" onclick="setSettlementKind('real_crypto')">Real crypto</button>
+            <button type="button" class="ledger-xfer-tab" data-skind="real_fiat" onclick="setSettlementKind('real_fiat')">Real fiat</button>
+            <button type="button" class="ledger-xfer-tab" data-skind="vault" onclick="setSettlementKind('vault')">Vault convert</button>
+            <button type="button" class="ledger-xfer-tab" data-skind="internal" onclick="setSettlementKind('internal')">Internal</button>
+          </div>
+
+          <label class="field-label">From ledger account</label>
+          <select id="ledger-settle-from" onchange="settlementPreviewDebounced()"></select>
+          <div class="ledger-convert-row">
+            <input id="ledger-settle-amount" placeholder="Amount" inputmode="decimal" oninput="settlementPreviewDebounced()" />
+            <button type="button" class="dex-max ledger-max" onclick="setSettlementMax()">MAX</button>
+          </div>
+          <label class="field-label">Payout asset</label>
+          <select id="ledger-settle-payout" onchange="settlementPreviewDebounced()">
+            <option value="BNB">BNB</option>
+            <option value="USDT">USDT</option>
+            <option value="ETH">ETH</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="BTC">BTC</option>
+            <option value="ONEX">ONEX</option>
+          </select>
+
+          <div id="ledger-settle-panel-crypto">
+            <label class="field-label">Chain</label>
+            <select id="ledger-settle-chain" onchange="settlementPreviewDebounced()"></select>
+            <label class="field-label">Recipient address</label>
+            <div class="ledger-convert-row">
+              <input id="ledger-settle-address" placeholder="0x…" oninput="settlementPreviewDebounced()" />
+              <button type="button" class="dex-max ledger-max" onclick="fillSettlementMyAddress()">My address</button>
+            </div>
+          </div>
+
+          <div id="ledger-settle-panel-fiat" class="hidden">
+            <label class="field-label">Bank</label>
+            <select id="ledger-settle-bank" onchange="onSettlementBankChange()"></select>
+            <label class="field-label">Rail</label>
+            <select id="ledger-settle-rail" onchange="settlementPreviewDebounced()"></select>
+            <input id="ledger-settle-bank-acct" placeholder="IBAN / account" oninput="settlementPreviewDebounced()" />
+          </div>
+
+          <div id="ledger-settle-panel-internal" class="hidden">
+            <label class="field-label">To account</label>
+            <select id="ledger-settle-to" onchange="settlementPreviewDebounced()"></select>
+          </div>
+
+          <div class="ledger-settlement-steps" id="ledger-settlement-steps"></div>
+          <p class="ledger-conv-preview" id="ledger-settle-preview">Configure settlement</p>
+          <button type="button" class="btn-primary" id="ledger-settle-btn" onclick="doSettlement()">Settle to real funds</button>
+          <p class="msg" id="ledger-settle-msg"></p>
+
+          <div class="ledger-xfer-history">
+            <div class="section-head" style="margin-top:16px"><h2>Settlement history</h2></div>
+            <div id="ledger-settlement-history" class="asset-list"></div>
+          </div>
+        </div>
+
         <div class="card ledger-convert-card">
           <div class="card-title">Convert <span class="ledger-active-badge">live</span></div>
+          <p class="msg">Convert M0 (base cash), M1 (demand deposits), or NSB (National Sovereign Bank) to any crypto or fiat.</p>
           <label class="field-label">From account</label>
           <select id="ledger-conv-from-acct" onchange="onLedgerConvAccountChange()"></select>
           <div class="ledger-convert-row">
@@ -296,11 +374,13 @@
         </div>
 
 		<div class="card ledger-transfer-card">
-          <div class="card-title">External transfer</div>
-          <p class="msg">Send from your ledger to any chain or world bank.</p>
+          <div class="card-title">Bridge to chain</div>
+          <p class="msg">Debit your local ledger and settle on IDBIS/DBIS chain 138, BSC, or another chain. The bridge auto-provisions an EVM sender at <code>~/.onex/evm-sender.key</code> — fund that address for live on-chain payout.</p>
 
-          <div class="ledger-xfer-tabs">
-            <button type="button" class="ledger-xfer-tab active" data-mode="chain" onclick="setLedgerXferMode('chain')">Other chain</button>
+          <div class="ledger-xfer-tabs" id="ledger-bridge-tabs">
+            <button type="button" class="ledger-xfer-tab active" data-mode="dbis" onclick="setLedgerXferMode('dbis')">Bridge to DBIS 138</button>
+            <button type="button" class="ledger-xfer-tab" data-mode="bsc" onclick="setLedgerXferMode('bsc')">Bridge to BSC</button>
+            <button type="button" class="ledger-xfer-tab" data-mode="chain" onclick="setLedgerXferMode('chain')">Other chain</button>
             <button type="button" class="ledger-xfer-tab" data-mode="bank" onclick="setLedgerXferMode('bank')">Other bank</button>
             <button type="button" class="ledger-xfer-tab" data-mode="internal" onclick="setLedgerXferMode('internal')">Internal</button>
           </div>
@@ -315,8 +395,11 @@
           <div id="ledger-xfer-panel-chain">
             <label class="field-label">Destination chain</label>
             <select id="ledger-xfer-chain" onchange="onLedgerXferChainChange()"></select>
-            <label class="field-label">Wallet address</label>
-            <input id="ledger-xfer-address" placeholder="0x… / bc1… / T… / Solana address" oninput="ledgerXferPreviewDebounced()" />
+            <label class="field-label">BSC / EVM wallet address</label>
+            <div class="ledger-convert-row">
+              <input id="ledger-xfer-address" placeholder="0x… recipient on BSC" oninput="ledgerXferPreviewDebounced()" />
+              <button type="button" class="dex-max ledger-max" onclick="fillLedgerXferMyAddress()">My address</button>
+            </div>
           </div>
 
           <div id="ledger-xfer-panel-bank" class="hidden">
@@ -349,7 +432,7 @@
           </select>
 
           <p class="ledger-conv-preview" id="ledger-xfer-preview">Select account, amount, and destination</p>
-          <button type="button" class="btn-primary" id="ledger-xfer-btn" onclick="doLedgerTransfer()">Send external transfer</button>
+          <button type="button" class="btn-primary" id="ledger-xfer-btn" onclick="doLedgerTransfer()">Bridge to BSC</button>
           <p class="msg" id="ledger-xfer-msg"></p>
 
           <div class="ledger-xfer-history">
@@ -360,11 +443,12 @@
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-title">Import any ledger</div>
-          <p class="msg">Bank JSON, crypto map, exchange rows — any format.</p>
-          <textarea id="ledger-import-json" rows="4" placeholder='{"balances":{"BTC":"0.5","USD":"1000"}}'></textarea>
-          <button type="button" class="btn-secondary" onclick="doLedgerImport()">Import &amp; value</button>
+        <div class="card ledger-import-card">
+          <div class="card-title">Import any ledger <span class="ledger-active-badge">active</span></div>
+          <p class="msg">Paste bank JSON, crypto map, or exchange rows — valued at live prices and synced to your ledger book.</p>
+          <textarea id="ledger-import-json" rows="4" placeholder='{"balances":{"BTC":"0.5","USD":"1000"}}' oninput="ledgerImportPreviewDebounced()"></textarea>
+          <p class="ledger-conv-preview" id="ledger-import-preview">Paste JSON for live value preview</p>
+          <button type="button" class="btn-primary" id="ledger-import-btn" onclick="doLedgerImport()">Import &amp; value (active)</button>
           <p class="msg" id="ledger-import-msg"></p>
         </div>
 

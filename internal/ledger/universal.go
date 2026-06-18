@@ -50,7 +50,7 @@ func parseRowArray(data []byte) ([]Entry, error) {
 			continue
 		}
 		out = append(out, Entry{
-			ID:      fmt.Sprintf("row-%d", i),
+			ID:      importStableID(asset, pickString(row, "account", "address", "wallet", "name"), i),
 			Source:  SourceImport,
 			Mode:    modeForAsset(asset),
 			Asset:   strings.ToUpper(asset),
@@ -74,7 +74,7 @@ func mapToEntries(m map[string]string, src SourceKind) []Entry {
 			continue
 		}
 		out = append(out, Entry{
-			ID:     fmt.Sprintf("map-%s-%d", asset, i),
+			ID:     importStableID(asset, "", i),
 			Source: src,
 			Mode:   modeForAsset(asset),
 			Asset:  asset,
@@ -104,4 +104,15 @@ func modeForAsset(asset string) Mode {
 		return ModeFiat
 	}
 	return ModeReal
+}
+
+func importStableID(asset, account string, rowIndex int) string {
+	asset = strings.ToLower(strings.TrimSpace(asset))
+	if account = strings.TrimSpace(account); account != "" {
+		return fmt.Sprintf("import-%s-%s", asset, strings.ToLower(account))
+	}
+	if asset != "" {
+		return "import-" + asset
+	}
+	return fmt.Sprintf("import-row-%d", rowIndex)
 }

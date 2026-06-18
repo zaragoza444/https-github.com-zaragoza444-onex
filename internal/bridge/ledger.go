@@ -41,8 +41,13 @@ func (b *Bridge) ledgerTokens() []ledger.TokenMeta {
 func (b *Bridge) ledgerChains() []ledger.EVMChain {
 	chains := b.registry().GetChains()
 	out := make([]ledger.EVMChain, 0, len(chains))
+	dbisRPC := strings.TrimSpace(os.Getenv("DBIS138_RPC_URL"))
 	for _, c := range chains {
-		out = append(out, ledger.EVMChain{ID: c.ID, RPC: c.RPC, Type: c.Type})
+		rpc := c.RPC
+		if c.ID == "dbis-138" && dbisRPC != "" {
+			rpc = dbisRPC
+		}
+		out = append(out, ledger.EVMChain{ID: c.ID, RPC: rpc, Type: c.Type})
 	}
 	return out
 }
@@ -57,7 +62,9 @@ func (b *Bridge) tokenMetaMap() map[string]ledger.TokenMeta {
 
 // LedgerStatus returns production middleware readiness.
 func (b *Bridge) LedgerStatus() map[string]interface{} {
-	return b.resolvedLedgerConfig().Status()
+	st := b.resolvedLedgerConfig().Status()
+	st["settlement"] = b.SettlementCapabilities()
+	return st
 }
 
 // ReadRealLedger aggregates bank, on-chain, and optional portfolio ledgers into real fiat/crypto values.

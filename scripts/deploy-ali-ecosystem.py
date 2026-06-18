@@ -10,9 +10,9 @@ import paramiko
 ROOT = Path(__file__).resolve().parents[1]
 HOST = os.environ.get("SSH_HOST", "51.75.64.28")
 USER = os.environ.get("SSH_USER", "ubuntu")
-REMOTE = os.environ.get("ALI_DEPLOY_ROOT", "/home/ubuntu/shiva-blockchain")
+REMOTE = os.environ.get("ALI_DEPLOY_ROOT", "/home/ubuntu/onex")
 GITHUB = os.environ.get(
-    "GITHUB_REPO", "https://github.com/zaragoza444/shiva-blockchain.git"
+    "GITHUB_REPO", "https://github.com/zaragoza444/onex.git"
 )
 
 
@@ -39,13 +39,18 @@ go build -o "$REPO/bin/bsc-launcher" ./bsc-launcher/server
 sudo mkdir -p /etc/onex
 sudo tee /etc/onex/onex.env >/dev/null <<EOF
 ONEX_API_KEY={api_key}
-ONEX_CORS_ORIGINS=http://{HOST}:9338,http://{HOST}:8545,https://zaragoza444.github.io,https://git.anakatech.llc
+ONEX_CORS_ORIGINS=http://{HOST}:9338,http://{HOST}:8545,https://zaragoza444.github.io,https://zaragoza444.github.io/onex,https://git.anakatech.llc,https://explorer.d-bis.org
 ONEX_LEDGER_MODE=production
 ONEX_BANK_LEDGER_FILE=$REPO/configs/bank-ledger.example.json
 ONEX_PROJECT_ROOT=$REPO
 ONEX_HOME_DIR=$HOME/.onex
 ONEX_NODE_URL=http://127.0.0.1:8545
-ONEX_BRIDGE_LISTEN=:9338
+ONEX_BRIDGE_LISTEN=0.0.0.0:9338
+ONEX_DEFAULT_BRIDGE_CHAIN=dbis-138
+ONEX_PUBLIC_HOST={HOST}
+DBIS138_RPC_URL=https://rpc-core.d-bis.org
+DBIS138_EXPLORER=https://explorer.d-bis.org
+DBIS138_CHAIN_ID=138
 EOF
 
 sudo tee /etc/systemd/system/onexd.service >/dev/null <<UNIT
@@ -120,11 +125,14 @@ sleep 3
 echo "==> health"
 curl -sf http://127.0.0.1:8545/health && echo " onexd OK" || echo " onexd FAIL"
 curl -sf http://127.0.0.1:9338/health && echo " bridge OK" || echo " bridge FAIL"
+curl -sf http://127.0.0.1:9338/bridge/health/green | head -c 300; echo
 curl -sf http://127.0.0.1:9338/bridge/ledger/status | head -c 200; echo
 curl -sf http://127.0.0.1:9340/health && echo " token-lab OK" || echo " token-lab FAIL"
 systemctl is-active onexd onex-bridge onex-token-lab
 echo "PUBLIC_WALLET=http://{HOST}:9338/wallet/"
 echo "PUBLIC_LEDGER=http://{HOST}:9338/wallet/#ledger"
+echo "PUBLIC_GREEN=http://{HOST}:9338/bridge/health/green"
+echo "GITHUB_PAGES=https://zaragoza444.github.io/onex/wallet/?bridge=http://{HOST}:9338"
 echo "PUBLIC_TOKEN_LAB=http://{HOST}:9340/"
 """
 

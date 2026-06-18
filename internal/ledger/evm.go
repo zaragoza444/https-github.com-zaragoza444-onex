@@ -31,6 +31,11 @@ var knownContracts = map[string]string{
 	"polygon:USDC-POLY": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
 }
 
+// KnownContract returns a mainnet ERC-20 contract for chainId:symbol.
+func KnownContract(chainID, symbol string) string {
+	return knownContracts[chainID+":"+strings.ToUpper(symbol)]
+}
+
 // ReadEVMBalance fetches real native or ERC-20 balance from chain RPC.
 func ReadEVMBalance(ctx context.Context, chain EVMChain, holder, symbol string, decimals int, contract string) (string, error) {
 	if chain.RPC == "" || chain.Type != "evm" {

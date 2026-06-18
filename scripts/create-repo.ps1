@@ -1,7 +1,7 @@
-# Create GitHub repo zaragoza444/onex-blockchain and push main.
+# Create GitHub repo zaragoza444/onex and push main.
 param(
     [string]$GitHubUser = "zaragoza444",
-    [string]$RepoName = "onex-blockchain",
+    [string]$RepoName = "onex",
     [ValidateSet("public", "private")]
     [string]$Visibility = "public"
 )

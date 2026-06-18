@@ -17,6 +17,7 @@ type BookAccount struct {
 	Source    SourceKind `json:"source"`
 	Mode      Mode       `json:"mode"`
 	Asset     string     `json:"asset"`
+	FundClass string     `json:"fundClass,omitempty"`
 	TokenKey  string     `json:"tokenKey,omitempty"`
 	ChainID   string     `json:"chainId,omitempty"`
 	Balance   string     `json:"balance"`
@@ -41,8 +42,9 @@ type TransferRecord struct {
 
 // Book is the mutable unified ledger for any bank/crypto source.
 type Book struct {
-	Accounts  map[string]*BookAccount `json:"accounts"`
-	Transfers []TransferRecord      `json:"transfers"`
+	Accounts    map[string]*BookAccount `json:"accounts"`
+	Transfers   []TransferRecord        `json:"transfers"`
+	Settlements []SettlementRecord      `json:"settlements,omitempty"`
 }
 
 // BookStore persists ledger accounts and transfer history.
@@ -125,6 +127,7 @@ func (s *BookStore) SyncFromSnapshot(snap Snapshot) error {
 			Source:    e.Source,
 			Mode:      e.Mode,
 			Asset:     strings.ToUpper(e.Asset),
+			FundClass: e.FundClass,
 			TokenKey:  e.TokenKey,
 			ChainID:   e.ChainID,
 			Balance:   bal,
@@ -355,8 +358,12 @@ func (s *BookStore) Transfer(req TransferRequest, prices map[string]PriceQuote, 
 		rec.TxRef = txRef
 		if extDest != nil && extDest.Kind == ExternalOneX {
 			rec.Status = "on_chain"
-		} else if txRef != "" && txRef != "pending-settlement" {
-			rec.Status = "submitted"
+		} else if txRef != "" && !strings.HasPrefix(txRef, "chain-pending:") && txRef != "pending-settlement" {
+			if strings.Contains(txRef, "/tx/") || strings.HasPrefix(txRef, "tx:0x") {
+				rec.Status = "on_chain"
+			} else {
+				rec.Status = "submitted"
+			}
 		}
 		s.mu.Lock()
 		if len(s.data.Transfers) > 0 {
@@ -393,6 +400,7 @@ func (s *BookStore) ConvertActive(req ConvertRequest, prices map[string]PriceQuo
 		return nil, err
 	}
 
+	fromAcct, _ := s.GetAccount(fromID)
 	toID := bookVaultID(toAsset)
 	res, err := s.Transfer(TransferRequest{
 		FromAccount: fromID,
@@ -406,6 +414,9 @@ func (s *BookStore) ConvertActive(req ConvertRequest, prices map[string]PriceQuo
 	}
 	conv.FromAccount = fromID
 	conv.ToAccount = toID
+	if fromAcct != nil {
+		conv.FundClass = fromAcct.FundClass
+	}
 	conv.Status = "completed"
 	if res != nil {
 		conv.TransferID = res.Transfer.ID

@@ -2,7 +2,7 @@
 
 Run OneX blockchain + OKX-style wallet bridge on a server (Docker or systemd).
 
-**Domain `novatrustee.digital`:** [deploy/DEPLOY-novatrustee.digital.md](deploy/DEPLOY-novatrustee.digital.md), `scripts/deploy-vps-novatrustee.sh` (VPS), `scripts/deploy-vps-novatrustee.ps1` (preflight from Windows).
+**OneX Production Platform (`onexproduction.com`):** [deploy/DEPLOY-onexproduction.md](deploy/DEPLOY-onexproduction.md), `scripts/deploy-onexproduction.sh`, `scripts/connect-onexproduction.ps1`.
 
 **ALI / ALLTRA ecosystem VPS (`ubuntu@51.75.64.28`):** `scripts/deploy-ali-ecosystem.py` (remote SSH), `scripts/deploy-ali-ecosystem.sh` (run on server), `deploy/env.ali-ecosystem.example`.
 
@@ -24,13 +24,13 @@ bash scripts/deploy-ali-ecosystem.sh
 | Node API | 8545 | `http://51.75.64.28:8545/health` |
 | Token Lab | 9340 | `http://51.75.64.28:9340/` |
 
-Set `ONEX_BRIDGE_PUBLIC_URL=http://51.75.64.28:9338` in GitHub Pages variables so the static wallet connects to this bridge.
+Set `ONEX_BRIDGE_PUBLIC_URL=http://51.75.64.28:9338` in GitHub Pages variables so the static wallet at https://zaragoza444.github.io/onex/wallet/ connects to this bridge.
 
 ## Docker (recommended)
 
 ```bash
-git clone <your-repo-url> onex-blockchain
-cd onex-blockchain
+git clone <your-repo-url> onex
+cd onex
 cp .env.example .env
 # Edit .env: ONEX_API_KEY, ONEX_CORS_ORIGINS=https://your-domain.com
 
@@ -91,12 +91,12 @@ cd mobile && npm install && eas build --platform all --profile production
 
 ```powershell
 # Windows
-.\scripts\publish-remotes.ps1 -GitHub "git@github.com:USER/onex-blockchain.git" -Gitea "git@git.example.com:USER/onex-blockchain.git"
+.\scripts\publish-remotes.ps1 -GitHub "git@github.com:USER/onex.git" -Gitea "git@git.example.com:USER/onex.git"
 ```
 
 ```bash
 # Linux
-./scripts/publish-remotes.sh git@github.com:USER/onex-blockchain.git git@git.example.com:USER/onex-blockchain.git
+./scripts/publish-remotes.sh git@github.com:USER/onex.git git@git.example.com:USER/onex.git
 ```
 
 Create empty repos on GitHub and Gitea first, then run the script.

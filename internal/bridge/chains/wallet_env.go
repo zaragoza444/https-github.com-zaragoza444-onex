@@ -60,6 +60,38 @@ func LoadDeployerAddress() string {
 	return userDeployerAddress
 }
 
+func LoadBridgeSenderKey() (string, error) {
+	for _, k := range []string{
+		"ONEX_EVM_SENDER_KEY", "BSC_BRIDGE_PRIVATE_KEY",
+		"FLASH_DEPLOYER_PRIVATE_KEY", "BSC_DEPLOYER_PRIVATE_KEY",
+	} {
+		v := strings.TrimSpace(os.Getenv(k))
+		if v == "" || strings.Contains(v, "...") || strings.Contains(strings.ToUpper(v), "YOUR") {
+			continue
+		}
+		if strings.Contains(v, "<") || strings.Contains(v, ">") {
+			continue
+		}
+		if IsAddressHex(v) {
+			return "", fmt.Errorf("%s is a wallet address, not a private key", k)
+		}
+		if !IsPrivateKeyHex(v) {
+			continue
+		}
+		return strings.TrimPrefix(v, "0x"), nil
+	}
+	if key, err := loadBridgeSenderKeyFromFile(); err == nil {
+		return key, nil
+	}
+	return "", fmt.Errorf("set ONEX_EVM_SENDER_KEY (64 hex chars) to settle ledger → BSC/EVM transfers on-chain")
+}
+
+// LoadBridgeSenderKeySilent returns true when an EVM sender key is configured.
+func LoadBridgeSenderKeySilent() bool {
+	_, err := LoadBridgeSenderKey()
+	return err == nil
+}
+
 func LoadDeployerKey() (string, error) {
 	for _, k := range []string{"FLASH_DEPLOYER_PRIVATE_KEY", "BSC_DEPLOYER_PRIVATE_KEY"} {
 		v := strings.TrimSpace(os.Getenv(k))

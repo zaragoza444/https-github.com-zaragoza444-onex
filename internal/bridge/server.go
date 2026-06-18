@@ -42,6 +42,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/rpc", s.handleRPC)
 	s.registerDeFiRoutes(mux)
 	s.registerPlatformRoutes(mux)
+	s.registerProductionRoutes(mux)
 	s.registerAIRoutes(mux)
 
 	sub, _ := fs.Sub(walletFS, "static/wallet")

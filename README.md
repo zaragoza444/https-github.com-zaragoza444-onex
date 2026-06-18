@@ -186,7 +186,7 @@ Expo WebView wrapper in [`mobile/`](mobile/) — see [mobile/PUBLISH.md](mobile/
 git push -u gitea main
 # optional mirror:
 .\scripts\publish-remotes.ps1 `
-  -GitHub "https://github.com/zaragoza444/onex-blockchain.git" `
+  -GitHub "https://github.com/zaragoza444/onex.git" `
   -Gitea "https://git.anakatech.llc/zaragoza/onex.git"
 ```
 

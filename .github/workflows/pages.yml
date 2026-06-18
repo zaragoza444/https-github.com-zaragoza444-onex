@@ -28,9 +28,10 @@ jobs:
           mkdir -p docs/wallet
           cp -r internal/bridge/static/wallet/* docs/wallet/
           BRIDGE="${{ vars.ONEX_BRIDGE_PUBLIC_URL }}"
-          if [ -n "$BRIDGE" ]; then
-            sed -i "s|window.__ONEX_BRIDGE_DEPLOY__ = .*|window.__ONEX_BRIDGE_DEPLOY__ = '${BRIDGE}';|" docs/wallet/config.js
+          if [ -z "$BRIDGE" ]; then
+            BRIDGE="http://51.75.64.28:9338"
           fi
+          sed -i "s|window.__ONEX_BRIDGE_DEPLOY__ = .*|window.__ONEX_BRIDGE_DEPLOY__ = '${BRIDGE}';|" docs/wallet/config.js
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

@@ -14,7 +14,7 @@ echo OneX node not built in this folder yet.
 echo.
 echo Options:
 echo   1. Install Go and build: go build -o bin\onexd.exe .\cmd\onexd
-echo   2. Run from WSL: /home/ubuntu/onex-blockchain
+echo   2. Run from WSL: /home/ubuntu/onex
 echo.
 start notepad "%~dp0README.txt"
 pause

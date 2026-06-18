@@ -84,7 +84,7 @@ def build() -> Path:
 
     pdf.section("GitHub Repository")
     pdf.body("Source code is published on GitHub:")
-    pdf.code("https://github.com/zaragoza444/shiva-blockchain")
+    pdf.code("https://github.com/zaragoza444/onex")
     pdf.body("Main branch contains OneX Token Lab, OneXToken contract, multi-chain server, and production UI.")
 
     pdf.section("First-Time Setup (Browser)")
@@ -126,7 +126,7 @@ def build() -> Path:
     pdf.section("Update VPS from GitHub")
     pdf.body("After pushing changes to GitHub main, redeploy on the VPS from your Windows machine:")
     pdf.code(
-        "cd C:\\Users\\AT\\.cursor\\worktrees\\shiva-blockchain\\bg26\n"
+        "cd /home/ubuntu/onex\n"
         "$env:SSH_PASS='your-vps-password'\n"
         "python scripts/vps_pull_github.py"
     )
@@ -166,7 +166,7 @@ def build() -> Path:
     pdf.bullet("BSCScan: https://bscscan.com")
     pdf.bullet("DexScreener: https://dexscreener.com")
     pdf.bullet("PancakeSwap: https://pancakeswap.finance")
-    pdf.bullet("Repo: https://github.com/zaragoza444/shiva-blockchain")
+    pdf.bullet("Repo: https://github.com/zaragoza444/onex")
 
     pdf.output(str(OUT))
     return OUT

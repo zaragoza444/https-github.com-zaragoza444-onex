@@ -16,6 +16,9 @@ const LEDGER_HIST_KEY = 'onex_ledger_history';
 
 const LEDGER_SOURCE_COLORS = {
   bank: '#4a9eff',
+  m0: '#7c4dff',
+  m1: '#00bcd4',
+  nsb: '#ffb300',
   onex: '#00e5b0',
   evm: '#c0a062',
   import: '#ff9500',
@@ -546,12 +549,59 @@ async function bridgeStatus() {
   }
   const dot = document.getElementById('network-dot');
   const name = document.getElementById('network-name');
-  if (dot) dot.classList.toggle('offline', !j.nodeOk);
+  if (dot) {
+    dot.classList.toggle('offline', !j.nodeOk);
+    dot.classList.toggle('online', !!j.nodeOk);
+  }
   if (name) name.textContent = j.nodeOk ? (j.chainId || 'OneX').replace('onex-', '').replace('-1', '') : 'Offline';
+}
+
+async function loadGreenHealth() {
+  const bar = document.getElementById('green-health-bar');
+  const grid = document.getElementById('green-health-grid');
+  const title = document.getElementById('green-health-title');
+  const dot = document.getElementById('green-health-dot');
+  if (!bar || !grid) return;
+  const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+  const j = await api('/bridge/health/green' + evmQ);
+  if (j.error) {
+    bar.classList.add('hidden');
+    return;
+  }
+  bar.classList.remove('hidden');
+  const isGreen = j.status === 'green' || j.allGreen;
+  bar.classList.toggle('degraded', !isGreen);
+  if (title) title.textContent = isGreen ? 'All systems green' : 'Some checks need attention';
+  if (dot) dot.style.background = isGreen ? '#00e5b0' : '#ff9500';
+  grid.innerHTML = (j.checks || []).map(c =>
+    `<span class="green-check ${c.status}">${c.status === 'green' ? '✓' : c.status === 'amber' ? '◐' : '✗'} ${c.label}</span>`
+  ).join('');
+}
+
+async function loadProductionPlatform() {
+  const banner = document.getElementById('production-platform-banner');
+  const badge = document.getElementById('production-platform-badge');
+  const detail = document.getElementById('production-platform-detail');
+  if (!banner) return;
+  const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+  const j = await api('/bridge/production/status' + evmQ);
+  if (j.error || !j.production) {
+    banner.classList.add('hidden');
+    return;
+  }
+  banner.classList.remove('hidden');
+  if (badge) badge.textContent = j.domain || 'production';
+  const ledgerUsd = j.ledgerTotalUsd != null ? fmtUsd(j.ledgerTotalUsd) : '—';
+  const tokens = j.platform?.totalTokens ?? '—';
+  if (detail) {
+    detail.textContent = `Real ledger ${ledgerUsd} · ${tokens} platform tokens · node ${j.nodeReady ? 'online' : 'offline'}`;
+  }
 }
 
 async function refreshAll() {
   await bridgeStatus();
+  await loadGreenHealth();
+  await loadProductionPlatform();
   await loadMarketPrices();
   try {
     const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
@@ -1273,15 +1323,27 @@ function onChainChange(sel, tokenSelId) {
   tokSel.innerHTML = list.map(t => `<option value="${t.id}">${t.symbol}</option>`).join('');
 }
 
+function fundClassLabel(fc) {
+  const k = (fc || '').toLowerCase();
+  if (k === 'm0') return 'M0';
+  if (k === 'm1') return 'M1';
+  if (k === 'nsb') return 'NSB Sovereign';
+  return fc ? fc.toUpperCase() : '';
+}
 const LEDGER_CONVERT_ASSETS = ['USD', 'EUR', 'GBP', 'BTC', 'ETH', 'USDT', 'USDC', 'BNB', 'ONEX', 'SOL'];
 let ledgerConvTimer = null;
 let ledgerAccounts = [];
 let ledgerDestinations = { chains: [], banks: [] };
-let ledgerXferMode = 'chain';
+let ledgerXferMode = 'dbis';
+let ledgerDefaultBridgeChain = 'dbis-138';
 let ledgerXferTimer = null;
+let settlementKind = 'real_crypto';
+let settlementTimer = null;
+let ledgerImportTimer = null;
 
 const CHAIN_NATIVE_ASSET = {
   'onex-mainnet-1': 'ONEX', ethereum: 'ETH', bsc: 'BNB', polygon: 'MATIC',
+  'dbis-138': 'ETH', dbis: 'ETH', idbis: 'ETH',
   arbitrum: 'ETH', optimism: 'ETH', avalanche: 'AVAX', base: 'ETH',
   solana: 'SOL', bitcoin: 'BTC', tron: 'TRX', alltra: 'ALL',
 };
@@ -1300,9 +1362,10 @@ function refreshLedgerConvertUI(accounts) {
   if (!ledgerAccounts.length) {
     acctSel.innerHTML = '<option value="">No accounts — refresh ledger</option>';
   } else {
-    acctSel.innerHTML = ledgerAccounts.map(a =>
-      `<option value="${a.id}" data-asset="${a.asset}" data-bal="${a.balance}">${a.asset} · ${a.balance} (${a.source})</option>`
-    ).join('');
+    acctSel.innerHTML = ledgerAccounts.map(a => {
+      const fc = a.fundClass ? ` · ${fundClassLabel(a.fundClass)}` : '';
+      return `<option value="${a.id}" data-asset="${a.asset}" data-bal="${a.balance}" data-fund="${a.fundClass || ''}">${a.asset} · ${a.balance}${fc} (${a.source})</option>`;
+    }).join('');
   }
 
   const toOpts = LEDGER_CONVERT_ASSETS.map(a => `<option value="${a}">${a}</option>`).join('');
@@ -1425,7 +1488,10 @@ async function loadLedgerStatus() {
     if (el) el.textContent = j.error;
     return;
   }
-  if (badge) badge.textContent = j.production ? 'production' : (j.mode || 'production');
+  if (badge) {
+    badge.textContent = j.production ? 'production' : (j.mode || 'production');
+    badge.classList.add('green');
+  }
   const bank = j.bank || {};
   const parts = [];
   if (bank.configured) parts.push(`Provider: ${bank.provider || 'custom'}`);
@@ -1440,6 +1506,7 @@ async function loadLedgerStatus() {
 
 async function refreshLedger() {
   await loadLedgerStatus();
+  await loadGreenHealth();
   const evm = getEvmHolder();
   const q = new URLSearchParams();
   if (ledgerSource && ledgerSource !== 'all') q.set('source', ledgerSource);
@@ -1459,10 +1526,13 @@ async function refreshLedger() {
 async function loadLedgerAccounts() {
   const evm = getEvmHolder();
   const q = evm ? `?evm=${encodeURIComponent(evm)}` : '';
-  const [j, dest, hist] = await Promise.all([
+  const [j, dest, hist, caps, settlements, ledgerStatus] = await Promise.all([
     api('/bridge/ledger/accounts' + q),
     api('/bridge/ledger/destinations'),
     api('/bridge/ledger/transfers' + q),
+    api('/bridge/ledger/settlement/capabilities'),
+    api('/bridge/ledger/settlements' + q),
+    api('/bridge/ledger/status'),
   ]);
   const accounts = j.accounts || [];
   ledgerDestinations = { chains: dest.chains || [], banks: dest.banks || [] };
@@ -1488,6 +1558,11 @@ async function loadLedgerAccounts() {
     chainSel.innerHTML = ledgerDestinations.chains.map(c =>
       `<option value="${c.id}" data-symbol="${c.symbol}">${c.name} (${c.symbol})</option>`
     ).join('');
+    const def = ledgerDefaultBridgeChain || 'dbis-138';
+    const pick = [...chainSel.options].find(o => o.value === def) ||
+      [...chainSel.options].find(o => o.value === 'dbis-138');
+    if (pick) chainSel.value = pick.value;
+    onLedgerXferChainChange();
   }
   const bankSel = document.getElementById('ledger-xfer-bank');
   if (bankSel && ledgerDestinations.banks.length) {
@@ -1497,22 +1572,59 @@ async function loadLedgerAccounts() {
     onLedgerXferBankChange();
   }
   renderLedgerXferHistory(hist.transfers || []);
+  refreshSettlementUI(accounts, dest, caps, settlements.settlements || []);
+  applyLedgerBridgeDefaults(ledgerStatus);
+}
+
+function applyLedgerBridgeDefaults(st) {
+  if (st?.defaultBridgeChain) ledgerDefaultBridgeChain = st.defaultBridgeChain;
+  const mode = ledgerDefaultBridgeChain === 'dbis-138' ? 'dbis' : 'bsc';
+  setLedgerXferMode(mode);
 }
 
 function setLedgerXferMode(mode) {
-  ledgerXferMode = mode;
-  document.querySelectorAll('.ledger-xfer-tab').forEach(b => {
+  if (mode === 'dbis') {
+    ledgerXferMode = 'chain';
+    const chainSel = document.getElementById('ledger-xfer-chain');
+    const conv = document.getElementById('ledger-xfer-convert');
+    if (chainSel) chainSel.value = 'dbis-138';
+    if (conv && !conv.value) conv.value = 'ETH';
+    fillLedgerXferMyAddress();
+  } else if (mode === 'bsc') {
+    ledgerXferMode = 'chain';
+    const chainSel = document.getElementById('ledger-xfer-chain');
+    const conv = document.getElementById('ledger-xfer-convert');
+    if (chainSel) chainSel.value = 'bsc';
+    if (conv && !conv.value) conv.value = 'BNB';
+    fillLedgerXferMyAddress();
+  } else {
+    ledgerXferMode = mode;
+  }
+  document.querySelectorAll('#ledger-bridge-tabs .ledger-xfer-tab').forEach(b => {
     b.classList.toggle('active', b.dataset.mode === mode);
   });
-  document.getElementById('ledger-xfer-panel-chain')?.classList.toggle('hidden', mode !== 'chain');
+  const isChain = mode === 'chain' || mode === 'bsc' || mode === 'dbis';
+  document.getElementById('ledger-xfer-panel-chain')?.classList.toggle('hidden', !isChain);
   document.getElementById('ledger-xfer-panel-bank')?.classList.toggle('hidden', mode !== 'bank');
   document.getElementById('ledger-xfer-panel-internal')?.classList.toggle('hidden', mode !== 'internal');
   const btn = document.getElementById('ledger-xfer-btn');
   if (btn) {
-    btn.textContent = mode === 'internal' ? 'Transfer internally' :
+    btn.textContent = mode === 'dbis' ? 'Bridge to DBIS 138' :
+      mode === 'bsc' ? 'Bridge to BSC' :
+      mode === 'internal' ? 'Transfer internally' :
       mode === 'bank' ? 'Send to external bank' : 'Send to external chain';
   }
+  if (mode === 'chain') onLedgerXferChainChange();
   ledgerXferPreviewDebounced();
+}
+
+function fillLedgerXferMyAddress() {
+  const addr = getEvmHolder();
+  const input = document.getElementById('ledger-xfer-address');
+  if (input && addr) {
+    input.value = addr;
+    ledgerXferPreviewDebounced();
+  }
 }
 
 function onLedgerXferChainChange() {
@@ -1651,6 +1763,213 @@ async function doLedgerTransfer() {
   }
 }
 
+function refreshSettlementUI(accounts, dest, caps, settlements) {
+  const from = document.getElementById('ledger-settle-from');
+  const to = document.getElementById('ledger-settle-to');
+  const opts = (accounts || []).map(a =>
+    `<option value="${a.id}" data-bal="${a.balance}">${a.asset} · ${a.balance} (${a.source})</option>`
+  ).join('');
+  if (from) from.innerHTML = '<option value="">From account…</option>' + opts;
+  if (to) to.innerHTML = '<option value="">To account…</option>' + opts;
+
+  const chainSel = document.getElementById('ledger-settle-chain');
+  const chains = dest?.chains || ledgerDestinations.chains || [];
+  if (chainSel && chains.length) {
+    chainSel.innerHTML = chains.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    chainSel.value = ledgerDefaultBridgeChain || 'dbis-138';
+  }
+  const bankSel = document.getElementById('ledger-settle-bank');
+  const banks = dest?.banks || ledgerDestinations.banks || [];
+  if (bankSel && banks.length) {
+    bankSel.innerHTML = banks.map(b =>
+      `<option value="${b.id}" data-rails="${(b.rails || []).join(',')}">${b.name}</option>`
+    ).join('');
+    onSettlementBankChange();
+  }
+
+  const capsEl = document.getElementById('ledger-settlement-caps');
+  if (capsEl && caps) {
+    const on = (k) => caps[k] ? '✓' : '·';
+    const evmAddr = caps.evmSenderAddress ? ` · ${caps.evmSenderAddress.slice(0, 6)}…${caps.evmSenderAddress.slice(-4)}` : '';
+    capsEl.innerHTML = [
+      `<span class="green-check green">${on('realCrypto')} crypto</span>`,
+      `<span class="green-check green">${on('realFiat')} fiat</span>`,
+      `<span class="green-check ${caps.evmSettlement ? 'green' : 'amber'}">${on('evmSettlement')} EVM sender${evmAddr}</span>`,
+      `<span class="green-check ${caps.onexSettlement ? 'green' : 'amber'}">${on('onexSettlement')} OneX wallet</span>`,
+    ].join(' ');
+  }
+  renderSettlementHistory(settlements || []);
+  setSettlementKind(settlementKind);
+}
+
+function setSettlementKind(kind) {
+  settlementKind = kind;
+  document.querySelectorAll('#ledger-settle-tabs [data-skind]').forEach(b => {
+    b.classList.toggle('active', b.dataset.skind === kind);
+  });
+  document.getElementById('ledger-settle-panel-crypto')?.classList.toggle('hidden', kind !== 'real_crypto');
+  document.getElementById('ledger-settle-panel-fiat')?.classList.toggle('hidden', kind !== 'real_fiat');
+  document.getElementById('ledger-settle-panel-internal')?.classList.toggle('hidden', kind !== 'internal');
+  const btn = document.getElementById('ledger-settle-btn');
+  const labels = {
+    real_crypto: 'Settle to real crypto',
+    real_fiat: 'Settle to real fiat',
+    vault: 'Convert to vault',
+    internal: 'Internal settlement',
+  };
+  if (btn) btn.textContent = labels[kind] || 'Settle';
+  if (kind === 'real_crypto') {
+    const payout = document.getElementById('ledger-settle-payout');
+    if (payout && !payout.value) payout.value = 'BNB';
+    fillSettlementMyAddress();
+  }
+  settlementPreviewDebounced();
+}
+
+function onSettlementBankChange() {
+  const bankSel = document.getElementById('ledger-settle-bank');
+  const railSel = document.getElementById('ledger-settle-rail');
+  if (!bankSel || !railSel) return;
+  const rails = (bankSel.selectedOptions[0]?.dataset?.rails || '').split(',').filter(Boolean);
+  const allRails = ['ach', 'sepa', 'swift', 'wire', 'iban', 'fps'];
+  const use = rails.length ? rails : allRails;
+  railSel.innerHTML = use.map(r =>
+    `<option value="${r}">${BANK_RAIL_LABELS[r] || r.toUpperCase()}</option>`
+  ).join('');
+  settlementPreviewDebounced();
+}
+
+function setSettlementMax() {
+  const from = document.getElementById('ledger-settle-from');
+  const amt = document.getElementById('ledger-settle-amount');
+  const bal = from?.selectedOptions[0]?.dataset?.bal;
+  if (amt && bal) { amt.value = bal; settlementPreviewDebounced(); }
+}
+
+function fillSettlementMyAddress() {
+  const addr = getEvmHolder();
+  const input = document.getElementById('ledger-settle-address');
+  if (input && addr) { input.value = addr; settlementPreviewDebounced(); }
+}
+
+function buildSettlementBody(preview) {
+  const from = document.getElementById('ledger-settle-from')?.value;
+  const amount = document.getElementById('ledger-settle-amount')?.value;
+  const payout = document.getElementById('ledger-settle-payout')?.value;
+  if (!from || !amount) return null;
+  const body = { fromAccount: from, amount, payoutAsset: payout || '', kind: settlementKind, preview: !!preview };
+  if (settlementKind === 'real_crypto') {
+    const chain = document.getElementById('ledger-settle-chain')?.value;
+    const address = document.getElementById('ledger-settle-address')?.value?.trim();
+    if (!chain || !address) return null;
+    body.externalTo = `${chain}:${address}`;
+  } else if (settlementKind === 'real_fiat') {
+    const bank = document.getElementById('ledger-settle-bank')?.value;
+    const rail = document.getElementById('ledger-settle-rail')?.value;
+    const acct = document.getElementById('ledger-settle-bank-acct')?.value?.trim();
+    if (!bank || !rail || !acct) return null;
+    body.externalTo = `bank:${bank}:${rail}:${acct}`;
+  } else if (settlementKind === 'internal') {
+    const to = document.getElementById('ledger-settle-to')?.value;
+    if (!to) return null;
+    body.toAccount = to;
+  }
+  return body;
+}
+
+function renderSettlementSteps(steps) {
+  const el = document.getElementById('ledger-settlement-steps');
+  if (!el) return;
+  if (!steps?.length) { el.innerHTML = ''; return; }
+  el.innerHTML = steps.map(s =>
+    `<span class="ledger-settle-step ${s.status}">${s.phase}${s.detail ? ': ' + s.detail : ''}</span>`
+  ).join('');
+}
+
+function settlementPreviewDebounced() {
+  clearTimeout(settlementTimer);
+  settlementTimer = setTimeout(settlementPreview, 350);
+}
+
+async function settlementPreview() {
+  const preview = document.getElementById('ledger-settle-preview');
+  const body = buildSettlementBody(true);
+  if (!body) {
+    if (preview) preview.textContent = 'Configure settlement';
+    renderSettlementSteps([]);
+    return;
+  }
+  const evm = getEvmHolder();
+  const q = evm ? `?evm=${encodeURIComponent(evm)}` : '';
+  const j = await api('/bridge/ledger/settle' + q, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!preview) return;
+  if (j.error) {
+    preview.textContent = j.error;
+    renderSettlementSteps([]);
+    return;
+  }
+  const s = j.settlement || {};
+  renderSettlementSteps(s.steps);
+  const conv = j.convert;
+  const convTxt = conv ? ` → ${conv.toAmount} ${conv.toAsset}` : '';
+  preview.textContent = `Preview: ${s.sourceAmount} ${s.sourceAsset}${convTxt} · ${s.kind}${s.destinationLabel ? ' → ' + s.destinationLabel : ''}`;
+}
+
+async function doSettlement() {
+  const msg = document.getElementById('ledger-settle-msg');
+  const btn = document.getElementById('ledger-settle-btn');
+  const body = buildSettlementBody(false);
+  if (!body) {
+    if (msg) msg.textContent = 'Complete all required fields';
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = 'Settling…'; }
+  const evm = getEvmHolder();
+  const q = evm ? `?evm=${encodeURIComponent(evm)}` : '';
+  const j = await api('/bridge/ledger/settle' + q, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (btn) { btn.disabled = false; setSettlementKind(settlementKind); }
+  if (msg) {
+    if (j.error) {
+      msg.textContent = j.error;
+    } else {
+      const s = j.settlement || {};
+      msg.textContent = `✓ ${j.status}: ${s.payoutAmount} ${s.payoutAsset}${s.settlementRef ? ' · ' + s.settlementRef : ''}`;
+    }
+  }
+  if (!j.error) {
+    document.getElementById('ledger-settle-amount').value = '';
+    refreshLedger();
+  }
+}
+
+function renderSettlementHistory(list) {
+  const el = document.getElementById('ledger-settlement-history');
+  if (!el) return;
+  if (!list.length) {
+    el.innerHTML = '<div class="empty-state"><p>No settlements yet</p></div>';
+    return;
+  }
+  el.innerHTML = list.slice(0, 10).map(s => {
+    const st = (s.status || '').replace(/_/g, ' ');
+    const cls = (s.status || '').replace(/\s/g, '_');
+    return `<div class="asset-row ledger-row">
+      <div class="asset-info">
+        <div class="asset-symbol">${s.payoutAmount} ${s.payoutAsset} <span class="ledger-xfer-status ${cls}">${st}</span></div>
+        <div class="asset-name">${s.kind} · ${s.destinationLabel || s.fromAccount}</div>
+      </div>
+      <div class="asset-right"><div class="asset-fiat">${s.sourceAmount} ${s.sourceAsset}</div></div>
+    </div>`;
+  }).join('');
+}
+
 function renderLedgerXferHistory(transfers) {
   const el = document.getElementById('ledger-xfer-history');
   if (!el) return;
@@ -1674,6 +1993,16 @@ function renderLedgerXferHistory(transfers) {
   }).join('');
 }
 
+function ledgerAllocationData(snap) {
+  const d = { ...(snap.byFundUsd || {}) };
+  const src = snap.bySourceUsd || {};
+  for (const k of ['onex', 'evm', 'import', 'portfolio']) {
+    if (src[k]) d[k] = src[k];
+  }
+  if (!Object.keys(d).length) return { ...src };
+  return d;
+}
+
 function renderLedger(snap) {
   const totalEl = document.getElementById('ledger-total-usd');
   const srcEl = document.getElementById('ledger-source-totals');
@@ -1684,13 +2013,21 @@ function renderLedger(snap) {
   if (totalEl) totalEl.textContent = fmtUsd(total);
   recordLedgerSnapshot(total);
   renderLedgerHistoryChart();
-  renderLedgerAllocationChart(snap.bySourceUsd || {});
+  renderLedgerAllocationChart(ledgerAllocationData(snap));
 
-  if (srcEl && snap.bySourceUsd) {
-    srcEl.innerHTML = Object.entries(snap.bySourceUsd)
-      .filter(([, v]) => v > 0)
-      .map(([k, v]) => `<span class="ledger-src-chip">${k} ${fmtUsd(v)}</span>`)
-      .join('');
+  if (srcEl) {
+    const chips = [];
+    const funds = snap.byFundUsd || {};
+    Object.entries(funds).filter(([, v]) => v > 0).forEach(([k, v]) => {
+      chips.push(`<span class="ledger-src-chip ledger-fc-${k}">${fundClassLabel(k)} ${fmtUsd(v)}</span>`);
+    });
+    const src = snap.bySourceUsd || {};
+    Object.entries(src).filter(([, v]) => v > 0).forEach(([k, v]) => {
+      if (k === 'bank' && Object.keys(funds).length) return;
+      if (['m0', 'm1', 'nsb'].includes(k)) return;
+      chips.push(`<span class="ledger-src-chip">${k} ${fmtUsd(v)}</span>`);
+    });
+    srcEl.innerHTML = chips.join('');
   }
 
   const entries = snap.entries || [];
@@ -1706,10 +2043,11 @@ function renderLedger(snap) {
     const chain = chains.find(c => c.id === e.chainId);
     const color = chain?.color || (e.mode === 'bank' || e.mode === 'fiat' ? '#4a9eff' : '#00e5b0');
     const sub = [e.source, e.chainId, e.account].filter(Boolean).join(' · ');
+    const fc = e.fundClass ? `<span class="ledger-fc-badge ledger-fc-${e.fundClass}">${fundClassLabel(e.fundClass)}</span>` : '';
     return `<div class="asset-row ledger-row">
       <div class="asset-icon" style="background:${color}22;color:${color}">${sym.slice(0, 2)}</div>
       <div class="asset-info">
-        <div class="asset-symbol">${sym} <span class="ledger-mode ${modeBadgeClass(e.mode)}">${e.mode}</span></div>
+        <div class="asset-symbol">${sym} ${fc} <span class="ledger-mode ${modeBadgeClass(e.mode)}">${e.mode}</span></div>
         <div class="asset-name">${sub || e.reference || ''}</div>
       </div>
       <div class="asset-right">
@@ -1723,23 +2061,75 @@ function renderLedger(snap) {
 async function doLedgerImport() {
   const raw = document.getElementById('ledger-import-json')?.value?.trim();
   const msg = document.getElementById('ledger-import-msg');
+  const btn = document.getElementById('ledger-import-btn');
   if (!raw) return;
   let body;
   try { body = JSON.parse(raw); } catch (e) {
     if (msg) msg.textContent = 'Invalid JSON';
     return;
   }
-  const j = await api('/bridge/ledger/import', {
+  if (btn) { btn.disabled = true; btn.textContent = 'Importing…'; }
+  const evm = getEvmHolder();
+  const q = evm ? `?evm=${encodeURIComponent(evm)}` : '';
+  const j = await api('/bridge/ledger/import' + q, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ ...body, active: true }),
   });
-  if (msg) msg.textContent = j.error ? j.error : `Imported ${j.entries || 0} entries`;
+  if (btn) { btn.disabled = false; btn.textContent = 'Import & value (active)'; }
+  if (msg) {
+    if (j.error) {
+      msg.textContent = j.error;
+    } else {
+      const total = j.totalUsd ?? j.importUsd ?? 0;
+      const synced = j.accountsSynced ?? j.entries ?? 0;
+      msg.textContent = `✓ ${j.status}: ${j.entries} entries · ${fmtUsd(total)} total · ${synced} book accounts synced`;
+    }
+  }
   if (!j.error) {
     document.getElementById('ledger-import-json').value = '';
+    const preview = document.getElementById('ledger-import-preview');
+    if (preview) preview.textContent = 'Paste JSON for live value preview';
     ledgerSource = 'import';
     setLedgerSource('import');
+    refreshLedger();
   }
+}
+
+function ledgerImportPreviewDebounced() {
+  clearTimeout(ledgerImportTimer);
+  ledgerImportTimer = setTimeout(ledgerImportPreview, 400);
+}
+
+async function ledgerImportPreview() {
+  const raw = document.getElementById('ledger-import-json')?.value?.trim();
+  const preview = document.getElementById('ledger-import-preview');
+  if (!raw) {
+    if (preview) preview.textContent = 'Paste JSON for live value preview';
+    return;
+  }
+  let body;
+  try { body = JSON.parse(raw); } catch (e) {
+    if (preview) preview.textContent = 'Invalid JSON';
+    return;
+  }
+  const evm = getEvmHolder();
+  const q = (evm ? `?evm=${encodeURIComponent(evm)}&` : '?') + 'preview=1';
+  const j = await api('/bridge/ledger/import' + q, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...body, preview: true }),
+  });
+  if (!preview) return;
+  if (j.error) {
+    preview.textContent = j.error;
+    return;
+  }
+  const assets = Object.entries(j.byAssetUsd || {})
+    .filter(([, v]) => v > 0)
+    .map(([k, v]) => `${k} ${fmtUsd(v)}`)
+    .join(' · ');
+  preview.textContent = `Preview: ${j.entries} entries · ${fmtUsd(j.importUsd || j.totalUsd || 0)}${assets ? ' — ' + assets : ''}`;
 }
 
 function getLedgerHistory() {

@@ -7,7 +7,7 @@
 services:
   onexd:
     build: .
-    image: onex-blockchain:latest
+    image: onex:latest
     ports:
       - "8545:8545"
       - "30303:30303"
@@ -26,7 +26,7 @@ services:
 
   onex-bridge:
     build: .
-    image: onex-blockchain:latest
+    image: onex:latest
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
@@ -101,7 +101,7 @@ services:
 
   onexd-testnet:
     build: .
-    image: onex-blockchain:latest
+    image: onex:latest
     profiles: ["testnet"]
     ports:
       - "8547:8547"

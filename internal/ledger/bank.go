@@ -85,6 +85,11 @@ func parseBankJSON(data []byte) ([]Entry, error) {
 			}
 			account += acct.IBAN
 		}
+		fc := resolveBankFundClass(acct, id)
+		ref := "bank-balance"
+		if fc != "" {
+			ref = "bank-" + fc
+		}
 		out = append(out, Entry{
 			ID:           id,
 			Source:       SourceBank,
@@ -93,9 +98,10 @@ func parseBankJSON(data []byte) ([]Entry, error) {
 			TokenKey:     "fiat:" + cur,
 			Human:        bal,
 			FiatCurrency: cur,
+			FundClass:    fc,
 			Account:      account,
 			Timestamp:    now,
-			Reference:    "bank-balance",
+			Reference:    ref,
 		})
 	}
 	return out, nil
@@ -135,13 +141,14 @@ func parseImportFile(data []byte) ([]Entry, error) {
 			}
 		}
 		out = append(out, Entry{
-			ID:           fmt.Sprintf("import-%d", i),
-			Source:       src,
+			ID:     importStableID(asset, row.Account, i),
+			Source: src,
 			Mode:         mode,
 			Asset:        asset,
 			TokenKey:     asset,
 			Human:        strings.TrimSpace(row.Amount),
 			FiatCurrency: cur,
+			FundClass:    NormalizeFundClass(row.FundClass),
 			Account:      row.Account,
 			Reference:    row.Reference,
 			Timestamp:    now,

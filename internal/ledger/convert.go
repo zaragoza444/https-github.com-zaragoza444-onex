@@ -175,14 +175,18 @@ func decimalsForSymbol(sym string) int {
 func Summarize(entries []Entry, mode string) Snapshot {
 	now := entries
 	out := Snapshot{
-		Mode:     mode,
-		Entries:  now,
-		BySource: make(map[string]float64),
-		ByFiat:   make(map[string]float64),
+		Mode:        mode,
+		Entries:     now,
+		BySource:    make(map[string]float64),
+		ByFundClass: make(map[string]float64),
+		ByFiat:      make(map[string]float64),
 	}
 	for _, e := range entries {
 		out.TotalUSD += e.FiatUSD
 		out.BySource[string(e.Source)] += e.FiatUSD
+		if e.FundClass != "" {
+			out.ByFundClass[e.FundClass] += e.FiatUSD
+		}
 		if e.FiatCurrency != "" {
 			out.ByFiat[e.FiatCurrency] += e.FiatValue
 		}

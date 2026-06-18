@@ -56,6 +56,11 @@ func (c Config) Status() map[string]interface{} {
 	if !bankReady && c.BankFile != "" {
 		bankReady = true
 	}
+	dc := strings.TrimSpace(legacy.EnvOrLegacy("ONEX_DEFAULT_BRIDGE_CHAIN", "ONEX_DEFAULT_BRIDGE_CHAIN"))
+	if dc == "" {
+		dc = "bsc"
+	}
+	dbisRPC := strings.TrimSpace(legacy.EnvOrLegacy("DBIS138_RPC_URL", "DBIS138_RPC_URL"))
 	return map[string]interface{}{
 		"service":      "onex-ledger-middleware",
 		"mode":         c.Mode,
@@ -65,7 +70,18 @@ func (c Config) Status() map[string]interface{} {
 		"evmHolder":    c.EVMHolder != "",
 		"importDir":    c.ImportDir,
 		"fiatCurrency": c.FiatCurrency,
-		"sources":      []string{"bank", "onex", "evm", "portfolio", "import"},
+		"sources":      []string{"bank", "m0", "m1", "nsb", "onex", "evm", "portfolio", "import"},
+		"fundClasses":  []string{FundM0, FundM1, FundNSB},
+		"fundClassLabels": map[string]string{
+			FundM0:  "M0 — base money",
+			FundM1:  "M1 — demand deposits",
+			FundNSB: "NSB — National Sovereign Bank",
+		},
+		"settlement": SettlementCapabilities(c, bank, false, false),
+		"importActive":       true,
+		"defaultBridgeChain": dc,
+		"dbis138Rpc":         dbisRPC != "",
+		"dbis138Configured":  dbisRPC != "",
 	}
 }
 
@@ -177,6 +193,10 @@ func (e *Engine) Read(ctx context.Context, in ReadInput) Snapshot {
 	for i := range entries {
 		entries[i].FiatCurrency = fiat
 		entries[i] = ValueEntry(entries[i], in.Prices)
+	}
+
+	if isFundClassSource(src) {
+		entries = filterEntriesByFundClass(entries, src)
 	}
 
 	modeLabel := in.Config.Mode

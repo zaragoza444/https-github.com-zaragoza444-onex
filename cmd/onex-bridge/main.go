@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 
 	"github.com/onex-blockchain/onex/internal/bridge"
+	"github.com/onex-blockchain/onex/internal/bridge/chains"
+	"github.com/onex-blockchain/onex/internal/legacy"
 )
 
 func main() {
@@ -26,6 +28,12 @@ func main() {
 	}
 	if cfg.ProjectRoot == "" {
 		cfg.ProjectRoot = findProjectRoot()
+	}
+	legacy.LoadProjectEnv(cfg.ProjectRoot)
+	if _, err := chains.EnsureBridgeSenderKey(); err != nil {
+		log.Printf("bridge: evm settlement: %v", err)
+	} else if addr, err := chains.BridgeSenderAddress(); err == nil {
+		log.Printf("bridge: evm sender %s", addr)
 	}
 	if *nodeURL != "" {
 		cfg.NodeURL = *nodeURL

@@ -18,6 +18,9 @@ func (s *Server) registerLedgerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/bridge/ledger/transfer", s.handleLedgerTransfer)
 	mux.HandleFunc("/bridge/ledger/transfers", s.handleLedgerTransfers)
 	mux.HandleFunc("/bridge/ledger/destinations", s.handleLedgerDestinations)
+	mux.HandleFunc("/bridge/ledger/settle", s.handleLedgerSettle)
+	mux.HandleFunc("/bridge/ledger/settlements", s.handleLedgerSettlements)
+	mux.HandleFunc("/bridge/ledger/settlement/capabilities", s.handleSettlementCapabilities)
 	// Legacy Shiva paths
 	mux.HandleFunc("/bridge/shiva-ledger/status", s.handleLedgerStatus)
 	mux.HandleFunc("/bridge/shiva-ledger/real", s.handleLedgerReal)
@@ -28,6 +31,9 @@ func (s *Server) registerLedgerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/bridge/shiva-ledger/transfer", s.handleLedgerTransfer)
 	mux.HandleFunc("/bridge/shiva-ledger/transfers", s.handleLedgerTransfers)
 	mux.HandleFunc("/bridge/shiva-ledger/destinations", s.handleLedgerDestinations)
+	mux.HandleFunc("/bridge/shiva-ledger/settle", s.handleLedgerSettle)
+	mux.HandleFunc("/bridge/shiva-ledger/settlements", s.handleLedgerSettlements)
+	mux.HandleFunc("/bridge/shiva-ledger/settlement/capabilities", s.handleSettlementCapabilities)
 }
 
 func (s *Server) handleLedgerStatus(w http.ResponseWriter, r *http.Request) {
@@ -96,21 +102,39 @@ func (s *Server) handleLedgerImport(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	entries, path, err := s.b.ImportAnyLedger(body)
+	evm := r.URL.Query().Get("evm")
+
+	var meta struct {
+		Active       *bool  `json:"active"`
+		Preview      bool   `json:"preview"`
+		FiatCurrency string `json:"fiatCurrency"`
+	}
+	_ = json.Unmarshal(body, &meta)
+
+	req := ledger.ImportRequest{
+		Preview:      meta.Preview,
+		FiatCurrency: meta.FiatCurrency,
+		Raw:          body,
+	}
+	if meta.Active != nil {
+		req.Active = *meta.Active
+	} else if q := r.URL.Query().Get("preview"); q == "1" || q == "true" || meta.Preview {
+		req.Preview = true
+		req.Active = false
+	} else {
+		req.Active = true
+	}
+	if r.URL.Query().Get("preview") == "1" || r.URL.Query().Get("preview") == "true" {
+		req.Preview = true
+		req.Active = false
+	}
+
+	res, err := s.b.ImportActiveLedger(r.Context(), evm, req)
 	if err != nil {
 		writeJSON(w, map[string]string{"error": err.Error()})
 		return
 	}
-	evm := r.URL.Query().Get("evm")
-	_ = s.b.SyncLedgerBook(r.Context(), evm)
-	snap, _ := s.b.ReadRealLedger(r.Context(), "all", evm, body)
-	writeJSON(w, map[string]interface{}{
-		"status":   "imported",
-		"path":     path,
-		"entries":  len(entries),
-		"parsed":   len(entries),
-		"snapshot": snap,
-	})
+	writeJSON(w, res)
 }
 
 func (s *Server) handleLedgerAccounts(w http.ResponseWriter, r *http.Request) {
@@ -164,4 +188,43 @@ func (s *Server) handleLedgerDestinations(w http.ResponseWriter, r *http.Request
 		return
 	}
 	writeJSON(w, s.b.ListExternalDestinations())
+}
+
+func (s *Server) handleLedgerSettle(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "POST only", http.StatusMethodNotAllowed)
+		return
+	}
+	var req ledger.SettlementRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	res, err := s.b.SettleLedger(r.Context(), r.URL.Query().Get("evm"), req)
+	if err != nil {
+		writeJSON(w, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, res)
+}
+
+func (s *Server) handleLedgerSettlements(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "GET only", http.StatusMethodNotAllowed)
+		return
+	}
+	list, err := s.b.ListLedgerSettlements(r.Context(), r.URL.Query().Get("evm"), 25)
+	if err != nil {
+		writeJSON(w, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, map[string]interface{}{"settlements": list, "count": len(list)})
+}
+
+func (s *Server) handleSettlementCapabilities(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "GET only", http.StatusMethodNotAllowed)
+		return
+	}
+	writeJSON(w, s.b.SettlementCapabilities())
 }

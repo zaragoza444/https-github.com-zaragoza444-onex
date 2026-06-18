@@ -6,7 +6,7 @@ import paramiko
 SCRIPT = r"""#!/bin/bash
 set -e
 REPO=/home/ubuntu/onex-token-lab
-GITHUB=https://github.com/zaragoza444/shiva-blockchain.git
+GITHUB=https://github.com/zaragoza444/onex.git
 export PATH=/usr/local/go/bin:$PATH
 cd "$REPO"
 if [ ! -d .git ]; then

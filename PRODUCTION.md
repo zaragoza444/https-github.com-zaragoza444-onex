@@ -25,7 +25,7 @@ With bridge URL (Render):
 |--------|--------|
 | **Anakatech Gitea** | Repo `zaragoza/onex`, `.gitea/workflows/pages.yml` for Pages |
 | **Wallet UI** | `https://git.anakatech.llc/pages/zaragoza/onex/wallet/` |
-| **GitHub** (optional) | Mirror `zaragoza444/onex-blockchain`, Actions Pages |
+| **GitHub** (optional) | Mirror `zaragoza444/onex`, Actions Pages |
 | **Bridge API** | Deploy [`render.yaml`](../render.yaml) on Render (or Docker prod) |
 
 ## After first push
@@ -42,6 +42,16 @@ With bridge URL (Render):
 1. Repo → **Settings → Pages** → source **GitHub Actions**
 2. **Actions → GitHub Pages** → confirm green run
 3. Optional variable: `ONEX_BRIDGE_PUBLIC_URL`
+
+### OneX Production Platform
+
+Deploy full stack to **onexproduction.com** (or your domain): [deploy/DEPLOY-onexproduction.md](deploy/DEPLOY-onexproduction.md)
+
+```powershell
+.\scripts\connect-onexproduction.ps1 -ProductionUrl "https://onexproduction.com" -GitHubVariable
+```
+
+Unified API: `GET /bridge/production/status` (ledger + token platform + node).
 
 ### Bridge (required for send/swap/wallet sync)
 

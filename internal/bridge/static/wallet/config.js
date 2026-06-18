@@ -37,14 +37,15 @@
     window.ONEX_BRIDGE_URL = (stored || deploy || window.ONEX_BRIDGE_URL || '').replace(/\/$/, '');
   }
 
-  // Local dev: auto-connect to onex-bridge on same machine.
-  // Production: wallet served at /wallet/ on the bridge host uses same origin.
+  // GitHub Pages static wallet → public bridge (override via ?bridge= or Settings).
   if (!window.ONEX_BRIDGE_URL) {
     const h = location.hostname;
     if (h === 'localhost' || h === '127.0.0.1') {
       window.ONEX_BRIDGE_URL = 'http://127.0.0.1:9338';
-    } else if (location.pathname.startsWith('/wallet') || h === 'novatrustee.digital') {
+    } else if (location.pathname.startsWith('/wallet') || h === 'novatrustee.digital' || h.includes('onexproduction')) {
       window.ONEX_BRIDGE_URL = location.origin;
+    } else if (h.includes('github.io') || h.includes('git.anakatech.llc')) {
+      window.ONEX_BRIDGE_URL = 'http://51.75.64.28:9338';
     }
   }
 

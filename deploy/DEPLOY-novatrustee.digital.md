@@ -35,8 +35,8 @@ sudo apt update && sudo apt install -y docker.io docker-compose-plugin certbot
 sudo usermod -aG docker $USER
 # log out and back in
 
-git clone <your-repo-url> onex-blockchain
-cd onex-blockchain
+git clone <your-repo-url> onex
+cd onex
 cp deploy/env.novatrustee.digital.example .env
 nano .env   # set ONEX_API_KEY
 ```
@@ -87,5 +87,5 @@ curl -s -o /dev/null -w "%{http_code}\n" https://novatrustee.digital/wallet/
 ## 7. Renew certs (cron)
 
 ```bash
-sudo certbot renew --deploy-hook "cd /path/to/onex-blockchain && sudo cp /etc/letsencrypt/live/novatrustee.digital/*.pem deploy/certs/ && docker compose -f docker-compose.prod.yml --profile proxy restart nginx"
+sudo certbot renew --deploy-hook "cd /path/to/onex && sudo cp /etc/letsencrypt/live/novatrustee.digital/*.pem deploy/certs/ && docker compose -f docker-compose.prod.yml --profile proxy restart nginx"
 ```

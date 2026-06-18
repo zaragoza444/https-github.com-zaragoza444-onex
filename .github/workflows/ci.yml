@@ -27,5 +27,5 @@ jobs:
     needs: test
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -t onex-blockchain:ci .
+      - run: docker build -t onex:ci .
       - run: docker build -f bsc-launcher/Dockerfile -t bsc-launcher:ci .

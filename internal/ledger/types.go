@@ -35,6 +35,7 @@ type Entry struct {
 	FiatValue    float64    `json:"fiatValue"`
 	FiatUSD      float64    `json:"fiatUsd"`
 	Account      string     `json:"account,omitempty"`
+	FundClass    string     `json:"fundClass,omitempty"` // m0, m1, nsb
 	Timestamp    int64      `json:"timestamp,omitempty"`
 	Reference    string     `json:"reference,omitempty"`
 }
@@ -45,8 +46,9 @@ type Snapshot struct {
 	Mode      string             `json:"mode"`
 	Entries   []Entry            `json:"entries"`
 	TotalUSD  float64            `json:"totalUsd"`
-	BySource  map[string]float64 `json:"bySourceUsd"`
-	ByFiat    map[string]float64 `json:"byFiat"`
+	BySource    map[string]float64 `json:"bySourceUsd"`
+	ByFundClass map[string]float64 `json:"byFundUsd"`
+	ByFiat      map[string]float64 `json:"byFiat"`
 }
 
 // ConvertRequest converts an amount between ledger assets.
@@ -74,6 +76,7 @@ type ConvertResult struct {
 	ToAccount    string  `json:"toAccount,omitempty"`
 	Status       string  `json:"status,omitempty"` // quoted, completed
 	TransferID   string  `json:"transferId,omitempty"`
+	FundClass    string  `json:"fundClass,omitempty"`
 }
 
 // TokenMeta describes a fungible asset for conversion.
@@ -96,11 +99,15 @@ type BankFile struct {
 }
 
 type BankAccount struct {
-	ID       string `json:"id,omitempty"`
-	IBAN     string `json:"iban,omitempty"`
-	Name     string `json:"name,omitempty"`
-	Currency string `json:"currency"`
-	Balance  string `json:"balance"`
+	ID          string `json:"id,omitempty"`
+	IBAN        string `json:"iban,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Currency    string `json:"currency"`
+	Balance     string `json:"balance"`
+	FundClass   string `json:"fundClass,omitempty"`   // m0 | m1 | nsb
+	MoneySupply string `json:"moneySupply,omitempty"` // alias for fundClass
+	Bank        string `json:"bank,omitempty"`        // e.g. nsb
+	Type        string `json:"type,omitempty"`
 }
 
 // ImportFile accepts arbitrary external ledger rows for normalization.
@@ -115,4 +122,5 @@ type ImportRow struct {
 	Currency  string `json:"currency,omitempty"`
 	Account   string `json:"account,omitempty"`
 	Reference string `json:"reference,omitempty"`
+	FundClass string `json:"fundClass,omitempty"`
 }

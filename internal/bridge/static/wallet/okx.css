@@ -115,10 +115,57 @@ html, body {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--brand);
+  background: #00e5b0;
+  box-shadow: 0 0 8px #00e5b055;
 }
 
-.network-dot.offline { background: var(--text-tertiary); }
+.network-dot.offline { background: var(--text-tertiary); box-shadow: none; }
+.network-dot.online { background: #00e5b0; box-shadow: 0 0 8px #00e5b066; }
+
+.green-health-bar {
+  margin: 0 16px 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #00e5b012, #00e5b006);
+  border: 1px solid #00e5b033;
+}
+.green-health-bar.degraded {
+  background: linear-gradient(135deg, #ff950012, #ff950006);
+  border-color: #ff950033;
+}
+.green-health-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+.green-health-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #00e5b0;
+  box-shadow: 0 0 10px #00e5b0;
+}
+.green-health-bar.degraded .green-health-dot {
+  background: #ff9500;
+  box-shadow: 0 0 10px #ff9500;
+}
+.green-health-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.green-check {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.green-check.green { background: #00e5b022; color: #00e5b0; }
+.green-check.amber { background: #ff950022; color: #ff9500; }
+.green-check.red { background: #ff4d4f22; color: #ff4d4f; }
+.ledger-mode-badge.green { background: #00e5b022; color: #00e5b0; }
 
 .topbar-right { display: flex; gap: 8px; }
 
@@ -676,6 +723,29 @@ input:focus, select:focus, textarea:focus {
   display: block;
 }
 
+.production-platform-banner {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, #00e5b018, #4a9eff12);
+  border: 1px solid #00e5b044;
+  font-size: 13px;
+}
+
+.production-platform-banner p { margin: 0 0 4px; }
+.production-platform-banner .msg { margin: 0; font-size: 12px; color: var(--text-secondary); }
+
+#production-platform-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #00e5b022;
+  color: #00e5b0;
+}
+
 .external-banner {
   margin: 0 0 12px;
   padding: 12px 14px;
@@ -1092,6 +1162,20 @@ html.onex-mobile .quick-action-icon {
   color: var(--text-secondary);
 }
 
+.ledger-fc-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-right: 2px;
+}
+.ledger-fc-m0 { background: #7c4dff33; color: #b388ff; }
+.ledger-fc-m1 { background: #00bcd433; color: #4dd0e1; }
+.ledger-fc-nsb { background: #ffb30033; color: #ffd54f; }
+.ledger-src-chip.ledger-fc-m0 { color: #b388ff; }
+.ledger-src-chip.ledger-fc-m1 { color: #4dd0e1; }
+.ledger-src-chip.ledger-fc-nsb { color: #ffd54f; }
+
 .ledger-filters {
   display: flex;
   gap: 6px;
@@ -1210,7 +1294,29 @@ html.onex-mobile .quick-action-icon {
   background: var(--bg-elevated);
   color: var(--text-tertiary);
 }
-.ledger-xfer-status.completed { color: #00e5b0; }
-.ledger-xfer-status.pending, .ledger-xfer-status.submitted { color: #ff9500; }
-.ledger-xfer-status.on_chain { color: #4a9eff; }
+.ledger-xfer-status.completed, .ledger-xfer-status.on_chain { color: #00e5b0; background: #00e5b018; }
 .ledger-xfer-status.failed { color: #ff4d4f; }
+
+.ledger-settlement-caps {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+.ledger-settlement-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+}
+.ledger-settle-step {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  color: var(--text-tertiary);
+  text-transform: capitalize;
+}
+.ledger-settle-step.done { color: #00e5b0; }
+.ledger-settle-step.pending { color: #ff9500; }
+.ledger-settle-step.failed { color: #ff4d4f; }
+.ledger-settle-step.skipped { opacity: 0.6; }
