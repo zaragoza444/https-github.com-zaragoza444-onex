@@ -242,6 +242,31 @@
           <div class="ledger-source-totals" id="ledger-source-totals"></div>
         </div>
 
+        <div class="ledger-charts">
+          <div class="chart-card ledger-chart-card">
+            <div class="chart-periods ledger-chart-periods">
+              <button type="button" class="active" data-period="24h" onclick="setLedgerChartPeriod('24h')">24h</button>
+              <button type="button" data-period="7d" onclick="setLedgerChartPeriod('7d')">7d</button>
+              <button type="button" data-period="30d" onclick="setLedgerChartPeriod('30d')">30d</button>
+            </div>
+            <div class="chart-wrap">
+              <svg id="ledger-history-chart" viewBox="0 0 360 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+              <div class="chart-empty hidden" id="ledger-chart-empty">Ledger history builds on refresh</div>
+            </div>
+            <div class="chart-stats">
+              <span id="ledger-chart-change">—</span>
+              <span class="chart-stat-label" id="ledger-chart-period-label">24h change</span>
+            </div>
+          </div>
+          <div class="ledger-allocation-card">
+            <div class="card-title">Allocation</div>
+            <div class="ledger-allocation-wrap">
+              <svg id="ledger-allocation-chart" viewBox="0 0 120 120" aria-hidden="true"></svg>
+              <div class="ledger-allocation-legend" id="ledger-allocation-legend"></div>
+            </div>
+          </div>
+        </div>
+
         <div class="ledger-filters">
           <button type="button" class="ledger-filter active" data-src="all" onclick="setLedgerSource('all')">All</button>
           <button type="button" class="ledger-filter" data-src="bank" onclick="setLedgerSource('bank')">Bank</button>
@@ -257,53 +282,82 @@
         <div class="asset-list" id="ledger-entries"></div>
 
         <div class="card ledger-convert-card">
-          <div class="card-title">Convert</div>
+          <div class="card-title">Convert <span class="ledger-active-badge">live</span></div>
+          <label class="field-label">From account</label>
+          <select id="ledger-conv-from-acct" onchange="onLedgerConvAccountChange()"></select>
           <div class="ledger-convert-row">
-            <input id="ledger-conv-amt" placeholder="Amount" inputmode="decimal" />
-            <select id="ledger-conv-from"></select>
-            <span class="ledger-conv-arrow">→</span>
-            <select id="ledger-conv-to"></select>
+            <input id="ledger-conv-amt" placeholder="Amount" inputmode="decimal" oninput="ledgerConvQuoteDebounced()" />
+            <button type="button" class="dex-max ledger-max" onclick="setLedgerConvMax()">MAX</button>
+            <select id="ledger-conv-to" onchange="ledgerConvQuoteDebounced()"></select>
           </div>
-          <button type="button" class="btn-primary" onclick="doLedgerConvert()">Convert to real</button>
+          <p class="ledger-conv-preview" id="ledger-conv-preview">Enter amount for live quote</p>
+          <button type="button" class="btn-primary" id="ledger-conv-btn" onclick="doLedgerConvert()">Convert from ledger</button>
           <p class="msg" id="ledger-conv-result"></p>
         </div>
 
 		<div class="card ledger-transfer-card">
-          <div class="card-title">Transfer to external bank or chain</div>
-          <p class="msg">Send to any world bank (ACH, SEPA, SWIFT, wire) or any chain (ETH, BSC, SOL, BTC, TRON…).</p>
-          <select id="ledger-xfer-from"></select>
-          <input id="ledger-xfer-amount" placeholder="Amount" inputmode="decimal" />
-          <select id="ledger-xfer-to"></select>
-          <label class="field-label">External chain</label>
-          <select id="ledger-xfer-chain">
-            <option value="">— or pick chain —</option>
-          </select>
-          <label class="field-label">External bank</label>
-          <select id="ledger-xfer-bank">
-            <option value="">— or pick bank —</option>
-          </select>
-          <select id="ledger-xfer-rail">
-            <option value="">Bank rail</option>
-            <option value="ach">ACH (US)</option>
-            <option value="sepa">SEPA (EU)</option>
-            <option value="swift">SWIFT (global)</option>
-            <option value="wire">Wire</option>
-            <option value="iban">IBAN</option>
-            <option value="fps">FPS (UK)</option>
-          </select>
-          <input id="ledger-xfer-address" placeholder="Address / IBAN / account" />
-          <input id="ledger-xfer-external" placeholder="Or full: chain:ethereum:0x… / bank:hsbc:swift:…" />
-          <select id="ledger-xfer-convert">
+          <div class="card-title">External transfer</div>
+          <p class="msg">Send from your ledger to any chain or world bank.</p>
+
+          <div class="ledger-xfer-tabs">
+            <button type="button" class="ledger-xfer-tab active" data-mode="chain" onclick="setLedgerXferMode('chain')">Other chain</button>
+            <button type="button" class="ledger-xfer-tab" data-mode="bank" onclick="setLedgerXferMode('bank')">Other bank</button>
+            <button type="button" class="ledger-xfer-tab" data-mode="internal" onclick="setLedgerXferMode('internal')">Internal</button>
+          </div>
+
+          <label class="field-label">From ledger account</label>
+          <select id="ledger-xfer-from" onchange="ledgerXferPreviewDebounced()"></select>
+          <div class="ledger-convert-row">
+            <input id="ledger-xfer-amount" placeholder="Amount" inputmode="decimal" oninput="ledgerXferPreviewDebounced()" />
+            <button type="button" class="dex-max ledger-max" onclick="setLedgerXferMax()">MAX</button>
+          </div>
+
+          <div id="ledger-xfer-panel-chain">
+            <label class="field-label">Destination chain</label>
+            <select id="ledger-xfer-chain" onchange="onLedgerXferChainChange()"></select>
+            <label class="field-label">Wallet address</label>
+            <input id="ledger-xfer-address" placeholder="0x… / bc1… / T… / Solana address" oninput="ledgerXferPreviewDebounced()" />
+          </div>
+
+          <div id="ledger-xfer-panel-bank" class="hidden">
+            <label class="field-label">Destination bank</label>
+            <select id="ledger-xfer-bank" onchange="onLedgerXferBankChange()"></select>
+            <label class="field-label">Settlement rail</label>
+            <select id="ledger-xfer-rail" onchange="ledgerXferPreviewDebounced()"></select>
+            <label class="field-label">Account / IBAN</label>
+            <input id="ledger-xfer-bank-acct" placeholder="IBAN or account number" oninput="ledgerXferPreviewDebounced()" />
+          </div>
+
+          <div id="ledger-xfer-panel-internal" class="hidden">
+            <label class="field-label">To ledger account</label>
+            <select id="ledger-xfer-to" onchange="ledgerXferPreviewDebounced()"></select>
+          </div>
+
+          <label class="field-label">Convert to (optional)</label>
+          <select id="ledger-xfer-convert" onchange="ledgerXferPreviewDebounced()">
             <option value="">Same asset</option>
-            <option value="USD">Convert to USD</option>
-            <option value="EUR">Convert to EUR</option>
-            <option value="BTC">Convert to BTC</option>
-            <option value="ETH">Convert to ETH</option>
-            <option value="USDT">Convert to USDT</option>
-            <option value="ONEX">Convert to ONEX</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+            <option value="BTC">BTC</option>
+            <option value="ETH">ETH</option>
+            <option value="USDT">USDT</option>
+            <option value="USDC">USDC</option>
+            <option value="BNB">BNB</option>
+            <option value="SOL">SOL</option>
+            <option value="ONEX">ONEX</option>
           </select>
-          <button type="button" class="btn-primary" onclick="doLedgerTransfer()">Transfer</button>
+
+          <p class="ledger-conv-preview" id="ledger-xfer-preview">Select account, amount, and destination</p>
+          <button type="button" class="btn-primary" id="ledger-xfer-btn" onclick="doLedgerTransfer()">Send external transfer</button>
           <p class="msg" id="ledger-xfer-msg"></p>
+
+          <div class="ledger-xfer-history">
+            <div class="section-head" style="margin-top:16px">
+              <h2>Recent transfers</h2>
+            </div>
+            <div id="ledger-xfer-history" class="asset-list"></div>
+          </div>
         </div>
 
         <div class="card">

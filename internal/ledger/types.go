@@ -51,10 +51,12 @@ type Snapshot struct {
 
 // ConvertRequest converts an amount between ledger assets.
 type ConvertRequest struct {
-	FromAsset    string  `json:"fromAsset"`
-	ToAsset      string  `json:"toAsset"`
-	Amount       string  `json:"amount"`
-	FiatCurrency string  `json:"fiatCurrency,omitempty"`
+	FromAsset    string `json:"fromAsset"`
+	ToAsset      string `json:"toAsset"`
+	Amount       string `json:"amount"`
+	FiatCurrency string `json:"fiatCurrency,omitempty"`
+	FromAccount  string `json:"fromAccount,omitempty"`
+	Active       bool   `json:"active,omitempty"`
 }
 
 // ConvertResult holds the converted amount and valuation.
@@ -68,6 +70,10 @@ type ConvertResult struct {
 	FiatValue    float64 `json:"fiatValue"`
 	FiatUSD      float64 `json:"fiatUsd"`
 	Mode         Mode    `json:"mode"`
+	FromAccount  string  `json:"fromAccount,omitempty"`
+	ToAccount    string  `json:"toAccount,omitempty"`
+	Status       string  `json:"status,omitempty"` // quoted, completed
+	TransferID   string  `json:"transferId,omitempty"`
 }
 
 // TokenMeta describes a fungible asset for conversion.

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/onex-blockchain/onex/internal/ledger"
 	"github.com/onex-blockchain/onex/internal/types"
@@ -88,8 +89,21 @@ func (b *Bridge) ReadRealLedger(ctx context.Context, source, evmHolder string, i
 }
 
 // ConvertLedger converts between any supported fiat or crypto asset.
-func (b *Bridge) ConvertLedger(req ledger.ConvertRequest) (*ledger.ConvertResult, error) {
-	return ledger.NewEngine().Convert(req, b.ledgerPrices(), b.tokenMetaMap())
+// When req.Active is true, debits/credits the persisted ledger book.
+func (b *Bridge) ConvertLedger(ctx context.Context, evmHolder string, req ledger.ConvertRequest) (*ledger.ConvertResult, error) {
+	prices := b.ledgerPrices()
+	tokens := b.tokenMetaMap()
+	if !req.Active && strings.TrimSpace(req.FromAccount) == "" {
+		res, err := ledger.NewEngine().Convert(req, prices, tokens)
+		if res != nil && res.Status == "" {
+			res.Status = "quoted"
+		}
+		return res, err
+	}
+	if err := b.SyncLedgerBook(ctx, evmHolder); err != nil {
+		return nil, err
+	}
+	return b.ledgerBook().ConvertActive(req, prices, tokens)
 }
 
 // SaveLedgerImport persists imported ledger JSON for later reads.

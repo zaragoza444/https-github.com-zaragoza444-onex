@@ -1007,6 +1007,76 @@ html.onex-mobile .quick-action-icon {
   border: 1px solid var(--border);
 }
 
+.ledger-charts {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 520px) {
+  .ledger-charts {
+    grid-template-columns: 1.4fr 1fr;
+    align-items: stretch;
+  }
+}
+
+.ledger-chart-card { margin-bottom: 0; }
+
+.ledger-allocation-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+}
+
+.ledger-allocation-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+#ledger-allocation-chart {
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+}
+
+.ledger-allocation-legend {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.ledger-alloc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ledger-alloc-row span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+}
+
+.ledger-alloc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ledger-alloc-pct {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 .ledger-source-totals {
   display: flex;
   flex-wrap: wrap;
@@ -1073,6 +1143,74 @@ html.onex-mobile .quick-action-icon {
 .ledger-convert-arrow { color: var(--text-tertiary); font-size: 18px; }
 
 .ledger-convert-card { margin-top: 16px; }
+
+.ledger-active-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #00e5b022;
+  color: #00e5b0;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+
+.ledger-conv-preview {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 10px 0 12px;
+  min-height: 1.2em;
+}
+
+.ledger-max {
+  width: auto;
+  padding: 8px 10px;
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+#ledger-conv-from-acct { margin-bottom: 8px; }
 .ledger-bank-card { margin-top: 12px; }
 .ledger-transfer-card select,
 .ledger-transfer-card input { margin-bottom: 8px; }
+
+.ledger-xfer-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.ledger-xfer-tab {
+  flex: 1;
+  padding: 10px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ledger-xfer-tab.active {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+
+.ledger-xfer-history .asset-row { cursor: default; }
+.ledger-xfer-status {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  color: var(--text-tertiary);
+}
+.ledger-xfer-status.completed { color: #00e5b0; }
+.ledger-xfer-status.pending, .ledger-xfer-status.submitted { color: #ff9500; }
+.ledger-xfer-status.on_chain { color: #4a9eff; }
+.ledger-xfer-status.failed { color: #ff4d4f; }

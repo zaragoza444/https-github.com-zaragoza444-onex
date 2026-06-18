@@ -4,6 +4,28 @@ Run OneX blockchain + OKX-style wallet bridge on a server (Docker or systemd).
 
 **Domain `novatrustee.digital`:** [deploy/DEPLOY-novatrustee.digital.md](deploy/DEPLOY-novatrustee.digital.md), `scripts/deploy-vps-novatrustee.sh` (VPS), `scripts/deploy-vps-novatrustee.ps1` (preflight from Windows).
 
+**ALI / ALLTRA ecosystem VPS (`ubuntu@51.75.64.28`):** `scripts/deploy-ali-ecosystem.py` (remote SSH), `scripts/deploy-ali-ecosystem.sh` (run on server), `deploy/env.ali-ecosystem.example`.
+
+```powershell
+# From Windows (requires SSH_PASS + port 22 reachable)
+set SSH_PASS=your-ubuntu-password
+scripts\deploy-ali-ecosystem.bat
+```
+
+```bash
+# On the VPS directly
+bash scripts/deploy-ali-ecosystem.sh
+```
+
+| Service | Port | URL |
+|---------|------|-----|
+| Wallet + Real Ledger | 9338 | `http://51.75.64.28:9338/wallet/` |
+| Ledger tab | 9338 | `http://51.75.64.28:9338/wallet/#ledger` |
+| Node API | 8545 | `http://51.75.64.28:8545/health` |
+| Token Lab | 9340 | `http://51.75.64.28:9340/` |
+
+Set `ONEX_BRIDGE_PUBLIC_URL=http://51.75.64.28:9338` in GitHub Pages variables so the static wallet connects to this bridge.
+
 ## Docker (recommended)
 
 ```bash

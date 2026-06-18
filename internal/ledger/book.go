@@ -153,6 +153,24 @@ func (s *BookStore) ListAccounts() ([]BookAccount, error) {
 	return out, nil
 }
 
+// ListTransfers returns recent transfer records newest first.
+func (s *BookStore) ListTransfers(limit int) []TransferRecord {
+	if err := s.load(); err != nil {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if limit <= 0 || limit > len(s.data.Transfers) {
+		limit = len(s.data.Transfers)
+	}
+	if limit > 50 {
+		limit = 50
+	}
+	out := make([]TransferRecord, limit)
+	copy(out, s.data.Transfers[:limit])
+	return out
+}
+
 func (s *BookStore) GetAccount(id string) (*BookAccount, error) {
 	if err := s.load(); err != nil {
 		return nil, err
@@ -180,6 +198,7 @@ type TransferRequest struct {
 	BankRail      string `json:"bankRail,omitempty"`      // ach, sepa, swift, wire
 	ExternalAddress string `json:"externalAddress,omitempty"`
 	Note         string `json:"note,omitempty"`
+	Preview      bool   `json:"preview,omitempty"`
 }
 
 // TransferResult is the outcome of a ledger transfer.
@@ -237,6 +256,22 @@ func (s *BookStore) Transfer(req TransferRequest, prices map[string]PriceQuote, 
 	}
 	if toID == "" {
 		return nil, fmt.Errorf("toAccount or externalTo required")
+	}
+
+	if req.Preview {
+		rec := TransferRecord{
+			ID:          "preview",
+			FromAccount: from.ID,
+			ToAccount:   toID,
+			Asset:       from.Asset,
+			Amount:      formatFloat(amt),
+			ToAmount:    formatFloat(outAmt),
+			ConvertTo:   req.ConvertTo,
+			Status:      "preview",
+			Note:        req.Note,
+			CreatedAt:   time.Now().Unix(),
+		}
+		return &TransferResult{Status: "preview", Transfer: rec, Convert: conv, External: extDest}, nil
 	}
 
 	s.mu.Lock()
@@ -332,6 +367,81 @@ func (s *BookStore) Transfer(req TransferRequest, prices map[string]PriceQuote, 
 	}
 
 	return &TransferResult{Status: rec.Status, Transfer: rec, Convert: conv, External: extDest, Settlement: rec.TxRef}, nil
+}
+
+// ConvertActive debits a ledger account and credits the target asset vault using live rates.
+func (s *BookStore) ConvertActive(req ConvertRequest, prices map[string]PriceQuote, tokens map[string]TokenMeta) (*ConvertResult, error) {
+	fromID := strings.TrimSpace(req.FromAccount)
+	if fromID == "" {
+		var err error
+		fromID, err = s.pickAccount(req.FromAsset)
+		if err != nil {
+			return nil, err
+		}
+	}
+	toAsset := strings.ToUpper(strings.TrimSpace(req.ToAsset))
+	if toAsset == "" {
+		return nil, fmt.Errorf("toAsset required")
+	}
+	fromAsset := strings.ToUpper(strings.TrimSpace(req.FromAsset))
+	if fromAsset == toAsset {
+		return nil, fmt.Errorf("from and to asset must differ")
+	}
+
+	conv, err := ConvertAmount(req, prices, tokens)
+	if err != nil {
+		return nil, err
+	}
+
+	toID := bookVaultID(toAsset)
+	res, err := s.Transfer(TransferRequest{
+		FromAccount: fromID,
+		ToAccount:   toID,
+		Amount:      req.Amount,
+		ConvertTo:   toAsset,
+		Note:        "ledger-convert",
+	}, prices, nil)
+	if err != nil {
+		return nil, err
+	}
+	conv.FromAccount = fromID
+	conv.ToAccount = toID
+	conv.Status = "completed"
+	if res != nil {
+		conv.TransferID = res.Transfer.ID
+		if res.Status != "" {
+			conv.Status = res.Status
+		}
+	}
+	return conv, nil
+}
+
+func bookVaultID(asset string) string {
+	return "book:" + strings.ToUpper(strings.TrimSpace(asset))
+}
+
+func (s *BookStore) pickAccount(asset string) (string, error) {
+	asset = strings.ToUpper(strings.TrimSpace(asset))
+	accounts, err := s.ListAccounts()
+	if err != nil {
+		return "", err
+	}
+	var best string
+	var bestBal float64
+	for _, a := range accounts {
+		if strings.ToUpper(a.Asset) != asset {
+			continue
+		}
+		b := parseHuman(a.Balance)
+		if b > bestBal {
+			bestBal = b
+			best = a.ID
+		}
+	}
+	if best == "" {
+		return "", fmt.Errorf("no ledger account with asset %s", asset)
+	}
+	return best, nil
 }
 
 // ResolveExternalRaw builds a canonical external destination string from a transfer request.

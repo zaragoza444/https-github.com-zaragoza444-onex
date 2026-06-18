@@ -77,6 +77,13 @@ func (b *Bridge) settleLedgerExternal(rec ledger.TransferRecord, dest *ledger.Ex
 	return "pending-settlement", nil
 }
 
+func (b *Bridge) ListLedgerTransfers(ctx context.Context, evmHolder string, limit int) ([]ledger.TransferRecord, error) {
+	if err := b.SyncLedgerBook(ctx, evmHolder); err != nil {
+		return nil, err
+	}
+	return b.ledgerBook().ListTransfers(limit), nil
+}
+
 func (b *Bridge) ListExternalDestinations() map[string]interface{} {
 	return ledger.SupportedExternals()
 }

@@ -16,6 +16,7 @@ func (s *Server) registerLedgerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/bridge/ledger/import", s.handleLedgerImport)
 	mux.HandleFunc("/bridge/ledger/accounts", s.handleLedgerAccounts)
 	mux.HandleFunc("/bridge/ledger/transfer", s.handleLedgerTransfer)
+	mux.HandleFunc("/bridge/ledger/transfers", s.handleLedgerTransfers)
 	mux.HandleFunc("/bridge/ledger/destinations", s.handleLedgerDestinations)
 	// Legacy Shiva paths
 	mux.HandleFunc("/bridge/shiva-ledger/status", s.handleLedgerStatus)
@@ -25,6 +26,7 @@ func (s *Server) registerLedgerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/bridge/shiva-ledger/import", s.handleLedgerImport)
 	mux.HandleFunc("/bridge/shiva-ledger/accounts", s.handleLedgerAccounts)
 	mux.HandleFunc("/bridge/shiva-ledger/transfer", s.handleLedgerTransfer)
+	mux.HandleFunc("/bridge/shiva-ledger/transfers", s.handleLedgerTransfers)
 	mux.HandleFunc("/bridge/shiva-ledger/destinations", s.handleLedgerDestinations)
 }
 
@@ -76,7 +78,7 @@ func (s *Server) handleLedgerConvert(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	res, err := s.b.ConvertLedger(req)
+	res, err := s.b.ConvertLedger(r.Context(), r.URL.Query().Get("evm"), req)
 	if err != nil {
 		writeJSON(w, map[string]string{"error": err.Error()})
 		return
@@ -141,6 +143,19 @@ func (s *Server) handleLedgerTransfer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, res)
+}
+
+func (s *Server) handleLedgerTransfers(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "GET only", http.StatusMethodNotAllowed)
+		return
+	}
+	list, err := s.b.ListLedgerTransfers(r.Context(), r.URL.Query().Get("evm"), 25)
+	if err != nil {
+		writeJSON(w, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, map[string]interface{}{"transfers": list, "count": len(list)})
 }
 
 func (s *Server) handleLedgerDestinations(w http.ResponseWriter, r *http.Request) {
