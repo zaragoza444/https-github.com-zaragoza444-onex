@@ -4,6 +4,8 @@ Run OneX blockchain + OKX-style wallet bridge on a server (Docker or systemd).
 
 **OneX Production Platform (`onexproduction.com`):** [deploy/DEPLOY-onexproduction.md](deploy/DEPLOY-onexproduction.md), `scripts/deploy-onexproduction.sh`, `scripts/connect-onexproduction.ps1`.
 
+**Go live (public VPS + GitHub Pages):** [deploy/GO-LIVE.md](deploy/GO-LIVE.md), `scripts/go-live.ps1`
+
 **ALI / ALLTRA ecosystem VPS (`ubuntu@51.75.64.28`):** `scripts/deploy-ali-ecosystem.py` (remote SSH), `scripts/deploy-ali-ecosystem.sh` (run on server), `deploy/env.ali-ecosystem.example`.
 
 ```powershell
