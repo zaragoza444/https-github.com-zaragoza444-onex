@@ -33,8 +33,14 @@ git remote add gitea $GiteaUrl
 
 Remove-GitRemote "origin"
 git remote add origin $GitHubUrl
-git remote set-url --add --push origin $GitHubUrl
-git remote set-url --add --push origin $GiteaUrl
+if ($env:GITEA_TOKEN) {
+    git remote set-url --add --push origin $GitHubUrl
+    git remote set-url --add --push origin $GiteaUrl
+    Write-Host "origin pushes to GitHub and Gitea." -ForegroundColor Green
+} else {
+    git remote set-url --add --push origin $GitHubUrl
+    Write-Host "origin pushes to GitHub only (set GITEA_TOKEN for dual push)." -ForegroundColor Yellow
+}
 
 git config alias.pushall "!powershell -NoProfile -ExecutionPolicy Bypass -File scripts/push-all.ps1"
 git config alias.push-both "!powershell -NoProfile -ExecutionPolicy Bypass -File scripts/push-all.ps1"
