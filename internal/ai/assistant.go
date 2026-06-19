@@ -39,9 +39,10 @@ func (a *Assistant) Chat(req ChatRequest) ChatResponse {
 				Reply: strings.TrimSpace(reply),
 				Mode:  "cloud",
 				Suggestions: []string{
-					"Summarize my portfolio",
-					"Best way to stake?",
-					"Explain bridge routing",
+					"Show my real assets",
+					"Settle to IBAN",
+					"Bridge to BSC",
+					"Explain M0 vs M1",
 				},
 			}
 		}

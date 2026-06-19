@@ -3,7 +3,6 @@ package bridge
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/onex-blockchain/onex/internal/ai"
 )
@@ -33,33 +32,9 @@ func (s *Server) handleAIChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req.Context == "" {
-		req.Context = s.buildWalletAIContext()
+		evm := r.URL.Query().Get("evm")
+		req.Context = s.buildWalletAIContext(r.Context(), evm)
 	}
 	out := ai.NewAssistant().Chat(req)
 	writeJSON(w, out)
-}
-
-func (s *Server) buildWalletAIContext() string {
-	var b strings.Builder
-	st, _ := s.b.Status()
-	if st != nil {
-		data, _ := json.Marshal(st)
-		b.WriteString("bridge_status: ")
-		b.Write(data)
-		b.WriteByte('\n')
-	}
-	p, err := s.b.GetPortfolio()
-	if err == nil && p != nil {
-		data, _ := json.Marshal(map[string]interface{}{
-			"address":  p.Address,
-			"balances": p.Balances,
-			"stakes":   len(p.Stakes),
-			"loans":    len(p.Loans),
-			"nfts":     len(p.NFTs),
-			"tasks":    len(p.Tasks),
-		})
-		b.WriteString("portfolio: ")
-		b.Write(data)
-	}
-	return b.String()
 }

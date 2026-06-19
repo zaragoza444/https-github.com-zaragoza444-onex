@@ -67,6 +67,7 @@ func (c Config) Status() map[string]interface{} {
 		"production":   c.Production(),
 		"bankReady":    bankReady,
 		"bank":         bank.Status(),
+		"onlineBank":   DefaultOnlineBankStore().Status(),
 		"evmHolder":    c.EVMHolder != "",
 		"importDir":    c.ImportDir,
 		"fiatCurrency": c.FiatCurrency,

@@ -6,25 +6,52 @@ import (
 
 const walletSystemHint = `You are OneX AI — assistant for OneX Blockchain (Ed25519 PoW chain) and OneX Wallet (OKX-style DeFi UI).
 Features: multi-chain portfolio, send/receive, deposit, OneX Swap AMM (x·y=k), liquidity pools, cross-chain bridge, stake, loans, NFTs, tasks, create token.
+Real Ledger: unified bank (M0/M1/NSB fund classes, IBAN accounts), on-chain EVM balances, and imports — valued at live USD. Settle to real crypto wallets or external bank IBAN/SEPA/SWIFT.
+Saved destinations: wallet addresses and bank IBAN accounts for settlement and bridge.
 Native coin: ONEX (8 decimals). Addresses are 64-char hex. MetaMask cannot sign; use OneX Wallet or the Chrome extension.
-Wallet UI tabs: Wallet (home), Trade (swap/pool/bridge), Earn (stake/loans), Discover (NFT/tasks/token/networks), Web3 (dApps), AI (this chat).
+Wallet UI tabs: Wallet (home), Trade, Earn, Discover, Web3, Ledger (real assets), AI (this chat).
 Node API: :8545 explorer, /rpc JSON-RPC, /health. Bridge: :9338/wallet/.`
 
 func localReply(user string, ctx string) ChatResponse {
 	q := strings.ToLower(strings.TrimSpace(user))
 	reply := ""
 	var act *Action
-	suggestions := []string{"Show my balance", "How do I swap?", "Explain OneX Swap", "Stake ONEX"}
+	suggestions := []string{"Show my real assets", "How do I swap?", "Settle to IBAN", "Bridge to BSC"}
 
 	switch {
 	case containsAny(q, "hello", "hi", "hey"):
-		reply = "Hello! I'm OneX AI. I can help with your wallet, swaps, staking, bridge, and the OneX blockchain. What would you like to do?"
-	case containsAny(q, "balance", "portfolio", "assets", "how much"):
-		reply = "Open the Wallet tab to see total assets and token rows. I use your live portfolio context when the bridge is connected."
+		reply = "Hello! I'm OneX AI. I can help with your real ledger (bank IBAN, M0/M1/NSB), wallet, swaps, staking, and bridge. What would you like to do?"
 		if ctx != "" {
 			reply += "\n\n" + summarizeContext(ctx)
 		}
-		act = &Action{Type: "navigate", Tab: "wallet"}
+	case containsAny(q, "online bank", "nsb online", "send iban", "internal transfer"):
+		reply = "Open the Online Bank tab — NSB live IBAN accounts, internal transfers between M0/M1/NSB accounts, and SEPA/SWIFT/IBAN payouts."
+		if ctx != "" {
+			reply += "\n\n" + summarizeContext(ctx)
+		}
+		act = &Action{Type: "navigate", Tab: "onlinebank"}
+	case containsAny(q, "virtual card", "debit card", "apple pay", "google pay", "pay with card"):
+		reply = "Open Online Bank → Virtual cards. NSB auto-issues Visa/Mastercard debit cards linked to your IBAN accounts — production mode enables Apple Pay, Google Pay, and 3D Secure."
+		if ctx != "" {
+			reply += "\n\n" + summarizeContext(ctx)
+		}
+		act = &Action{Type: "navigate", Tab: "onlinebank"}
+	case containsAny(q, "real", "ledger", "bank", "iban", "m0", "m1", "nsb", "sovereign", "fiat", "settle", "convert"):
+		reply = "Your Real Ledger tab shows bank IBAN balances (M0 base money, M1 demand deposits, NSB sovereign), on-chain crypto, and live USD totals. I read that data when you chat here."
+		if ctx != "" {
+			reply += "\n\n" + summarizeContext(ctx)
+		} else {
+			reply += "\n\nSet ONEX_BANK_LEDGER_FILE or connect EVM address in Settings for full real asset context."
+		}
+		act = &Action{Type: "navigate", Tab: "ledger"}
+	case containsAny(q, "balance", "portfolio", "assets", "how much", "worth", "holdings"):
+		reply = "I combine your real ledger (bank + chain) with portfolio tokens. Here's what I see right now:"
+		if ctx != "" {
+			reply += "\n\n" + summarizeContext(ctx)
+		} else {
+			reply += "\n\nConnect the bridge and open Ledger tab to sync real assets."
+		}
+		act = &Action{Type: "navigate", Tab: "ledger"}
 	case containsAny(q, "send", "transfer"):
 		reply = "Tap Send on the home screen (or the send sheet). Pick chain + token, enter a 64-char recipient address and amount. On-chain ONEX sends need a small fee (default 0.001 ONEX)."
 		act = &Action{Type: "sheet", Sheet: "send"}
@@ -73,6 +100,12 @@ func localReply(user string, ctx string) ChatResponse {
 	case containsAny(q, "wallet", "create", "import"):
 		reply = "Create a wallet via Settings (⚙) or the + button. Wallet file: ~/.onex/wallets/default.json. Ed25519 keys — keep backups offline."
 		act = &Action{Type: "sheet", Sheet: "settings"}
+	case containsAny(q, "saved", "receiver", "destination", "payout"):
+		reply = "Saved wallet addresses and bank IBAN accounts live in the Ledger tab under Saved destinations. Use them for settlement, bridge, and convert."
+		if ctx != "" {
+			reply += "\n\n" + summarizeContext(ctx)
+		}
+		act = &Action{Type: "navigate", Tab: "ledger"}
 	case containsAny(q, "fee", "gas"):
 		reply = "OneX uses explicit min tx fees (not EVM gas). Default send fee is 0.001 ONEX. AMM swaps charge pool fee (~0.3%)."
 	case containsAny(q, "cloud", "api key", "openai", "model"):
@@ -101,11 +134,4 @@ func containsAny(s string, words ...string) bool {
 		}
 	}
 	return false
-}
-
-func summarizeContext(ctx string) string {
-	if len(ctx) > 1200 {
-		return ctx[:1200] + "…"
-	}
-	return ctx
 }

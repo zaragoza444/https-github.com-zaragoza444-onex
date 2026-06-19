@@ -68,6 +68,7 @@ services:
     volumes:
       - ./deploy/nginx.prod.conf:/etc/nginx/nginx.conf:ro
       - ./deploy/certs:/etc/nginx/certs:ro
+      - ./website:/var/www/onex-site:ro
       - certbot-webroot:/var/www/certbot:ro
     depends_on:
       - onexd

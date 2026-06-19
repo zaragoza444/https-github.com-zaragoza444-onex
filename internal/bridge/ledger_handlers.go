@@ -22,6 +22,7 @@ func (s *Server) registerLedgerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/bridge/ledger/settlements", s.handleLedgerSettlements)
 	mux.HandleFunc("/bridge/ledger/settlement/capabilities", s.handleSettlementCapabilities)
 	mux.HandleFunc("/bridge/ledger/receivers", s.handleLedgerReceivers)
+	mux.HandleFunc("/bridge/ledger/assets", s.handleLedgerAssets)
 	// Legacy Shiva paths
 	mux.HandleFunc("/bridge/shiva-ledger/status", s.handleLedgerStatus)
 	mux.HandleFunc("/bridge/shiva-ledger/real", s.handleLedgerReal)
@@ -255,6 +256,44 @@ func (s *Server) handleLedgerReceivers(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		writeJSON(w, wlt)
+	default:
+		http.Error(w, "GET or POST only", http.StatusMethodNotAllowed)
+	}
+}
+
+func (s *Server) handleLedgerAssets(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		kind := r.URL.Query().Get("kind")
+		list, err := s.b.ListExternalAssets(kind)
+		if err != nil {
+			writeJSON(w, map[string]string{"error": err.Error()})
+			return
+		}
+		wallets, banks := 0, 0
+		for _, a := range list {
+			if a.Kind == AssetKindBank {
+				banks++
+			} else {
+				wallets++
+			}
+		}
+		writeJSON(w, map[string]interface{}{
+			"assets": list, "count": len(list),
+			"wallets": wallets, "banks": banks,
+		})
+	case http.MethodPost:
+		var req ExternalAsset
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		a, err := s.b.SaveExternalAsset(req)
+		if err != nil {
+			writeJSON(w, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, a)
 	default:
 		http.Error(w, "GET or POST only", http.StatusMethodNotAllowed)
 	}

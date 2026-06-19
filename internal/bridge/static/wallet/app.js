@@ -66,6 +66,7 @@ function nodeExplorerUrl() {
 function featuredDapps() {
   return [
   { name: 'Explorer', icon: '🔍', url: nodeExplorerUrl() },
+  { name: 'Online Bank', icon: '🏦', action: () => showTab('onlinebank') },
   { name: 'Real Ledger', icon: '📒', action: () => showTab('ledger') },
   { name: 'OneX Swap', icon: '⇄', action: () => showTab('trade') },
   { name: 'Stake', icon: '📈', action: () => showTab('earn') },
@@ -144,7 +145,8 @@ const SCREEN_ALIASES = {
   stake: 'earn', loans: 'earn', earn: 'earn',
   discover: 'discover', nft: 'discover', tasks: 'discover',
   createtoken: 'discover', token: 'discover', chains: 'discover', networks: 'discover',
-  ledger: 'ledger', real: 'ledger', bank: 'ledger',
+  ledger: 'ledger', real: 'ledger',
+  onlinebank: 'onlinebank', bank: 'onlinebank',
   web3: 'web3', dapp: 'web3', dapps: 'web3',
   ai: 'ai', assistant: 'ai', chat: 'ai',
 };
@@ -160,6 +162,7 @@ function showTab(name) {
   if (screen === 'trade') { loadAmmPools(); updateDexStatus(); updateSwapCTA(); }
   if (screen === 'earn') renderStakePools();
   if (screen === 'ledger') { refreshLedger(); initLedgerConvertSelects(); }
+  if (screen === 'onlinebank') refreshOnlineBank();
   if (screen === 'web3') renderWeb3();
   if (screen === 'ai') initAI();
   if (screen === 'discover') {
@@ -434,9 +437,9 @@ async function initAI() {
     }
   } catch (_) {}
   if (!aiHistory.length) {
-    appendAIBubble('assistant', 'Hi! I\'m OneX AI. Ask about balances, swaps, stake, bridge, NFTs, or running your node.');
+    appendAIBubble('assistant', 'Hi! I\'m OneX AI with live real-asset context — bank IBAN, M0/M1/NSB ledger, wallets, and on-chain balances.');
   }
-  renderAISuggestions(['Show my balance', 'How do I swap?', 'Explain staking', 'What is OneX Swap?']);
+  renderAISuggestions(['Show my real assets', 'What is my ledger total?', 'Settle to IBAN', 'Bridge to BSC']);
 }
 
 function renderAISuggestions(list) {
@@ -477,7 +480,8 @@ async function sendAIMessage() {
   document.getElementById('ai-chat')?.appendChild(typing);
 
   try {
-    const j = await api('/bridge/ai/chat', {
+    const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+    const j = await api('/bridge/ai/chat' + evmQ, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages: aiHistory }),
@@ -528,6 +532,7 @@ async function init() {
   const hash = (location.hash || '').replace('#', '').toLowerCase();
   if (hash === 'swap') showTab('trade');
   else if (hash === 'ledger' || hash === 'real') showTab('ledger');
+  else if (hash === 'bank' || hash === 'onlinebank') showTab('onlinebank');
   else if (hash === 'web3' || hash === 'dapp') showTab('web3');
   else if (hash === 'ai') showTab('ai');
   else if (hash && SCREEN_ALIASES[hash]) showTab(hash);
@@ -1503,6 +1508,15 @@ let settlementKind = 'real_crypto';
 let settlementTimer = null;
 let ledgerImportTimer = null;
 let ledgerReceiverWallets = [];
+let ledgerExternalAssets = [];
+
+function ledgerWalletAssets() {
+  return ledgerExternalAssets.filter(a => a.kind === 'wallet' || !a.kind);
+}
+
+function ledgerBankAssets() {
+  return ledgerExternalAssets.filter(a => a.kind === 'bank');
+}
 
 function buildLedgerConvertBody(active) {
   const acctSel = document.getElementById('ledger-conv-from-acct');
@@ -1553,10 +1567,106 @@ function syncLedgerConvTokenFields() {
   if (name && !name.value && to) name.value = to + ' Token';
 }
 
+async function loadLedgerAssets() {
+  const j = await api('/bridge/ledger/assets');
+  ledgerExternalAssets = j.assets || [];
+  ledgerReceiverWallets = ledgerWalletAssets().map(a => ({
+    id: a.id, label: a.label, chainId: a.chainId, address: a.address, createdAt: a.createdAt,
+  }));
+  refreshLedgerAssetSelects();
+  renderSavedAssetsList();
+}
+
 async function loadLedgerReceivers() {
-  const j = await api('/bridge/ledger/receivers');
-  ledgerReceiverWallets = j.receivers || [];
+  await loadLedgerAssets();
+}
+
+function refreshLedgerAssetSelects() {
   refreshLedgerReceiverSelects();
+  const walletOpts = ['<option value="">Saved wallets…</option>'].concat(
+    ledgerWalletAssets().map(a =>
+      `<option value="${a.id}" data-chain="${escapeHtml(a.chainId)}" data-addr="${escapeHtml(a.address)}">${escapeHtml(a.label)} · ${escapeHtml(a.chainId)}</option>`
+    )
+  );
+  for (const id of ['ledger-settle-wallet-saved', 'ledger-xfer-wallet-saved']) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = walletOpts.join('');
+  }
+  const bankOpts = ['<option value="">Saved bank accounts…</option>'].concat(
+    ledgerBankAssets().map(a =>
+      `<option value="${a.id}" data-bank="${escapeHtml(a.bankId)}" data-rail="${escapeHtml(a.rail)}" data-iban="${escapeHtml(a.iban)}">${escapeHtml(a.label)} · ${escapeHtml((a.iban || '').slice(0, 8))}…</option>`
+    )
+  );
+  for (const id of ['ledger-settle-bank-saved', 'ledger-xfer-bank-saved']) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = bankOpts.join('');
+  }
+}
+
+function onSavedWalletPick(prefix) {
+  const sel = document.getElementById(prefix === 'settle' ? 'ledger-settle-wallet-saved' : 'ledger-xfer-wallet-saved');
+  const opt = sel?.selectedOptions[0];
+  if (!opt?.dataset?.addr) return;
+  const chainSel = document.getElementById(prefix === 'settle' ? 'ledger-settle-chain' : 'ledger-xfer-chain');
+  const addr = document.getElementById(prefix === 'settle' ? 'ledger-settle-address' : 'ledger-xfer-address');
+  if (chainSel && opt.dataset.chain) chainSel.value = opt.dataset.chain;
+  if (addr) addr.value = opt.dataset.addr;
+  if (prefix === 'settle') settlementPreviewDebounced();
+  else ledgerXferPreviewDebounced();
+}
+
+function onSavedBankPick(prefix) {
+  const sel = document.getElementById(prefix === 'settle' ? 'ledger-settle-bank-saved' : 'ledger-xfer-bank-saved');
+  const opt = sel?.selectedOptions[0];
+  if (!opt?.dataset?.iban) return;
+  const bankSel = document.getElementById(prefix === 'settle' ? 'ledger-settle-bank' : 'ledger-xfer-bank');
+  const railSel = document.getElementById(prefix === 'settle' ? 'ledger-settle-rail' : 'ledger-xfer-rail');
+  const acct = document.getElementById(prefix === 'settle' ? 'ledger-settle-bank-acct' : 'ledger-xfer-bank-acct');
+  if (bankSel && opt.dataset.bank) bankSel.value = opt.dataset.bank;
+  if (railSel && opt.dataset.rail) railSel.value = opt.dataset.rail;
+  if (acct) acct.value = opt.dataset.iban;
+  if (prefix === 'settle') settlementPreviewDebounced();
+  else ledgerXferPreviewDebounced();
+}
+
+async function saveCurrentWalletAsset(prefix) {
+  const chainId = document.getElementById(prefix === 'settle' ? 'ledger-settle-chain' : 'ledger-xfer-chain')?.value || ledgerDefaultBridgeChain;
+  const address = document.getElementById(prefix === 'settle' ? 'ledger-settle-address' : 'ledger-xfer-address')?.value?.trim();
+  if (!address) return;
+  const j = await api('/bridge/ledger/assets', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kind: 'wallet', chainId, address, label: address.slice(0, 6) + '…' + address.slice(-4) }),
+  });
+  if (!j.error) await loadLedgerAssets();
+}
+
+async function saveCurrentBankAsset(prefix) {
+  const bankId = document.getElementById(prefix === 'settle' ? 'ledger-settle-bank' : 'ledger-xfer-bank')?.value;
+  const rail = document.getElementById(prefix === 'settle' ? 'ledger-settle-rail' : 'ledger-xfer-rail')?.value;
+  const iban = document.getElementById(prefix === 'settle' ? 'ledger-settle-bank-acct' : 'ledger-xfer-bank-acct')?.value?.trim();
+  if (!iban) return;
+  const j = await api('/bridge/ledger/assets', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kind: 'bank', bankId, rail, iban, label: (bankId || 'bank') + ' · ' + iban.slice(0, 4) + '…' }),
+  });
+  if (!j.error) await loadLedgerAssets();
+}
+
+function renderSavedAssetsList() {
+  const el = document.getElementById('ledger-saved-assets');
+  if (!el) return;
+  if (!ledgerExternalAssets.length) {
+    el.innerHTML = '<p class="msg">No saved wallets or IBAN accounts yet — use Save on settlement or bridge forms.</p>';
+    return;
+  }
+  el.innerHTML = ledgerExternalAssets.map(a => {
+    if (a.kind === 'bank') {
+      return `<div class="asset-row"><span class="asset-icon">🏦</span><div class="asset-info"><strong>${escapeHtml(a.label)}</strong><small>${escapeHtml(a.bankId)} · ${escapeHtml((a.rail || 'iban').toUpperCase())} · ${escapeHtml(a.iban)}</small></div></div>`;
+    }
+    return `<div class="asset-row"><span class="asset-icon">👛</span><div class="asset-info"><strong>${escapeHtml(a.label)}</strong><small>${escapeHtml(a.chainId)} · ${escapeHtml(a.address)}</small></div></div>`;
+  }).join('');
 }
 
 function refreshLedgerReceiverSelects() {
@@ -1604,7 +1714,7 @@ async function saveLedgerConvReceiver() {
     body: JSON.stringify({ address: addr, chainId, label: addr.slice(0, 6) + '…' + addr.slice(-4) }),
   });
   if (!j.error) {
-    await loadLedgerReceivers();
+    await loadLedgerAssets();
     const msg = document.getElementById('ledger-conv-result');
     if (msg) msg.textContent = 'Receiver saved';
   }
@@ -1747,7 +1857,7 @@ async function doLedgerConvert() {
     document.getElementById('ledger-conv-amt').value = '';
     const preview = document.getElementById('ledger-conv-preview');
     if (preview) preview.textContent = 'Enter amount for live quote';
-    if (body.saveReceiver) await loadLedgerReceivers();
+    if (body.saveReceiver) await loadLedgerAssets();
     refreshLedger();
   }
 }
@@ -1865,7 +1975,7 @@ async function loadLedgerAccounts() {
   renderLedgerXferHistory(hist.transfers || []);
   refreshSettlementUI(accounts, dest, caps, settlements.settlements || []);
   applyLedgerBridgeDefaults(ledgerStatus);
-  loadLedgerReceivers();
+  loadLedgerAssets();
 }
 
 function applyLedgerBridgeDefaults(st) {
@@ -2557,6 +2667,464 @@ function renderLedgerAllocationChart(bySourceUsd) {
         <span class="ledger-alloc-pct">${pct}%</span>
       </div>`;
     }).join('');
+  }
+}
+
+let onlineBankMode = 'internal';
+let onlineBankMainTab = 'send';
+let onlineBankTimer = null;
+let onlineBankDepositTimer = null;
+let onlineBankAccounts = [];
+
+function setOnlineBankMainTab(tab) {
+  onlineBankMainTab = tab;
+  document.querySelectorAll('#online-bank-main-tabs .ledger-xfer-tab').forEach(b => {
+    b.classList.toggle('active', b.dataset.bmain === tab);
+  });
+  document.getElementById('online-bank-pane-send')?.classList.toggle('hidden', tab !== 'send');
+  document.getElementById('online-bank-pane-deposit')?.classList.toggle('hidden', tab !== 'deposit');
+  document.getElementById('online-bank-pane-cards')?.classList.toggle('hidden', tab !== 'cards');
+  document.getElementById('online-bank-pane-ledger')?.classList.toggle('hidden', tab !== 'ledger');
+  if (tab === 'ledger') loadOnlineBankLedger();
+  if (tab === 'cards') refreshVirtualCards();
+}
+
+function setOnlineBankMode(mode) {
+  onlineBankMode = mode;
+  document.querySelectorAll('#online-bank-tabs .ledger-xfer-tab').forEach(b => {
+    b.classList.toggle('active', b.dataset.bmode === mode);
+  });
+  document.getElementById('online-bank-panel-internal')?.classList.toggle('hidden', mode !== 'internal');
+  document.getElementById('online-bank-panel-iban')?.classList.toggle('hidden', mode !== 'iban');
+  const btn = document.getElementById('online-bank-btn');
+  if (btn) btn.textContent = mode === 'iban' ? 'Send IBAN payment' : 'Send internal transfer';
+  onlineBankPreviewDebounced();
+}
+
+function fmtBankUsdTotals(totals) {
+  if (!totals || typeof totals !== 'object') return '—';
+  return Object.entries(totals).map(([c, v]) => `${Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${c}`).join(' · ');
+}
+
+function fundClassBadge(fc) {
+  if (!fc) return '';
+  return `<span class="deploy-badge green">${escapeHtml(fc.toUpperCase())}</span>`;
+}
+
+function renderOnlineBankAccounts(accts) {
+  const el = document.getElementById('online-bank-accounts');
+  if (!el) return;
+  if (!accts?.length) {
+    el.innerHTML = '<p class="msg">No accounts — set ONEX_BANK_LEDGER_FILE and refresh.</p>';
+    return;
+  }
+  el.innerHTML = accts.map(a => `
+    <div class="bank-account-card ${a.fundClass === 'nsb' || a.bank === 'nsb' ? 'nsb' : ''}">
+      <div class="bank-acct-name">${escapeHtml(a.name)} ${fundClassBadge(a.fundClass)}</div>
+      ${a.iban ? `<div class="bank-acct-iban">${escapeHtml(a.iban)}</div>` : ''}
+      <div class="bank-acct-bal">${escapeHtml(a.balance)} ${escapeHtml(a.currency)}</div>
+      <div class="bank-acct-meta">${escapeHtml(a.id)} · ${escapeHtml(a.status || 'active')}</div>
+    </div>`).join('');
+}
+
+function fillOnlineBankSelects(accts) {
+  const opts = (accts || []).map(a =>
+    `<option value="${a.id}" data-bal="${escapeHtml(a.balance)}" data-cur="${escapeHtml(a.currency)}">${escapeHtml(a.currency)} · ${escapeHtml(a.balance)} — ${escapeHtml(a.name)}</option>`
+  ).join('');
+  const from = document.getElementById('online-bank-from');
+  const to = document.getElementById('online-bank-to');
+  const depTo = document.getElementById('online-bank-deposit-to');
+  if (from) from.innerHTML = '<option value="">From account…</option>' + opts;
+  if (to) to.innerHTML = '<option value="">To account…</option>' + opts;
+  if (depTo) depTo.innerHTML = '<option value="">To account…</option>' + opts;
+
+  const bankSel = document.getElementById('online-bank-dest-bank');
+  if (bankSel && ledgerDestinations.banks?.length) {
+    bankSel.innerHTML = ledgerDestinations.banks.map(b =>
+      `<option value="${b.id}">${escapeHtml(b.name)}</option>`
+    ).join('');
+  }
+
+  const ibanSel = document.getElementById('online-bank-iban-saved');
+  if (ibanSel) {
+    const banks = ledgerBankAssets();
+    ibanSel.innerHTML = ['<option value="">Saved accounts…</option>'].concat(
+      banks.map(a => `<option value="${escapeHtml(a.iban)}" data-bank="${escapeHtml(a.bankId)}" data-rail="${escapeHtml(a.rail)}">${escapeHtml(a.label)}</option>`)
+    ).join('');
+  }
+}
+
+function onOnlineBankIbanPick() {
+  const sel = document.getElementById('online-bank-iban-saved');
+  const opt = sel?.selectedOptions[0];
+  if (!opt?.value) return;
+  const iban = document.getElementById('online-bank-iban');
+  const bank = document.getElementById('online-bank-dest-bank');
+  const rail = document.getElementById('online-bank-rail');
+  if (iban) iban.value = opt.value;
+  if (bank && opt.dataset.bank) bank.value = opt.dataset.bank;
+  if (rail && opt.dataset.rail) rail.value = opt.dataset.rail;
+  onlineBankPreviewDebounced();
+}
+
+function setOnlineBankMax() {
+  const from = document.getElementById('online-bank-from');
+  const amt = document.getElementById('online-bank-amount');
+  const bal = from?.selectedOptions[0]?.dataset?.bal;
+  if (amt && bal) { amt.value = bal; onlineBankPreviewDebounced(); }
+}
+
+function buildOnlineBankBody(preview) {
+  const fromAccount = document.getElementById('online-bank-from')?.value;
+  const amount = document.getElementById('online-bank-amount')?.value;
+  const reference = document.getElementById('online-bank-ref')?.value?.trim();
+  if (!fromAccount || !amount) return null;
+  const body = { fromAccount, amount, preview: !!preview };
+  if (reference) body.reference = reference;
+  if (onlineBankMode === 'internal') {
+    const toAccount = document.getElementById('online-bank-to')?.value;
+    if (!toAccount) return null;
+    body.toAccount = toAccount;
+  } else {
+    const toIban = document.getElementById('online-bank-iban')?.value?.trim();
+    if (!toIban) return null;
+    body.toIban = toIban;
+    body.toBank = document.getElementById('online-bank-dest-bank')?.value || 'generic';
+    body.rail = document.getElementById('online-bank-rail')?.value || 'iban';
+  }
+  return body;
+}
+
+function onlineBankPreviewDebounced() {
+  clearTimeout(onlineBankTimer);
+  onlineBankTimer = setTimeout(onlineBankPreview, 350);
+}
+
+async function onlineBankPreview() {
+  const preview = document.getElementById('online-bank-preview');
+  const body = buildOnlineBankBody(true);
+  if (!body) {
+    if (preview) preview.textContent = 'Select accounts and amount';
+    return;
+  }
+  const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+  const j = await api('/bridge/bank/send' + evmQ, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  if (!preview) return;
+  if (j.error) { preview.textContent = j.error; return; }
+  const tx = j.transaction || {};
+  const dest = tx.toName || tx.toIban || tx.toAccount || '—';
+  preview.textContent = `Preview: ${tx.amount} ${tx.currency} → ${dest} (${tx.status || 'quoted'})`;
+}
+
+async function doOnlineBankSend() {
+  return doOnlineBankTransfer();
+}
+
+async function doOnlineBankTransfer() {
+  const msg = document.getElementById('online-bank-msg');
+  const btn = document.getElementById('online-bank-btn');
+  const body = buildOnlineBankBody(false);
+  if (!body) {
+    if (msg) msg.textContent = 'Complete all required fields';
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+  const j = await api('/bridge/bank/send' + evmQ, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  if (btn) { btn.disabled = false; setOnlineBankMode(onlineBankMode); }
+  if (msg) {
+    if (j.error) msg.textContent = j.error;
+    else {
+      const tx = j.transaction || {};
+      msg.textContent = `✓ ${j.status}: ${tx.amount} ${tx.currency}${tx.toIban ? ' → ' + tx.toIban : ''}${j.fromBalance ? ' · balance ' + j.fromBalance : ''}`;
+    }
+  }
+  if (!j.error) {
+    document.getElementById('online-bank-amount').value = '';
+    await refreshOnlineBank();
+  }
+}
+
+function buildOnlineBankDepositBody(preview) {
+  const toAccount = document.getElementById('online-bank-deposit-to')?.value;
+  const amount = document.getElementById('online-bank-deposit-amount')?.value;
+  const source = document.getElementById('online-bank-deposit-source')?.value;
+  const reference = document.getElementById('online-bank-deposit-ref')?.value?.trim();
+  if (!toAccount || !amount) return null;
+  const body = { toAccount, amount, source: source || 'wire', preview: !!preview };
+  if (reference) body.reference = reference;
+  return body;
+}
+
+function onlineBankDepositPreviewDebounced() {
+  clearTimeout(onlineBankDepositTimer);
+  onlineBankDepositTimer = setTimeout(onlineBankDepositPreview, 350);
+}
+
+async function onlineBankDepositPreview() {
+  const preview = document.getElementById('online-bank-deposit-preview');
+  const body = buildOnlineBankDepositBody(true);
+  if (!body) {
+    if (preview) preview.textContent = 'Select account and amount';
+    return;
+  }
+  const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+  const j = await api('/bridge/bank/deposit' + evmQ, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  if (!preview) return;
+  if (j.error) { preview.textContent = j.error; return; }
+  const tx = j.transaction || {};
+  preview.textContent = `Preview: deposit ${tx.amount} ${tx.currency} → ${tx.toName || body.toAccount} (${tx.rail || body.source})`;
+}
+
+async function doOnlineBankDeposit() {
+  const msg = document.getElementById('online-bank-deposit-msg');
+  const body = buildOnlineBankDepositBody(false);
+  if (!body) {
+    if (msg) msg.textContent = 'Select account and amount';
+    return;
+  }
+  const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+  const j = await api('/bridge/bank/deposit' + evmQ, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  if (msg) {
+    if (j.error) msg.textContent = j.error;
+    else {
+      const tx = j.transaction || {};
+      msg.textContent = `✓ Deposited ${tx.amount} ${tx.currency} · balance ${j.toBalance || '—'}`;
+    }
+  }
+  if (!j.error) {
+    document.getElementById('online-bank-deposit-amount').value = '';
+    await refreshOnlineBank();
+    if (onlineBankMainTab === 'ledger') loadOnlineBankLedger();
+  }
+}
+
+function renderOnlineBankLedgerEntries(entries, summary) {
+  const el = document.getElementById('online-bank-ledger-entries');
+  const sumEl = document.getElementById('online-bank-ledger-summary');
+  if (sumEl && summary) {
+    const fc = summary.byFundUsd || {};
+    const fcTxt = Object.entries(fc).map(([k, v]) => `${k.toUpperCase()} $${Number(v).toLocaleString()}`).join(' · ');
+    sumEl.textContent = `Total $${Number(summary.totalUsd || 0).toLocaleString()}${fcTxt ? ' · ' + fcTxt : ''}`;
+  }
+  if (!el) return;
+  if (!entries?.length) {
+    el.innerHTML = '<p class="msg">No ledger entries.</p>';
+    return;
+  }
+  el.innerHTML = entries.map(e => `
+    <div class="asset-row">
+      <span class="asset-icon">🏦</span>
+      <div class="asset-info">
+        <strong>${escapeHtml(e.human)} ${escapeHtml(e.asset)}</strong>
+        <small>${escapeHtml(e.account || e.id)} · ${escapeHtml(e.fundClass || 'bank')} · $${Number(e.fiatUsd || 0).toLocaleString()}</small>
+      </div>
+    </div>`).join('');
+}
+
+async function loadOnlineBankLedger() {
+  const j = await api('/bridge/bank/ledger');
+  if (j.error) return;
+  renderOnlineBankLedgerEntries(j.entries, j);
+  renderOnlineBankTransactions(j.transactions || []);
+}
+
+function renderOnlineBankTransactions(txs) {
+  const el = document.getElementById('online-bank-tx-list');
+  if (!el) return;
+  if (!txs?.length) {
+    el.innerHTML = '<p class="msg">No transactions yet.</p>';
+    return;
+  }
+  el.innerHTML = txs.map(t => {
+    const dir = t.type === 'deposit' ? '+' : '−';
+    const label = t.type === 'deposit'
+      ? `${t.fromName || t.rail || 'deposit'} → ${t.toName || t.toAccount}`
+      : `${t.fromName || t.fromAccount} → ${t.toName || t.toIban || t.toAccount || '—'}`;
+    return `
+    <div class="bank-tx-row">
+      <strong>${dir} ${escapeHtml(t.amount)} ${escapeHtml(t.currency)} · ${escapeHtml(t.type)}</strong>
+      <small>${escapeHtml(label)}</small>
+      <small>${new Date((t.createdAt || 0) * 1000).toLocaleString()} · ${escapeHtml(t.reference || '')}
+        <span class="bank-tx-status ${t.status === 'pending' ? 'pending' : ''}">${escapeHtml(t.status)}</span></small>
+    </div>`;
+  }).join('');
+}
+
+async function refreshOnlineBank() {
+  const [st, accts, txs] = await Promise.all([
+    api('/bridge/bank/status'),
+    api('/bridge/bank/accounts'),
+    api('/bridge/bank/transactions'),
+  ]);
+  const badge = document.getElementById('online-bank-badge');
+  if (badge) badge.textContent = st.online ? 'Online' : 'Offline';
+  const totalEl = document.getElementById('online-bank-total');
+  if (totalEl) totalEl.textContent = fmtBankUsdTotals(st.totals);
+  const meta = document.getElementById('online-bank-meta');
+  if (meta) meta.textContent = `${st.name || 'NSB'} · SWIFT ${st.swift || '—'} · ${st.accounts || 0} accounts · ${st.transactions || 0} tx`;
+  onlineBankAccounts = accts.accounts || [];
+  renderOnlineBankAccounts(onlineBankAccounts);
+  fillOnlineBankSelects(onlineBankAccounts);
+  if (onlineBankMainTab === 'ledger') {
+    await loadOnlineBankLedger();
+  } else if (onlineBankMainTab === 'cards') {
+    await refreshVirtualCards();
+  } else {
+    renderOnlineBankTransactions(txs.transactions || []);
+  }
+  if (!ledgerDestinations.banks?.length) {
+    const dest = await api('/bridge/ledger/destinations');
+    ledgerDestinations = dest || ledgerDestinations;
+    fillOnlineBankSelects(onlineBankAccounts);
+  }
+  await loadLedgerAssets();
+}
+
+let virtualCards = [];
+let virtualCardTimer = null;
+
+function cardBrandClass(brand) {
+  const b = (brand || '').toLowerCase();
+  if (b === 'mastercard') return 'mastercard';
+  return 'visa';
+}
+
+function renderVirtualCards(cards, status) {
+  const grid = document.getElementById('virtual-cards-grid');
+  const badge = document.getElementById('virtual-cards-badge');
+  const intro = document.getElementById('virtual-cards-intro');
+  if (badge) badge.textContent = status?.production ? 'Production' : (status?.mode || '—');
+  if (intro) {
+    const n = status?.active || cards?.length || 0;
+    intro.textContent = `NSB virtual debit cards · ${n} active · Apple Pay · Google Pay · 3D Secure`;
+  }
+  if (!grid) return;
+  if (!cards?.length) {
+    grid.innerHTML = '<p class="msg">No cards yet — open Online Bank with production mode to auto-issue cards.</p>';
+    return;
+  }
+  grid.innerHTML = cards.map(c => `
+    <div class="virtual-card ${cardBrandClass(c.brand)} ${c.active ? 'active' : 'inactive'}">
+      <div class="virtual-card-top">
+        <span class="virtual-card-brand">${escapeHtml((c.network || c.brand || 'CARD').toUpperCase())}</span>
+        <span class="virtual-card-status">${escapeHtml(c.status || '—')}</span>
+      </div>
+      <div class="virtual-card-pan">${escapeHtml(c.panMasked || '•••• •••• •••• ' + (c.last4 || '0000'))}</div>
+      <div class="virtual-card-meta">
+        <span>EXP ${escapeHtml(c.expiry || '—')}</span>
+        <span>${escapeHtml(c.label || c.accountName || 'Virtual card')}</span>
+      </div>
+      <div class="virtual-card-bal">
+        <span>${escapeHtml(c.available || '0.00')} ${escapeHtml(c.currency || '')}</span>
+        <span class="virtual-card-spent">spent ${escapeHtml(c.spent || '0.00')}</span>
+      </div>
+      <div class="virtual-card-wallets">
+        ${c.applePay ? '<span class="deploy-badge green">Apple Pay</span>' : ''}
+        ${c.googlePay ? '<span class="deploy-badge green">Google Pay</span>' : ''}
+        ${c.threeDSecure ? '<span class="deploy-badge green">3DS</span>' : ''}
+      </div>
+    </div>`).join('');
+}
+
+function fillVirtualCardSelect(cards) {
+  const sel = document.getElementById('virtual-card-pick');
+  if (!sel) return;
+  sel.innerHTML = ['<option value="">Select card…</option>'].concat(
+    (cards || []).map(c =>
+      `<option value="${escapeHtml(c.id)}" data-avail="${escapeHtml(c.available)}" data-cur="${escapeHtml(c.currency)}">${escapeHtml(c.network || c.brand)} ·••• ${escapeHtml(c.last4)} — ${escapeHtml(c.available)} ${escapeHtml(c.currency)}</option>`
+    )
+  ).join('');
+}
+
+function renderVirtualCardTransactions(txs) {
+  const el = document.getElementById('virtual-card-tx-list');
+  if (!el) return;
+  if (!txs?.length) {
+    el.innerHTML = '<p class="msg">No card transactions yet.</p>';
+    return;
+  }
+  el.innerHTML = txs.map(t => `
+    <div class="asset-row">
+      <div class="asset-main">
+        <div class="asset-name">${escapeHtml(t.merchant || 'Payment')}</div>
+        <div class="asset-sub">${escapeHtml(t.reference || t.cardId || '')}</div>
+      </div>
+      <div class="asset-val">−${escapeHtml(t.amount)} ${escapeHtml(t.currency || '')}</div>
+    </div>`).join('');
+}
+
+async function refreshVirtualCards() {
+  const [status, list, txs] = await Promise.all([
+    api('/bridge/cards/status'),
+    api('/bridge/cards'),
+    api('/bridge/cards/transactions'),
+  ]);
+  virtualCards = list.cards || [];
+  renderVirtualCards(virtualCards, status);
+  fillVirtualCardSelect(virtualCards);
+  renderVirtualCardTransactions(txs.transactions || []);
+}
+
+function virtualCardPreviewDebounced() {
+  clearTimeout(virtualCardTimer);
+  virtualCardTimer = setTimeout(virtualCardPreview, 350);
+}
+
+async function virtualCardPreview() {
+  const preview = document.getElementById('virtual-card-preview');
+  const cardId = document.getElementById('virtual-card-pick')?.value;
+  const amount = document.getElementById('virtual-card-amount')?.value;
+  const merchant = document.getElementById('virtual-card-merchant')?.value?.trim();
+  if (!cardId || !amount) {
+    if (preview) preview.textContent = 'Select card and amount';
+    return;
+  }
+  const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+  const j = await api('/bridge/cards/authorize' + evmQ, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cardId, amount, merchant, preview: true }),
+  });
+  if (!preview) return;
+  if (j.error) { preview.textContent = j.error; return; }
+  preview.textContent = `Preview: ${j.amount} ${j.currency} at ${j.merchant} · available ${j.available}`;
+}
+
+async function doVirtualCardPay() {
+  const msg = document.getElementById('virtual-card-msg');
+  const btn = document.getElementById('virtual-card-btn');
+  const cardId = document.getElementById('virtual-card-pick')?.value;
+  const amount = document.getElementById('virtual-card-amount')?.value;
+  const merchant = document.getElementById('virtual-card-merchant')?.value?.trim();
+  if (!cardId || !amount) {
+    if (msg) msg.textContent = 'Select card and amount';
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = 'Authorizing…'; }
+  const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+  const j = await api('/bridge/cards/authorize' + evmQ, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cardId, amount, merchant, preview: false }),
+  });
+  if (btn) { btn.disabled = false; btn.textContent = 'Authorize payment'; }
+  if (msg) {
+    if (j.error) msg.textContent = j.error;
+    else {
+      const tx = j.transaction || {};
+      msg.textContent = `✓ ${j.status}: ${tx.amount} ${tx.currency} · ${tx.merchant || merchant || 'Payment'}`;
+    }
+  }
+  if (!j.error) {
+    document.getElementById('virtual-card-amount').value = '';
+    await refreshOnlineBank();
   }
 }
 

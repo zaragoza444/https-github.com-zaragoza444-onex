@@ -5,6 +5,7 @@
       "name": "M0 Base Money — USD Cash & Reserves",
       "bank": "central",
       "fundClass": "m0",
+      "iban": "US00M0USD00000000000001",
       "currency": "USD",
       "balance": "150000.00"
     },
@@ -12,6 +13,7 @@
       "id": "m0-eur-vault",
       "name": "M0 Narrow Money — EUR Vault",
       "moneySupply": "m0",
+      "iban": "DE89370400440532013000",
       "currency": "EUR",
       "balance": "75000.00"
     },
@@ -19,6 +21,7 @@
       "id": "m1-usd-checking",
       "name": "M1 Demand Deposits — USD Checking",
       "fundClass": "m1",
+      "iban": "US00M1USD00000000000001",
       "currency": "USD",
       "balance": "25000.00"
     },
@@ -26,6 +29,7 @@
       "id": "m1-eur-transactional",
       "name": "M1 Transactional — EUR",
       "moneySupply": "m1",
+      "iban": "FR1420041010050500013M02606",
       "currency": "EUR",
       "balance": "12500.50"
     },
@@ -42,6 +46,8 @@
       "id": "nsb-gbp-sovereign",
       "name": "National Sovereign Bank — GBP",
       "bank": "national_sovereign_bank",
+      "fundClass": "nsb",
+      "iban": "GB29BARC20001512345678",
       "currency": "GBP",
       "balance": "32000.00"
     }

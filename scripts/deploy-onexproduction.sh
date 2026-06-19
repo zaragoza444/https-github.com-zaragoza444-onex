@@ -36,5 +36,8 @@ curl -sf "http://127.0.0.1:9338/health" && echo " bridge OK" || echo " bridge FA
 curl -sf "http://127.0.0.1:9338/bridge/production/status" | head -c 400; echo
 if [ -f deploy/certs/fullchain.pem ]; then
   curl -sf "https://$DOMAIN/bridge/production/status" | head -c 400; echo
+  echo "Site:   https://$DOMAIN/"
+  echo "Contact: https://$DOMAIN/contact.html"
   echo "Wallet: https://$DOMAIN/wallet/"
+  curl -sf "https://$DOMAIN/" | head -c 120 | grep -q OneX && echo "Marketing site OK" || echo "WARN: marketing site check failed"
 fi

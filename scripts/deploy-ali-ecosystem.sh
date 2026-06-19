@@ -7,6 +7,21 @@ GITHUB="${GITHUB_REPO:-https://github.com/zaragoza444/onex.git}"
 HOST_IP="${ALI_PUBLIC_HOST:-51.75.64.28}"
 export PATH="/usr/local/go/bin:$HOME/go/bin:$PATH"
 
+echo "==> firewall"
+if command -v ufw >/dev/null 2>&1; then
+  sudo ufw allow 22/tcp || true
+  sudo ufw allow 80/tcp || true
+  sudo ufw allow 443/tcp || true
+  sudo ufw allow 9338/tcp || true
+  sudo ufw allow 8545/tcp || true
+  sudo ufw allow 9340/tcp || true
+  sudo ufw allow 30303/tcp || true
+  if sudo ufw status | grep -q inactive; then
+    echo "y" | sudo ufw enable || true
+  fi
+  sudo ufw reload || true
+fi
+
 if [ ! -d "$REPO/.git" ]; then
   git clone "$GITHUB" "$REPO"
 fi

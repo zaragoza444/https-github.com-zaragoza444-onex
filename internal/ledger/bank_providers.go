@@ -101,6 +101,17 @@ func (c BankProviderConfig) plaidHost() string {
 
 // ReadBankLedgerWithProvider loads fiat balances from the configured bank source.
 func ReadBankLedgerWithProvider(cfg BankProviderConfig) ([]Entry, error) {
+	if OnlineBankEnabled() {
+		file := cfg.FilePath
+		if file == "" {
+			file = LoadConfig().BankFile
+		}
+		if entries, err := ReadOnlineBankLedger(file); err != nil {
+			return nil, err
+		} else if len(entries) > 0 {
+			return entries, nil
+		}
+	}
 	switch cfg.ResolvedProvider() {
 	case "plaid":
 		return fetchPlaidBalances(cfg)

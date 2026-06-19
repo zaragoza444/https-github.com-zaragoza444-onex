@@ -23,8 +23,9 @@ type Bridge struct {
 	custom   *customTokenStore
 	amm      *amm.Store
 	platform *tokenplatform.Store
-	book     *ledger.BookStore
-	recv     *receiverStore
+	book       *ledger.BookStore
+	assetStore *externalAssetStore
+	cardStore  *virtualCardStore
 }
 
 func New(cfg Config) *Bridge {
