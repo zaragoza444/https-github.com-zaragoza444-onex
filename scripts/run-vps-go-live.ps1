@@ -44,6 +44,7 @@ if ($env:SSH_PASS -or $ForceRemote) {
     }
     $env:SSH_HOST = $VpsIp
     $env:ALI_PUBLIC_HOST = $VpsIp
+    $env:LOCAL_SYNC = "1"
     if ($Domain) { $env:ONEX_DEPLOY_DOMAIN = $Domain }
     python scripts/deploy-ali-ecosystem.py
     if ($LASTEXITCODE -eq 0) {

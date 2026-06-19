@@ -24,14 +24,23 @@ func localReply(user string, ctx string) ChatResponse {
 		if ctx != "" {
 			reply += "\n\n" + summarizeContext(ctx)
 		}
-	case containsAny(q, "online bank", "nsb online", "send iban", "internal transfer"):
-		reply = "Open the Online Bank tab — NSB live IBAN accounts, internal transfers between M0/M1/NSB accounts, and SEPA/SWIFT/IBAN payouts."
+	case containsAny(q, "hybx", "hybrix", "multi-ledger", "mirror bank"):
+		reply = "Open Online Bank → HYBX tab. Mirror NSB balances, use HYBX exchange middleware (banks · chains · platform), issue HYBX virtual cards, and settle via federation."
+	case containsAny(q, "bridge7", "local-ledger", "ledger pro", "crypto-ledger", "ledger-pro"):
+		reply = "Bridge7 syncs local-ledger-2026, ledger-pro, and crypto-ledger into the real ledger. Wallet → Real Ledger → Bridge7 → Sync. API: POST /bridge/bridge7/sync"
+		reply = "HYBX exchange middleware: GET /bridge/bank/hybx/exchange/routes, POST /bridge/bank/hybx/exchange for NSB↔HYBX, Fineract, blockchains, and token platform. Wallet: Online Bank → HYBX → exchange middleware panel."
+		if ctx != "" {
+			reply += "\n\n" + summarizeContext(ctx)
+		}
+		act = &Action{Type: "navigate", Tab: "onlinebank"}
+	case containsAny(q, "online bank", "nsb online", "send iban", "internal transfer", "bank statement", "wire instructions", "payee"):
+		reply = "Open Online Bank — Overview, Send, Deposit, Activity, Receive (IBAN/SWIFT), Payees, Cards, and Statements. Export CSV from Activity tab."
 		if ctx != "" {
 			reply += "\n\n" + summarizeContext(ctx)
 		}
 		act = &Action{Type: "navigate", Tab: "onlinebank"}
 	case containsAny(q, "virtual card", "debit card", "apple pay", "google pay", "pay with card"):
-		reply = "Open Online Bank → Virtual cards. NSB auto-issues Visa/Mastercard debit cards linked to your IBAN accounts — production mode enables Apple Pay, Google Pay, and 3D Secure."
+		reply = "Open Online Bank → Virtual cards. NSB auto-issues Visa/Mastercard debit cards; HYBX tab → Sync → Issue HYBX virtual cards for multi-ledger mirror accounts. Production mode enables Apple Pay, Google Pay, and 3D Secure."
 		if ctx != "" {
 			reply += "\n\n" + summarizeContext(ctx)
 		}

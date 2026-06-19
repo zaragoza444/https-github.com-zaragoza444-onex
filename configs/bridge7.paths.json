@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "projectRoot": ".",
+  "localLedger2026": "data/bridge7/local-ledger-2026.json",
+  "ledgerPro": "data/bridge7/ledger-pro.json",
+  "cryptoLedger": "data/bridge7/crypto-ledger.json"
+}

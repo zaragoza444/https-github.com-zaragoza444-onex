@@ -68,11 +68,32 @@ func (b *Bridge) settleLedgerExternal(rec ledger.TransferRecord, dest *ledger.Ex
 		}
 		return res["status"], nil
 	case ledger.ExternalEVM, ledger.ExternalSolana, ledger.ExternalBitcoin, ledger.ExternalTron:
+		if ref, ok := b.settleViaHybx(rec, dest); ok {
+			if dest.Kind == ledger.ExternalEVM {
+				if live, err := b.settleLedgerEVM(rec, dest); err == nil && !strings.HasPrefix(live, "chain-pending:") {
+					return live, nil
+				}
+			}
+			return ref, nil
+		}
 		if dest.Kind == ledger.ExternalEVM {
 			return b.settleLedgerEVM(rec, dest)
 		}
 		return fmt.Sprintf("chain-pending:%s:%s", dest.ChainID, dest.Address), nil
 	case ledger.ExternalBank:
+		if ledger.LoadHybrixConfig().Enabled && b.isProduction() {
+			amtStr := rec.ToAmount
+			if amtStr == "" {
+				amtStr = rec.Amount
+			}
+			_, _ = ledger.HybxFederateOutbound(ledger.BankTransferRequest{
+				Rail: dest.BankRail, BankName: dest.BankName, Account: dest.Address,
+				Amount: amtStr, Asset: rec.Asset, Reference: rec.ID,
+			}, rec.ID)
+		}
+		if ref, ok := b.settleViaHybx(rec, dest); ok {
+			return ref, nil
+		}
 		return ledger.InitiateBankTransfer(ledger.BankTransferRequest{
 			Rail: dest.BankRail, BankName: dest.BankName, Account: dest.Address,
 			Amount: amtStr, Asset: rec.Asset, Reference: rec.ID,

@@ -207,6 +207,7 @@ func (s *OnlineBankStore) EnsureSeeded(bankFile string) error {
 			Bank: "nsb", Status: "active",
 		})
 	}
+	st.Online = true
 	return s.save(st)
 }
 
@@ -260,24 +261,105 @@ func (s *OnlineBankStore) ListAccounts() ([]OnlineBankAccount, error) {
 }
 
 func (s *OnlineBankStore) ListTransactions(limit int) ([]OnlineBankTransaction, error) {
+	return s.ListTransactionsFiltered(limit, "", "")
+}
+
+// ListTransactionsFiltered returns recent transactions, optionally filtered by account or type.
+func (s *OnlineBankStore) ListTransactionsFiltered(limit int, accountID, txType string) ([]OnlineBankTransaction, error) {
 	st, err := s.load()
 	if err != nil {
 		return nil, err
 	}
-	if limit <= 0 || limit > len(st.Transactions) {
-		limit = len(st.Transactions)
+	accountID = strings.TrimSpace(accountID)
+	txType = strings.ToLower(strings.TrimSpace(txType))
+	var filtered []OnlineBankTransaction
+	for i := len(st.Transactions) - 1; i >= 0; i-- {
+		tx := st.Transactions[i]
+		if accountID != "" && tx.FromAccount != accountID && tx.ToAccount != accountID {
+			continue
+		}
+		if txType != "" && !strings.EqualFold(tx.Type, txType) {
+			continue
+		}
+		filtered = append(filtered, tx)
+		if limit > 0 && len(filtered) >= limit {
+			break
+		}
 	}
-	start := len(st.Transactions) - limit
-	if start < 0 {
-		start = 0
+	return filtered, nil
+}
+
+func (s *OnlineBankStore) GetAccount(id string) (*OnlineBankAccount, error) {
+	st, err := s.load()
+	if err != nil {
+		return nil, err
 	}
-	out := make([]OnlineBankTransaction, limit)
-	copy(out, st.Transactions[start:])
-	// newest first
-	for i, j := 0, len(out)-1; i < j; i, j = i+1, j-1 {
-		out[i], out[j] = out[j], out[i]
+	acct, _ := s.findAccount(st, strings.TrimSpace(id))
+	if acct == nil {
+		return nil, fmt.Errorf("account not found")
 	}
-	return out, nil
+	out := *acct
+	return &out, nil
+}
+
+// OnlineBankWireInstructions is how to receive funds into an account.
+type OnlineBankWireInstructions struct {
+	AccountID   string `json:"accountId"`
+	AccountName string `json:"accountName"`
+	IBAN        string `json:"iban,omitempty"`
+	SWIFT       string `json:"swift"`
+	BankName    string `json:"bankName"`
+	Currency    string `json:"currency"`
+	Reference   string `json:"reference,omitempty"`
+}
+
+func (s *OnlineBankStore) WireInstructions(accountID string) (*OnlineBankWireInstructions, error) {
+	st, err := s.load()
+	if err != nil {
+		return nil, err
+	}
+	acct, _ := s.findAccount(st, strings.TrimSpace(accountID))
+	if acct == nil {
+		return nil, fmt.Errorf("account not found")
+	}
+	ref := "NSB-" + strings.ToUpper(acct.ID)
+	return &OnlineBankWireInstructions{
+		AccountID: acct.ID, AccountName: acct.Name, IBAN: acct.IBAN,
+		SWIFT: st.SWIFT, BankName: st.Name, Currency: acct.Currency, Reference: ref,
+	}, nil
+}
+
+// ExportTransactionsCSV returns a CSV statement for one account or all accounts.
+func (s *OnlineBankStore) ExportTransactionsCSV(accountID string) (string, error) {
+	txs, err := s.ListTransactionsFiltered(0, accountID, "")
+	if err != nil {
+		return "", err
+	}
+	var b strings.Builder
+	b.WriteString("date,type,status,amount,currency,from,to,reference,settlement\n")
+	for _, t := range txs {
+		to := t.ToName
+		if to == "" {
+			to = t.ToIBAN
+		}
+		if to == "" {
+			to = t.ToAccount
+		}
+		fmt.Fprintf(&b, "%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
+			time.Unix(t.CreatedAt, 0).UTC().Format("2006-01-02 15:04:05"),
+			t.Type, t.Status, t.Amount, t.Currency,
+			escapeCSV(t.FromName), escapeCSV(to),
+			escapeCSV(t.Reference), escapeCSV(t.Settlement),
+		)
+	}
+	return b.String(), nil
+}
+
+func escapeCSV(s string) string {
+	if strings.ContainsAny(s, ",\"\n") {
+		return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
+	}
+	return s
 }
 
 func (s *OnlineBankStore) findAccount(st *OnlineBankState, id string) (*OnlineBankAccount, int) {
@@ -287,6 +369,24 @@ func (s *OnlineBankStore) findAccount(st *OnlineBankState, id string) (*OnlineBa
 		}
 	}
 	return nil, -1
+}
+
+// EnsureSystemAccount creates a zero-balance system account when missing.
+func (s *OnlineBankStore) EnsureSystemAccount(id, name, currency, fundClass string) error {
+	st, err := s.load()
+	if err != nil {
+		return err
+	}
+	for _, a := range st.Accounts {
+		if a.ID == id {
+			return nil
+		}
+	}
+	st.Accounts = append(st.Accounts, OnlineBankAccount{
+		ID: id, Name: name, Currency: strings.ToUpper(currency),
+		Balance: "0.00", FundClass: fundClass, Bank: "nsb", Status: "active",
+	})
+	return s.save(st)
 }
 
 // Transfer moves funds between online bank accounts or to an external IBAN.
@@ -375,7 +475,8 @@ func (s *OnlineBankStore) Transfer(req OnlineBankTransferRequest) (*OnlineBankTr
 			Amount: formatFloat(amt), Asset: from.Currency, Reference: ref,
 		})
 		res.Transaction.Settlement = settlement
-		if strings.HasPrefix(settlement, "plaid-") || strings.HasPrefix(settlement, "truelayer-") {
+		if strings.HasPrefix(settlement, "plaid-") || strings.HasPrefix(settlement, "truelayer-") ||
+			strings.HasPrefix(settlement, "hybx-") {
 			res.Transaction.Status = "completed"
 		}
 	}

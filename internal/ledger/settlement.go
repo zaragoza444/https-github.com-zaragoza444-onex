@@ -370,6 +370,12 @@ func (s *BookStore) ListSettlements(limit int) []SettlementRecord {
 // SettlementCapabilities reports which real settlement rails are available.
 func SettlementCapabilities(cfg Config, bank BankProviderConfig, evmSender, onexWallet bool) map[string]interface{} {
 	bankProvider := bank.ResolvedProvider()
+	hx := LoadHybrixConfig()
+	hxSt := NewHybrixClient().Status()
+	hybxOnline := false
+	if v, ok := hxSt["online"].(bool); ok {
+		hybxOnline = v
+	}
 	return map[string]interface{}{
 		"service":        "onex-settlement-middleware",
 		"production":     cfg.Production(),
@@ -381,8 +387,13 @@ func SettlementCapabilities(cfg Config, bank BankProviderConfig, evmSender, onex
 		"bankProvider":   bankProvider,
 		"evmSettlement":  evmSender,
 		"onexSettlement": onexWallet,
-		"kinds": []string{string(SettlementVault), string(SettlementInternal), string(SettlementRealFiat), string(SettlementRealCrypto)},
+		"hybxEnabled":    hx.Enabled,
+		"hybxOnline":     hybxOnline,
+		"hybxMiddleware": hx.Enabled,
+		"hybxFederation": hx.Enabled,
+		"hybxExchange":   "/bridge/bank/hybx/exchange",
+		"kinds":          []string{string(SettlementVault), string(SettlementInternal), string(SettlementRealFiat), string(SettlementRealCrypto)},
 		"payoutAssets":   []string{"USD", "EUR", "GBP", "BTC", "ETH", "USDT", "USDC", "BNB", "SOL", "ONEX"},
-		"pipeline":       []string{"quote", "debit", "convert", "settle"},
+		"pipeline":       []string{"quote", "debit", "convert", "settle", "hybx-federate"},
 	}
 }

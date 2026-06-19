@@ -583,24 +583,44 @@ async function loadGreenHealth() {
   ).join('');
 }
 
-async function loadProductionPlatform() {
+async function loadProductionPlatform(existing) {
   const banner = document.getElementById('production-platform-banner');
   const badge = document.getElementById('production-platform-badge');
   const detail = document.getElementById('production-platform-detail');
-  if (!banner) return;
-  const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
-  const j = await api('/bridge/production/status' + evmQ);
-  if (j.error || !j.production) {
-    banner.classList.add('hidden');
-    return;
+  const bankBanner = document.getElementById('online-bank-production');
+  const bankBadge = document.getElementById('online-bank-production-badge');
+  const bankDetail = document.getElementById('online-bank-production-detail');
+  if (!banner && !bankBanner) return existing;
+  let j = existing;
+  if (!j) {
+    const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+    j = await api('/bridge/production/status' + evmQ);
   }
-  banner.classList.remove('hidden');
-  if (badge) badge.textContent = j.domain || 'production';
+  if (j.error || !j.production) {
+    banner?.classList.add('hidden');
+    bankBanner?.classList.add('hidden');
+    return j;
+  }
+  const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+  await api('/bridge/production/bootstrap' + evmQ, { method: 'POST' });
+  await loadGreenHealth();
+  banner?.classList.remove('hidden');
+  bankBanner?.classList.remove('hidden');
+  const domain = j.domain || 'production';
+  if (badge) badge.textContent = domain;
+  if (bankBadge) bankBadge.textContent = domain;
   const ledgerUsd = j.ledgerTotalUsd != null ? fmtUsd(j.ledgerTotalUsd) : '—';
   const tokens = j.platform?.totalTokens ?? '—';
-  if (detail) {
-    detail.textContent = `Real ledger ${ledgerUsd} · ${tokens} platform tokens · node ${j.nodeReady ? 'online' : 'offline'}`;
-  }
+  const bankOnline = j.onlineBank?.online ? 'online bank live' : 'bank offline';
+  const hybx = j.hybx?.enabled || j.hybrix?.enabled ? 'HYBX on' : 'HYBX off';
+  const fineract = j.fineract?.online ? 'Fineract on' : (j.fineract?.enabled ? 'Fineract cfg' : 'Fineract off');
+  const cards = j.virtualCards?.active ?? 0;
+  const hybxCards = j.virtualCards?.hybxCards ?? 0;
+  const mwRoutes = j.hybxMiddleware?.routes ?? 0;
+  const line = `Real ledger ${ledgerUsd} · ${tokens} platform tokens · node ${j.nodeReady ? 'online' : 'offline'} · ${bankOnline} · ${hybx} · ${fineract} · ${cards} cards (${hybxCards} HYBX) · ${mwRoutes} exchange routes`;
+  if (detail) detail.textContent = line;
+  if (bankDetail) bankDetail.textContent = line;
+  return j;
 }
 
 async function refreshAll() {
@@ -1905,8 +1925,46 @@ async function loadLedgerStatus() {
   }
 }
 
+async function refreshBridge7() {
+  const [st, ledgers] = await Promise.all([
+    api('/bridge/bridge7/status'),
+    api('/bridge/bridge7/ledgers'),
+  ]);
+  const badge = document.getElementById('bridge7-badge');
+  const intro = document.getElementById('bridge7-intro');
+  const list = document.getElementById('bridge7-sources');
+  if (badge) badge.textContent = st.enabled ? (st.entries ? st.entries + ' entries' : 'Ready') : 'Off';
+  if (intro) intro.textContent = `Bridge7 · local-ledger-2026 · ledger-pro · crypto-ledger · ${st.entries || 0} valued entries`;
+  if (list) {
+    const rows = ledgers.ledgers || st.sources || [];
+    list.innerHTML = rows.map(r => `
+      <div class="asset-row">
+        <div class="asset-main">
+          <div class="asset-name">${escapeHtml(r.provider || r.id)}</div>
+          <div class="asset-sub">${escapeHtml(r.path || '')}</div>
+        </div>
+        <div class="asset-val">${r.loaded ? escapeHtml(String(r.entries)) + ' rows' : escapeHtml(r.error || '—')}</div>
+      </div>`).join('');
+  }
+}
+
+async function syncBridge7() {
+  const msg = document.getElementById('bridge7-msg');
+  const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+  const j = await api('/bridge/bridge7/sync' + evmQ, { method: 'POST' });
+  if (msg) {
+    if (j.error) msg.textContent = j.error;
+    else msg.textContent = `✓ Synced ${j.entries || 0} entries · $${Number(j.importUsd || 0).toFixed(0)} import value`;
+  }
+  if (!j.error) {
+    await refreshBridge7();
+    await refreshLedger();
+  }
+}
+
 async function refreshLedger() {
   await loadLedgerStatus();
+  await refreshBridge7();
   await loadGreenHealth();
   const evm = getEvmHolder();
   const q = new URLSearchParams();
@@ -2671,7 +2729,7 @@ function renderLedgerAllocationChart(bySourceUsd) {
 }
 
 let onlineBankMode = 'internal';
-let onlineBankMainTab = 'send';
+let onlineBankMainTab = 'overview';
 let onlineBankTimer = null;
 let onlineBankDepositTimer = null;
 let onlineBankAccounts = [];
@@ -2681,12 +2739,135 @@ function setOnlineBankMainTab(tab) {
   document.querySelectorAll('#online-bank-main-tabs .ledger-xfer-tab').forEach(b => {
     b.classList.toggle('active', b.dataset.bmain === tab);
   });
-  document.getElementById('online-bank-pane-send')?.classList.toggle('hidden', tab !== 'send');
-  document.getElementById('online-bank-pane-deposit')?.classList.toggle('hidden', tab !== 'deposit');
-  document.getElementById('online-bank-pane-cards')?.classList.toggle('hidden', tab !== 'cards');
-  document.getElementById('online-bank-pane-ledger')?.classList.toggle('hidden', tab !== 'ledger');
+  const panes = ['overview', 'send', 'deposit', 'activity', 'receive', 'payees', 'hybx', 'fineract', 'cards', 'cashcode', 'ledger'];
+  panes.forEach(p => {
+    document.getElementById('online-bank-pane-' + p)?.classList.toggle('hidden', tab !== p);
+  });
   if (tab === 'ledger') loadOnlineBankLedger();
   if (tab === 'cards') refreshVirtualCards();
+  if (tab === 'cashcode') refreshCashCodes();
+  if (tab === 'activity') loadOnlineBankActivity();
+  if (tab === 'receive') loadOnlineBankWire();
+  if (tab === 'payees') renderOnlineBankPayees();
+  if (tab === 'hybx') refreshHybrix();
+  if (tab === 'fineract') refreshFineract();
+}
+
+function onlineBankQuick(tab) {
+  setOnlineBankMainTab(tab);
+}
+
+function formatBankTxRows(txs, targetId) {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  if (!txs?.length) {
+    el.innerHTML = '<p class="msg">No transactions yet.</p>';
+    return;
+  }
+  el.innerHTML = txs.map(t => {
+    const dir = t.type === 'deposit' ? '+' : '−';
+    const label = t.type === 'deposit'
+      ? `${t.fromName || t.rail || 'deposit'} → ${t.toName || t.toAccount}`
+      : `${t.fromName || t.fromAccount} → ${t.toName || t.toIban || t.toAccount || '—'}`;
+    return `
+    <div class="bank-tx-row">
+      <strong>${dir} ${escapeHtml(t.amount)} ${escapeHtml(t.currency)} · ${escapeHtml(t.type)}</strong>
+      <small>${escapeHtml(label)}</small>
+      <small>${new Date((t.createdAt || 0) * 1000).toLocaleString()} · ${escapeHtml(t.reference || '')}
+        <span class="bank-tx-status ${t.status === 'pending' ? 'pending' : ''}">${escapeHtml(t.status)}</span></small>
+    </div>`;
+  }).join('');
+}
+
+async function loadOnlineBankActivity() {
+  const acct = document.getElementById('online-bank-activity-account')?.value || '';
+  const type = document.getElementById('online-bank-activity-type')?.value || '';
+  let url = '/bridge/bank/transactions?limit=100';
+  if (acct) url += '&account=' + encodeURIComponent(acct);
+  if (type) url += '&type=' + encodeURIComponent(type);
+  const j = await api(url);
+  formatBankTxRows(j.transactions || [], 'online-bank-activity-list');
+}
+
+function exportOnlineBankStatement() {
+  const acct = document.getElementById('online-bank-activity-account')?.value || '';
+  let url = API + '/bridge/bank/statement';
+  if (acct) url += '?account=' + encodeURIComponent(acct);
+  window.open(url, '_blank');
+}
+
+async function loadOnlineBankWire() {
+  const sel = document.getElementById('online-bank-receive-account');
+  const box = document.getElementById('online-bank-wire-details');
+  if (!sel?.value || !box) return;
+  const w = await api('/bridge/bank/wire?account=' + encodeURIComponent(sel.value));
+  if (w.error) { box.innerHTML = `<p class="msg">${escapeHtml(w.error)}</p>`; return; }
+  box.innerHTML = `
+    <div class="bank-wire-row"><span>Beneficiary</span><strong>${escapeHtml(w.accountName)}</strong></div>
+    <div class="bank-wire-row"><span>IBAN</span><code id="wire-iban">${escapeHtml(w.iban || '—')}</code></div>
+    <div class="bank-wire-row"><span>SWIFT / BIC</span><code>${escapeHtml(w.swift)}</code></div>
+    <div class="bank-wire-row"><span>Bank</span><strong>${escapeHtml(w.bankName)}</strong></div>
+    <div class="bank-wire-row"><span>Currency</span><strong>${escapeHtml(w.currency)}</strong></div>
+    <div class="bank-wire-row"><span>Reference</span><code>${escapeHtml(w.reference || '—')}</code></div>
+    <div class="bank-wire-actions">
+      ${w.iban ? '<button type="button" class="copy-btn" id="wire-copy-iban">Copy IBAN</button>' : ''}
+      <button type="button" class="copy-btn" id="wire-copy-swift">Copy SWIFT</button>
+      <button type="button" class="copy-btn" id="wire-copy-ref">Copy reference</button>
+    </div>
+    <p class="msg">Use this reference so deposits match your account.</p>`;
+  document.getElementById('wire-copy-iban')?.addEventListener('click', () => copyText(w.iban));
+  document.getElementById('wire-copy-swift')?.addEventListener('click', () => copyText(w.swift));
+  document.getElementById('wire-copy-ref')?.addEventListener('click', () => copyText(w.reference));
+}
+
+function copyText(text) {
+  if (!text) return;
+  navigator.clipboard?.writeText(text);
+}
+
+function renderOnlineBankPayees() {
+  const el = document.getElementById('online-bank-payees-list');
+  if (!el) return;
+  const banks = ledgerBankAssets();
+  if (!banks.length) {
+    el.innerHTML = '<p class="msg">No saved payees — add bank IBANs in Real Ledger → Saved destinations.</p>';
+    return;
+  }
+  el.innerHTML = banks.map((a, i) => `
+    <div class="bank-payee-card">
+      <div class="bank-acct-name">${escapeHtml(a.label)}</div>
+      <div class="bank-acct-iban">${escapeHtml(a.iban)}</div>
+      <div class="bank-acct-meta">${escapeHtml(a.bankId)} · ${escapeHtml(a.rail)} · ${escapeHtml(a.currency || '')}</div>
+      <button type="button" class="btn-secondary" data-payee-idx="${i}">Pay</button>
+    </div>`).join('');
+  el.querySelectorAll('[data-payee-idx]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const a = banks[Number(btn.dataset.payeeIdx)];
+      if (a) payOnlineBankPayee(a);
+    });
+  });
+}
+
+function payOnlineBankPayee(a) {
+  setOnlineBankMainTab('send');
+  setOnlineBankMode('iban');
+  const ibanEl = document.getElementById('online-bank-iban');
+  const bank = document.getElementById('online-bank-dest-bank');
+  const railEl = document.getElementById('online-bank-rail');
+  if (ibanEl) ibanEl.value = a.iban || '';
+  if (bank && a.bankId) bank.value = a.bankId;
+  if (railEl && a.rail) railEl.value = a.rail;
+  onlineBankPreviewDebounced();
+}
+
+function fillOnlineBankActivityFilters(accts) {
+  const sel = document.getElementById('online-bank-activity-account');
+  const recv = document.getElementById('online-bank-receive-account');
+  const opts = (accts || []).map(a =>
+    `<option value="${a.id}">${escapeHtml(a.currency)} · ${escapeHtml(a.name)}</option>`
+  ).join('');
+  if (sel) sel.innerHTML = '<option value="">All accounts</option>' + opts;
+  if (recv) recv.innerHTML = opts;
 }
 
 function setOnlineBankMode(mode) {
@@ -2737,6 +2918,11 @@ function fillOnlineBankSelects(accts) {
   if (from) from.innerHTML = '<option value="">From account…</option>' + opts;
   if (to) to.innerHTML = '<option value="">To account…</option>' + opts;
   if (depTo) depTo.innerHTML = '<option value="">To account…</option>' + opts;
+
+  const ccFrom = document.getElementById('cashcode-issue-from');
+  const ccTo = document.getElementById('cashcode-redeem-to');
+  if (ccFrom) ccFrom.innerHTML = '<option value="">From account…</option>' + opts;
+  if (ccTo) ccTo.innerHTML = '<option value="">Credit to…</option>' + opts;
 
   const bankSel = document.getElementById('online-bank-dest-bank');
   if (bankSel && ledgerDestinations.banks?.length) {
@@ -2938,47 +3124,66 @@ async function loadOnlineBankLedger() {
 }
 
 function renderOnlineBankTransactions(txs) {
-  const el = document.getElementById('online-bank-tx-list');
-  if (!el) return;
-  if (!txs?.length) {
-    el.innerHTML = '<p class="msg">No transactions yet.</p>';
-    return;
-  }
-  el.innerHTML = txs.map(t => {
-    const dir = t.type === 'deposit' ? '+' : '−';
-    const label = t.type === 'deposit'
-      ? `${t.fromName || t.rail || 'deposit'} → ${t.toName || t.toAccount}`
-      : `${t.fromName || t.fromAccount} → ${t.toName || t.toIban || t.toAccount || '—'}`;
-    return `
-    <div class="bank-tx-row">
-      <strong>${dir} ${escapeHtml(t.amount)} ${escapeHtml(t.currency)} · ${escapeHtml(t.type)}</strong>
-      <small>${escapeHtml(label)}</small>
-      <small>${new Date((t.createdAt || 0) * 1000).toLocaleString()} · ${escapeHtml(t.reference || '')}
-        <span class="bank-tx-status ${t.status === 'pending' ? 'pending' : ''}">${escapeHtml(t.status)}</span></small>
-    </div>`;
-  }).join('');
+  formatBankTxRows(txs, 'online-bank-tx-list');
+}
+
+function renderOnlineBankRecent(txs) {
+  formatBankTxRows((txs || []).slice(0, 8), 'online-bank-recent-tx');
 }
 
 async function refreshOnlineBank() {
-  const [st, accts, txs] = await Promise.all([
+  const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+  const [st, accts, txs, prod] = await Promise.all([
     api('/bridge/bank/status'),
     api('/bridge/bank/accounts'),
     api('/bridge/bank/transactions'),
+    api('/bridge/production/status' + evmQ),
   ]);
   const badge = document.getElementById('online-bank-badge');
-  if (badge) badge.textContent = st.online ? 'Online' : 'Offline';
+  if (badge) {
+    if (prod && !prod.error && prod.production) {
+      badge.textContent = prod.domain || 'Production';
+    } else {
+      badge.textContent = st.online ? 'Online' : 'Offline';
+    }
+  }
   const totalEl = document.getElementById('online-bank-total');
   if (totalEl) totalEl.textContent = fmtBankUsdTotals(st.totals);
   const meta = document.getElementById('online-bank-meta');
-  if (meta) meta.textContent = `${st.name || 'NSB'} · SWIFT ${st.swift || '—'} · ${st.accounts || 0} accounts · ${st.transactions || 0} tx`;
+  if (meta) {
+    let line = `${st.name || 'NSB'} · SWIFT ${st.swift || '—'} · ${st.accounts || 0} accounts · ${st.transactions || 0} tx`;
+    if (prod && !prod.error) {
+      const extras = [];
+      if (prod.ledgerTotalUsd != null) extras.push('ledger ' + fmtUsd(prod.ledgerTotalUsd));
+      if (prod.nodeReady != null) extras.push('node ' + (prod.nodeReady ? 'online' : 'offline'));
+      if (prod.hybx?.enabled || prod.hybrix?.enabled) extras.push('HYBX');
+      if (prod.fineract?.online) extras.push('Fineract');
+      if (extras.length) line += ' · ' + extras.join(' · ');
+    }
+    meta.textContent = line;
+  }
+  await loadProductionPlatform(prod);
   onlineBankAccounts = accts.accounts || [];
   renderOnlineBankAccounts(onlineBankAccounts);
   fillOnlineBankSelects(onlineBankAccounts);
+  fillOnlineBankActivityFilters(onlineBankAccounts);
+  fillHybrixSelect(onlineBankAccounts);
+  renderOnlineBankRecent(txs.transactions || []);
   if (onlineBankMainTab === 'ledger') {
     await loadOnlineBankLedger();
   } else if (onlineBankMainTab === 'cards') {
     await refreshVirtualCards();
-  } else {
+  } else if (onlineBankMainTab === 'activity') {
+    await loadOnlineBankActivity();
+  } else if (onlineBankMainTab === 'receive') {
+    loadOnlineBankWire();
+  } else if (onlineBankMainTab === 'payees') {
+    renderOnlineBankPayees();
+  } else if (onlineBankMainTab === 'hybx') {
+    await refreshHybrix();
+  } else if (onlineBankMainTab === 'fineract') {
+    await refreshFineract();
+  } else if (onlineBankMainTab !== 'overview') {
     renderOnlineBankTransactions(txs.transactions || []);
   }
   if (!ledgerDestinations.banks?.length) {
@@ -2992,45 +3197,96 @@ async function refreshOnlineBank() {
 let virtualCards = [];
 let virtualCardTimer = null;
 
-function cardBrandClass(brand) {
+function cardBrandClass(brand, issuer) {
+  if ((issuer || '').toLowerCase() === 'hybx') return 'hybx';
   const b = (brand || '').toLowerCase();
   if (b === 'mastercard') return 'mastercard';
   return 'visa';
 }
 
-function renderVirtualCards(cards, status) {
-  const grid = document.getElementById('virtual-cards-grid');
-  const badge = document.getElementById('virtual-cards-badge');
-  const intro = document.getElementById('virtual-cards-intro');
-  if (badge) badge.textContent = status?.production ? 'Production' : (status?.mode || '—');
+let virtualCardIssuerFilter = 'all';
+
+function setVirtualCardFilter(issuer) {
+  virtualCardIssuerFilter = issuer || 'all';
+  document.querySelectorAll('[data-cissuer]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.cissuer === virtualCardIssuerFilter);
+  });
+  renderVirtualCards(filterVirtualCards(virtualCards), lastVirtualCardStatus);
+}
+
+function filterVirtualCards(cards) {
+  if (virtualCardIssuerFilter === 'all') return cards || [];
+  return (cards || []).filter(c => (c.issuer || 'nsb').toLowerCase() === virtualCardIssuerFilter);
+}
+
+let lastVirtualCardStatus = null;
+
+function formatCardPAN(c) {
+  if (c.production && (c.panFull || c.panMasked)) {
+    return c.panFull || c.panMasked;
+  }
+  return c.panMasked || ('•••• •••• •••• ' + (c.last4 || '0000'));
+}
+
+function renderCardProviders(providers) {
+  if (!providers?.length) return '';
+  return providers.map(p =>
+    `<span class="deploy-badge ${p.status === 'active' ? 'green' : ''}">${escapeHtml(p.name)}</span>`
+  ).join('');
+}
+
+function renderVirtualCards(cards, status, gridId) {
+  lastVirtualCardStatus = status || lastVirtualCardStatus;
+  const grid = document.getElementById(gridId || 'virtual-cards-grid');
+  const mainGrid = !gridId || gridId === 'virtual-cards-grid';
+  const badge = mainGrid ? document.getElementById('virtual-cards-badge') : null;
+  const intro = mainGrid ? document.getElementById('virtual-cards-intro') : null;
+  const prod = status?.production || (cards?.length && cards[0]?.production);
+  const activeCount = (cards || []).filter(c => c.active).length;
+  const nsb = status?.nsbCards ?? (cards || []).filter(c => (c.issuer || 'nsb') !== 'hybx').length;
+  const hybx = status?.hybxCards ?? (cards || []).filter(c => (c.issuer || '') === 'hybx').length;
+  if (badge) badge.textContent = prod ? `${activeCount} active · Production` : (status?.mode || '—');
   if (intro) {
-    const n = status?.active || cards?.length || 0;
-    intro.textContent = `NSB virtual debit cards · ${n} active · Apple Pay · Google Pay · 3D Secure`;
+    intro.textContent = prod
+      ? `Cards 101.1 online · BIN 1011 · 4-digit PIN · ${activeCount}/${cards?.length || 0} active (${nsb} NSB · ${hybx} HYBX)`
+      : `NSB + HYBX virtual debit cards · ${activeCount} active (${nsb} NSB · ${hybx} HYBX)`;
   }
   if (!grid) return;
   if (!cards?.length) {
-    grid.innerHTML = '<p class="msg">No cards yet — open Online Bank with production mode to auto-issue cards.</p>';
+    grid.innerHTML = '<p class="msg">No cards yet — production mode auto-issues NSB cards per account. HYBX tab → Sync → Issue HYBX virtual cards.</p>';
     return;
   }
   grid.innerHTML = cards.map(c => `
-    <div class="virtual-card ${cardBrandClass(c.brand)} ${c.active ? 'active' : 'inactive'}">
+    <div class="virtual-card ${cardBrandClass(c.brand, c.issuer)} ${c.active ? 'active' : 'inactive'}">
       <div class="virtual-card-top">
-        <span class="virtual-card-brand">${escapeHtml((c.network || c.brand || 'CARD').toUpperCase())}</span>
-        <span class="virtual-card-status">${escapeHtml(c.status || '—')}</span>
+        <span class="virtual-card-brand">${escapeHtml(c.issuer === 'hybx' ? 'HYBX' : (c.network || c.brand || 'CARD').toUpperCase())}</span>
+        <span class="virtual-card-status ${c.active ? 'live' : ''}">${escapeHtml(c.active ? 'ACTIVE' : (c.status || '—'))}${c.production ? ' · PROD' : ''}</span>
       </div>
-      <div class="virtual-card-pan">${escapeHtml(c.panMasked || '•••• •••• •••• ' + (c.last4 || '0000'))}</div>
+      <div class="virtual-card-pan">${escapeHtml(formatCardPAN(c))}</div>
       <div class="virtual-card-meta">
         <span>EXP ${escapeHtml(c.expiry || '—')}</span>
+        <span>CVV ${escapeHtml(c.production ? (c.cvv || c.cvvHint || '—') : '***')}</span>
+        <span>PIN ${escapeHtml(c.production ? (c.pin || '—') : '****')}</span>
+      </div>
+      <div class="virtual-card-meta">
         <span>${escapeHtml(c.label || c.accountName || 'Virtual card')}</span>
+        <span>${escapeHtml(c.program ? 'Prog ' + c.program : '')}${c.bin ? ' · BIN ' + escapeHtml(c.bin) : ''}</span>
       </div>
       <div class="virtual-card-bal">
         <span>${escapeHtml(c.available || '0.00')} ${escapeHtml(c.currency || '')}</span>
-        <span class="virtual-card-spent">spent ${escapeHtml(c.spent || '0.00')}</span>
+        <span class="virtual-card-spent">limit ${escapeHtml(c.limit || '—')} · spent ${escapeHtml(c.spent || '0.00')}</span>
+      </div>
+      <div class="virtual-card-details">
+        <div><span class="vc-label">Account</span> ${escapeHtml(c.accountId || '—')}</div>
+        ${c.hybxAccountId ? `<div><span class="vc-label">HYBX</span> ${escapeHtml(c.hybxAccountId)}</div>` : ''}
+        ${c.iban ? `<div><span class="vc-label">IBAN</span> ${escapeHtml(c.iban)}</div>` : ''}
+        <div><span class="vc-label">Card ID</span> ${escapeHtml(c.id || '—')}</div>
       </div>
       <div class="virtual-card-wallets">
         ${c.applePay ? '<span class="deploy-badge green">Apple Pay</span>' : ''}
         ${c.googlePay ? '<span class="deploy-badge green">Google Pay</span>' : ''}
         ${c.threeDSecure ? '<span class="deploy-badge green">3DS</span>' : ''}
+        ${renderCardProviders(c.providers)}
       </div>
     </div>`).join('');
 }
@@ -3040,7 +3296,7 @@ function fillVirtualCardSelect(cards) {
   if (!sel) return;
   sel.innerHTML = ['<option value="">Select card…</option>'].concat(
     (cards || []).map(c =>
-      `<option value="${escapeHtml(c.id)}" data-avail="${escapeHtml(c.available)}" data-cur="${escapeHtml(c.currency)}">${escapeHtml(c.network || c.brand)} ·••• ${escapeHtml(c.last4)} — ${escapeHtml(c.available)} ${escapeHtml(c.currency)}</option>`
+      `<option value="${escapeHtml(c.id)}" data-avail="${escapeHtml(c.available)}" data-cur="${escapeHtml(c.currency)}">${escapeHtml(c.network || c.brand)} ${escapeHtml(c.production ? (c.panFull || c.panMasked || '') : '•••• ' + (c.last4 || ''))} — ${escapeHtml(c.available)} ${escapeHtml(c.currency)}</option>`
     )
   ).join('');
 }
@@ -3062,15 +3318,35 @@ function renderVirtualCardTransactions(txs) {
     </div>`).join('');
 }
 
+async function issueCards1011() {
+  const msg = document.getElementById('virtual-card-msg');
+  const j = await api('/bridge/cards/101.1/issue', { method: 'POST' });
+  if (msg) msg.textContent = j.error ? j.error : `✓ Cards 101.1 · ${j.count || 0} online · BIN ${j.bin || '1011'}`;
+  await refreshVirtualCards();
+}
+
 async function refreshVirtualCards() {
-  const [status, list, txs] = await Promise.all([
+  const [status, txs] = await Promise.all([
     api('/bridge/cards/status'),
-    api('/bridge/cards'),
     api('/bridge/cards/transactions'),
   ]);
+  let list = { cards: [] };
+  if (status?.production) {
+    list = await api('/bridge/cards/101.1/issue', { method: 'POST' });
+    if (list.error) list = await api('/bridge/cards?activate=1');
+    if (list.error) list = await api('/bridge/cards/activate', { method: 'POST' });
+    if (list.error) list = await api('/bridge/cards');
+  } else {
+    list = await api('/bridge/cards');
+  }
+  if (list.error) {
+    const intro = document.getElementById('virtual-cards-intro');
+    if (intro) intro.textContent = list.error;
+    return;
+  }
   virtualCards = list.cards || [];
-  renderVirtualCards(virtualCards, status);
-  fillVirtualCardSelect(virtualCards);
+  renderVirtualCards(filterVirtualCards(virtualCards), status);
+  fillVirtualCardSelect(filterVirtualCards(virtualCards));
   renderVirtualCardTransactions(txs.transactions || []);
 }
 
@@ -3126,6 +3402,397 @@ async function doVirtualCardPay() {
     document.getElementById('virtual-card-amount').value = '';
     await refreshOnlineBank();
   }
+}
+
+let cashCodeIssueTimer = null;
+let cashCodeRedeemTimer = null;
+
+function cashCodeIssuePreviewDebounced() {
+  clearTimeout(cashCodeIssueTimer);
+  cashCodeIssueTimer = setTimeout(cashCodeIssuePreview, 350);
+}
+
+function cashCodeRedeemPreviewDebounced() {
+  clearTimeout(cashCodeRedeemTimer);
+  cashCodeRedeemTimer = setTimeout(cashCodeRedeemPreview, 350);
+}
+
+async function cashCodeIssuePreview() {
+  const preview = document.getElementById('cashcode-issue-preview');
+  const fromAccount = document.getElementById('cashcode-issue-from')?.value;
+  const amount = document.getElementById('cashcode-issue-amount')?.value;
+  const pin = document.getElementById('cashcode-issue-pin')?.value?.trim();
+  const memo = document.getElementById('cashcode-issue-memo')?.value?.trim();
+  if (!fromAccount || !amount) {
+    if (preview) preview.textContent = 'Select account and amount';
+    return;
+  }
+  const body = { fromAccount, amount, preview: true };
+  if (pin) body.pin = pin;
+  if (memo) body.memo = memo;
+  const j = await api('/bridge/cashcode/issue', { method: 'POST', body: JSON.stringify(body) });
+  if (preview) preview.textContent = j.error ? j.error : `Preview: issue ${amount} · ends ${j.cashCode?.codeLast4 || '****'}`;
+}
+
+async function cashCodeRedeemPreview() {
+  const preview = document.getElementById('cashcode-redeem-preview');
+  const code = document.getElementById('cashcode-redeem-code')?.value?.trim();
+  const pin = document.getElementById('cashcode-redeem-pin')?.value?.trim();
+  if (!code) {
+    if (preview) preview.textContent = 'Enter code to verify';
+    return;
+  }
+  const body = { code };
+  if (pin) body.pin = pin;
+  const j = await api('/bridge/cashcode/verify', { method: 'POST', body: JSON.stringify(body) });
+  if (!preview) return;
+  if (j.error) preview.textContent = j.error;
+  else if (!j.valid) preview.textContent = `Invalid · ${j.status || 'not found'}`;
+  else preview.textContent = `Valid: ${j.amount} ${j.currency} · ****-${j.codeLast4}${j.hasPin ? ' · PIN required' : ''}`;
+}
+
+function renderCashCodeList(codes) {
+  const el = document.getElementById('cashcode-list');
+  if (!el) return;
+  if (!codes?.length) {
+    el.innerHTML = '<p class="msg">No cash codes issued yet.</p>';
+    return;
+  }
+  el.innerHTML = codes.map(c => `
+    <div class="bank-tx-row">
+      <strong>****-${escapeHtml(c.codeLast4)} · ${escapeHtml(c.amount)} ${escapeHtml(c.currency)} · ${escapeHtml(c.status)}</strong>
+      <small>${escapeHtml(c.memo || c.issuerName || c.issuerAccount)}</small>
+      <small>${new Date((c.createdAt || 0) * 1000).toLocaleString()}${c.expiresAt ? ' · expires ' + new Date(c.expiresAt * 1000).toLocaleString() : ''}</small>
+      ${c.status === 'active' ? `<button type="button" class="dex-max" onclick="cancelCashCode('${escapeHtml(c.id)}','${escapeHtml(c.issuerAccount)}')">Cancel</button>` : ''}
+    </div>`).join('');
+}
+
+async function refreshCashCodes() {
+  const st = await api('/bridge/cashcode/status');
+  const badge = document.getElementById('cashcode-badge');
+  const intro = document.getElementById('cashcode-intro');
+  if (badge) badge.textContent = st.enabled ? `${st.active || 0} active` : 'off';
+  if (intro) intro.textContent = `Cash codes · escrow ${st.escrowHeld || '0.00'} · ${st.redeemed || 0} redeemed`;
+  const from = document.getElementById('cashcode-issue-from')?.value;
+  const q = from ? `?accountId=${encodeURIComponent(from)}` : '';
+  const list = await api('/bridge/cashcode/list' + q);
+  renderCashCodeList(list.codes || []);
+}
+
+async function doCashCodeIssue() {
+  const msg = document.getElementById('cashcode-issue-msg');
+  const box = document.getElementById('cashcode-issued-box');
+  const fromAccount = document.getElementById('cashcode-issue-from')?.value;
+  const amount = document.getElementById('cashcode-issue-amount')?.value;
+  const pin = document.getElementById('cashcode-issue-pin')?.value?.trim();
+  const memo = document.getElementById('cashcode-issue-memo')?.value?.trim();
+  if (!fromAccount || !amount) {
+    if (msg) msg.textContent = 'Select account and amount';
+    return;
+  }
+  const body = { fromAccount, amount, preview: false };
+  if (pin) body.pin = pin;
+  if (memo) body.memo = memo;
+  const j = await api('/bridge/cashcode/issue', { method: 'POST', body: JSON.stringify(body) });
+  if (msg) msg.textContent = j.error ? j.error : '✓ Cash code issued';
+  if (j.code && box) {
+    box.classList.remove('hidden');
+    document.getElementById('cashcode-issued-value').textContent = j.code;
+    document.getElementById('cashcode-issued-detail').textContent =
+      `${j.cashCode?.amount || amount} ${j.cashCode?.currency || ''} · share securely · single use`;
+  }
+  if (!j.error) {
+    await refreshOnlineBank();
+    await refreshCashCodes();
+  }
+}
+
+async function doCashCodeRedeem() {
+  const msg = document.getElementById('cashcode-redeem-msg');
+  const code = document.getElementById('cashcode-redeem-code')?.value?.trim();
+  const pin = document.getElementById('cashcode-redeem-pin')?.value?.trim();
+  const toAccount = document.getElementById('cashcode-redeem-to')?.value;
+  if (!code || !toAccount) {
+    if (msg) msg.textContent = 'Enter code and destination account';
+    return;
+  }
+  const body = { code, toAccount, preview: false };
+  if (pin) body.pin = pin;
+  const j = await api('/bridge/cashcode/redeem', { method: 'POST', body: JSON.stringify(body) });
+  if (msg) {
+    msg.textContent = j.error ? j.error :
+      `✓ Redeemed ${j.cashCode?.amount || ''} ${j.cashCode?.currency || ''} · balance ${j.toBalance || '—'}`;
+  }
+  if (!j.error) {
+    document.getElementById('cashcode-redeem-code').value = '';
+    document.getElementById('cashcode-redeem-pin').value = '';
+    await refreshOnlineBank();
+    await refreshCashCodes();
+  }
+}
+
+async function cancelCashCode(id, issuerAccount) {
+  const j = await api('/bridge/cashcode/cancel', {
+    method: 'POST',
+    body: JSON.stringify({ id, issuerAccount }),
+  });
+  const msg = document.getElementById('cashcode-issue-msg');
+  if (msg) msg.textContent = j.error ? j.error : '✓ Code cancelled · funds returned';
+  await refreshOnlineBank();
+  await refreshCashCodes();
+}
+
+let hybxExchangeTimer = null;
+let hybxExchangeRoutes = [];
+
+async function loadHybxExchangeRoutes() {
+  const j = await api('/bridge/bank/hybx/exchange/routes');
+  hybxExchangeRoutes = j.routes || [];
+  const sel = document.getElementById('hybx-exchange-route');
+  if (!sel) return;
+  sel.innerHTML = hybxExchangeRoutes.map(r =>
+    `<option value="${escapeHtml(r.id)}">${escapeHtml(r.label)} (${escapeHtml(r.from)} → ${escapeHtml(r.to)})</option>`
+  ).join('');
+}
+
+function hybxExchangePreviewDebounced() {
+  clearTimeout(hybxExchangeTimer);
+  hybxExchangeTimer = setTimeout(hybxExchangePreview, 350);
+}
+
+async function hybxExchangePreview() {
+  const preview = document.getElementById('hybx-exchange-preview');
+  const route = document.getElementById('hybx-exchange-route')?.value;
+  const amount = document.getElementById('hybx-exchange-amount')?.value;
+  const nsbAccount = document.getElementById('hybx-account')?.value;
+  const chainId = document.getElementById('hybx-exchange-chain')?.value?.trim();
+  const address = document.getElementById('hybx-exchange-address')?.value?.trim();
+  if (!route || !amount) {
+    if (preview) preview.textContent = 'Select route and amount';
+    return;
+  }
+  const j = await api('/bridge/bank/hybx/exchange/quote', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ route, amount, nsbAccount, chainId, address, preview: true }),
+  });
+  if (!preview) return;
+  if (j.error) { preview.textContent = j.error; return; }
+  preview.textContent = `Preview: ${j.amount || amount} · ${j.route || route} · ${j.status || 'quoted'}`;
+}
+
+async function doHybxExchange() {
+  const msg = document.getElementById('hybx-exchange-msg');
+  const route = document.getElementById('hybx-exchange-route')?.value;
+  const amount = document.getElementById('hybx-exchange-amount')?.value;
+  const nsbAccount = document.getElementById('hybx-account')?.value;
+  const chainId = document.getElementById('hybx-exchange-chain')?.value?.trim();
+  const address = document.getElementById('hybx-exchange-address')?.value?.trim();
+  if (!route || !amount) {
+    if (msg) msg.textContent = 'Select route and amount';
+    return;
+  }
+  const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+  const j = await api('/bridge/bank/hybx/exchange' + evmQ, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ route, amount, nsbAccount, chainId, address }),
+  });
+  if (msg) {
+    if (j.error) msg.textContent = j.error;
+    else msg.textContent = `✓ ${j.status}: ${j.route || route}${j.chainSettlement ? ' · ' + j.chainSettlement : ''}`;
+  }
+  if (!j.error) {
+    document.getElementById('hybx-exchange-amount').value = '';
+    await refreshHybrix();
+    await refreshVirtualCards();
+    await refreshOnlineBank();
+  }
+}
+
+let hybrixTimer = null;
+
+async function refreshHybrix() {
+  const [st, mirrors, cards, mw] = await Promise.all([
+    api('/bridge/bank/hybx/status'),
+    api('/bridge/bank/hybx/mirrors'),
+    api('/bridge/cards/hybx'),
+    api('/bridge/bank/hybx/middleware/status'),
+  ]);
+  const badge = document.getElementById('hybx-status-badge');
+  if (badge) badge.textContent = st.online ? 'Online' : (st.enabled ? 'Offline' : 'Disabled');
+  const mwBadge = document.getElementById('hybx-mw-badge');
+  if (mwBadge) mwBadge.textContent = mw.enabled ? (mw.online ? 'Live' : 'Ready') : 'Off';
+  const mwIntro = document.getElementById('hybx-mw-intro');
+  if (mwIntro) mwIntro.textContent = `Exchange middleware · ${mw.routes || 0} routes · ${mw.chains || 0} chains · NSB · Fineract · platform`;
+  const cardsBadge = document.getElementById('hybx-cards-badge');
+  if (cardsBadge) cardsBadge.textContent = (cards.count || 0) + ' HYBX cards';
+  const meta = document.getElementById('hybx-meta');
+  if (meta) {
+    meta.textContent = `HYBX · ${st.baseUrl || '—'} · ${st.assets || 0} assets · ${mirrors.count || 0} mirrors · ${cards.count || 0} virtual cards`;
+  }
+  renderHybrixMirrors(mirrors.mirrors || []);
+  if (document.getElementById('hybx-cards-grid')) {
+    renderVirtualCards(cards.cards || [], { hybxCards: cards.count, active: cards.count }, 'hybx-cards-grid');
+  }
+  fillHybrixSelect(onlineBankAccounts);
+  await loadHybxExchangeRoutes();
+  renderHybxFederation(await api('/bridge/bank/hybx/federation'));
+}
+
+function renderHybxFederation(j) {
+  const el = document.getElementById('hybx-federation-list');
+  if (!el) return;
+  const recs = j?.records || [];
+  if (!recs.length) {
+    el.innerHTML = '<p class="msg">No federation settlements yet — exchange, card pay, or ledger settle will appear here.</p>';
+    return;
+  }
+  el.innerHTML = recs.slice(0, 20).map(r => `
+    <div class="asset-row">
+      <div class="asset-main">
+        <div class="asset-name">${escapeHtml(r.kind || 'settlement')} · ${escapeHtml(r.symbol || '')}</div>
+        <div class="asset-sub">${escapeHtml(r.reference || r.id || '')}</div>
+      </div>
+      <div class="asset-val">${escapeHtml(r.amount || '—')} <span class="asset-sub">${escapeHtml(r.status || '')}</span></div>
+    </div>`).join('');
+}
+
+function renderHybrixMirrors(mirrors) {
+  const el = document.getElementById('hybx-mirror-list');
+  if (!el) return;
+  if (!mirrors?.length) {
+    el.innerHTML = '<p class="msg">No mirrors — tap Sync NSB → HYBX.</p>';
+    return;
+  }
+  el.innerHTML = mirrors.map(m => `
+    <div class="bank-account-card">
+      <div class="bank-acct-name">${escapeHtml(m.nsbAccountId)} → ${escapeHtml(m.hybxAccountId || m.hybrixAccountId)}</div>
+      <div class="bank-acct-bal">${escapeHtml(m.mirroredBalance)} ${escapeHtml((m.symbol || '').toUpperCase())}</div>
+      <div class="bank-acct-meta">HYBX · ${escapeHtml(m.symbol)} · synced ${new Date((m.lastSync || 0) * 1000).toLocaleString()}</div>
+    </div>`).join('');
+}
+
+function fillHybrixSelect(accts) {
+  const sel = document.getElementById('hybx-account');
+  if (!sel) return;
+  sel.innerHTML = (accts || []).map(a =>
+    `<option value="${a.id}">${escapeHtml(a.currency)} · ${escapeHtml(a.balance)} — ${escapeHtml(a.name)}</option>`
+  ).join('');
+}
+
+function hybrixPreviewDebounced() {
+  clearTimeout(hybrixTimer);
+  hybrixTimer = setTimeout(hybrixPreview, 350);
+}
+
+async function hybrixPreview() {
+  const preview = document.getElementById('hybx-preview');
+  const nsbAccount = document.getElementById('hybx-account')?.value;
+  const amount = document.getElementById('hybx-amount')?.value;
+  const direction = document.getElementById('hybx-direction')?.value;
+  if (!nsbAccount || !amount) {
+    if (preview) preview.textContent = 'Select account and amount';
+    return;
+  }
+  const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+  const j = await api('/bridge/bank/hybx/convert' + evmQ, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nsbAccount, amount, direction, preview: true }),
+  });
+  if (!preview) return;
+  if (j.error) { preview.textContent = j.error; return; }
+  preview.textContent = `Preview: ${j.amount} ${j.symbol} · ${j.direction} · mirror ${j.mirrorBalance || '—'}`;
+}
+
+async function issueHybxVirtualCards() {
+  const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+  const j = await api('/bridge/bank/hybx/cards/issue' + evmQ, { method: 'POST' });
+  const msg = document.getElementById('hybx-msg');
+  if (msg) msg.textContent = j.error ? j.error : `✓ Issued ${j.count || 0} HYBX virtual cards`;
+  await refreshHybrix();
+  await refreshVirtualCards();
+  await refreshOnlineBank();
+}
+
+async function syncHybrixMirrors() {
+  const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+  const j = await api('/bridge/bank/hybx/sync' + evmQ, { method: 'POST' });
+  const msg = document.getElementById('hybx-msg');
+  if (msg) msg.textContent = j.error ? j.error : `✓ Synced ${j.count || 0} accounts`;
+  await refreshHybrix();
+  await refreshOnlineBank();
+}
+
+async function doHybrixConvert() {
+  const msg = document.getElementById('hybx-msg');
+  const nsbAccount = document.getElementById('hybx-account')?.value;
+  const amount = document.getElementById('hybx-amount')?.value;
+  const direction = document.getElementById('hybx-direction')?.value;
+  if (!nsbAccount || !amount) {
+    if (msg) msg.textContent = 'Select account and amount';
+    return;
+  }
+  const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+  const j = await api('/bridge/bank/hybx/convert' + evmQ, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nsbAccount, amount, direction, preview: false }),
+  });
+  if (msg) {
+    if (j.error) msg.textContent = j.error;
+    else msg.textContent = `✓ ${j.status}: ${j.amount} ${j.symbol} · mirror ${j.mirrorBalance}`;
+  }
+  if (!j.error) {
+    document.getElementById('hybx-amount').value = '';
+    await refreshHybrix();
+    await refreshOnlineBank();
+  }
+}
+
+async function refreshFineract() {
+  const [st, accts] = await Promise.all([
+    api('/bridge/bank/fineract/status'),
+    api('/bridge/bank/fineract/accounts'),
+  ]);
+  const badge = document.getElementById('fineract-status-badge');
+  if (badge) badge.textContent = st.online ? 'Online' : (st.configured ? 'Auth needed' : (st.enabled ? 'Offline' : 'Disabled'));
+  const meta = document.getElementById('fineract-meta');
+  if (meta) {
+    meta.textContent = `${st.name || 'Fineract'} · ${st.baseUrl || '—'} · tenant ${st.tenant || 'default'} · ${st.accounts ?? accts.count ?? 0} accounts`;
+  }
+  const swagger = document.getElementById('fineract-swagger-link');
+  if (swagger && st.swaggerUrl) swagger.href = st.swaggerUrl;
+  const intro = document.getElementById('fineract-intro');
+  if (intro) {
+    intro.textContent = st.error
+      ? `Fineract: ${st.error} — set ONEX_FINERACT_USERNAME and ONEX_FINERACT_PASSWORD`
+      : 'Apache Fineract savings accounts from HYBX Finance — sync into NSB online bank for send, deposit, and ledger.';
+  }
+  renderFineractAccounts(accts.accounts || []);
+}
+
+function renderFineractAccounts(accounts) {
+  const el = document.getElementById('fineract-account-list');
+  if (!el) return;
+  if (!accounts?.length) {
+    el.innerHTML = '<p class="msg">No Fineract accounts — configure credentials and tap Sync.</p>';
+    return;
+  }
+  el.innerHTML = accounts.map(a => `
+    <div class="bank-account-card">
+      <div class="bank-acct-name">${escapeHtml(a.clientName || a.productName || 'Savings')}</div>
+      <div class="bank-acct-bal">${escapeHtml(String(a.accountBalance ?? a.availableBalance ?? '0'))} ${escapeHtml((a.currency || 'USD').toUpperCase())}</div>
+      <div class="bank-acct-meta">Fineract #${escapeHtml(String(a.id))} · ${escapeHtml(a.accountNo || '—')} · ${escapeHtml(a.status || '—')}</div>
+    </div>`).join('');
+}
+
+async function syncFineractAccounts() {
+  const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+  const j = await api('/bridge/bank/fineract/sync' + evmQ, { method: 'POST' });
+  const msg = document.getElementById('fineract-intro');
+  if (msg && !j.error) {
+    msg.textContent = `✓ Synced ${j.count || 0} Fineract accounts into online bank`;
+  }
+  await refreshFineract();
+  await refreshOnlineBank();
 }
 
 init();

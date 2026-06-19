@@ -81,6 +81,7 @@ if [ "$USE_DOCKER" = "1" ] && [ -f docker-compose.prod.yml ]; then
   docker compose -f docker-compose.prod.yml --profile proxy up -d --build
   sleep 10
   curl -sf http://127.0.0.1:9338/health && echo " bridge OK" || echo " bridge FAIL"
+  curl -sf http://127.0.0.1:9338/bridge/bridge7/status | head -c 200 && echo " ... bridge7 OK" || echo " bridge7 FAIL"
   if [ -n "$DOMAIN" ] && [ -f deploy/certs/fullchain.pem ]; then
     echo "Site:   https://$DOMAIN/"
     echo "Wallet: https://$DOMAIN/wallet/"

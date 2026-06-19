@@ -48,6 +48,11 @@ services:
       # Persist bridge + token platform storage under the same mounted volume.
       ONEX_HOME_DIR: /bridge-data
       ONEX_LEDGER_MODE: production
+      ONEX_BRIDGE7_ENABLED: ${ONEX_BRIDGE7_ENABLED:-1}
+      ONEX_BRIDGE7_PATHS_FILE: ${ONEX_BRIDGE7_PATHS_FILE:-configs/bridge7.paths.json}
+      ONEX_LOCAL_LEDGER_2026_FILE: ${ONEX_LOCAL_LEDGER_2026_FILE:-data/bridge7/local-ledger-2026.json}
+      ONEX_LEDGER_PRO_FILE: ${ONEX_LEDGER_PRO_FILE:-data/bridge7/ledger-pro.json}
+      ONEX_CRYPTO_LEDGER_FILE: ${ONEX_CRYPTO_LEDGER_FILE:-data/bridge7/crypto-ledger.json}
     depends_on:
       onexd:
         condition: service_healthy

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"os"
@@ -69,6 +70,16 @@ func main() {
 	}
 
 	srv := bridge.NewServer(b)
+	if b.IsProduction() {
+		log.Printf("bridge: production bootstrap…")
+		if res := b.BootstrapProduction(context.Background(), ""); res != nil {
+			if ok, _ := res["ok"].(bool); ok {
+				log.Printf("bridge: production bootstrap complete")
+			} else {
+				log.Printf("bridge: production bootstrap: %v", res["detail"])
+			}
+		}
+	}
 	log.Fatal(srv.Start(cfg.Listen))
 }
 

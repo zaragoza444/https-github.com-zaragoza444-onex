@@ -1,0 +1,13 @@
+{
+  "provider": "Apache Fineract",
+  "baseUrl": "https://fineract.hybxfinance.com/fineract-provider",
+  "swaggerUrl": "https://fineract.hybxfinance.com/fineract-provider/swagger-ui/index.html",
+  "description": "HYBX Finance core banking — savings accounts, deposits, withdrawals via Fineract REST API",
+  "env": {
+    "ONEX_FINERACT_ENABLED": "1",
+    "ONEX_FINERACT_URL": "https://fineract.hybxfinance.com/fineract-provider",
+    "ONEX_FINERACT_TENANT": "default",
+    "ONEX_FINERACT_USERNAME": "your-fineract-user",
+    "ONEX_FINERACT_PASSWORD": "your-fineract-password"
+  }
+}

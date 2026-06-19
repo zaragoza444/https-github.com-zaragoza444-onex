@@ -1,0 +1,21 @@
+{
+  "provider": "ledger-pro",
+  "version": "1.0",
+  "description": "Ledger Pro professional books for Bridge7",
+  "books": [
+    {
+      "bookId": "operating",
+      "entries": [
+        { "asset": "USD", "amount": "175000.00", "account": "Operating Cash", "fundClass": "m1" },
+        { "asset": "EUR", "amount": "62000.00", "account": "EU Operations", "fundClass": "m1" }
+      ]
+    },
+    {
+      "bookId": "treasury",
+      "entries": [
+        { "asset": "USD", "amount": "500000.00", "account": "Treasury", "fundClass": "m0" },
+        { "asset": "GBP", "amount": "85000.00", "account": "UK Treasury", "fundClass": "nsb" }
+      ]
+    }
+  ]
+}

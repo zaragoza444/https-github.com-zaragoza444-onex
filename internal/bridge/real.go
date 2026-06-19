@@ -14,6 +14,11 @@ func (b *Bridge) isProduction() bool {
 	return b.resolvedLedgerConfig().Production()
 }
 
+// IsProduction reports whether the bridge runs in production ledger mode.
+func (b *Bridge) IsProduction() bool {
+	return b.isProduction()
+}
+
 // syncRealPortfolio keeps only verified on-chain balances in production mode.
 func (b *Bridge) syncRealPortfolio(p *Portfolio) {
 	if !b.isProduction() {

@@ -1,0 +1,31 @@
+{
+  "provider": "crypto-ledger",
+  "version": "1.0",
+  "description": "Multi-chain crypto wallet ledger for Bridge7",
+  "wallets": [
+    {
+      "chain": "ethereum",
+      "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+      "label": "ETH Treasury",
+      "balances": { "ETH": "12.5000", "USDT": "85000.00", "USDC": "42000.00" }
+    },
+    {
+      "chain": "bsc",
+      "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+      "label": "BNB Ops",
+      "balances": { "BNB": "150.25", "USDT": "25000.00" }
+    },
+    {
+      "chain": "bitcoin",
+      "address": "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
+      "label": "BTC Cold",
+      "balances": { "BTC": "2.15000000" }
+    },
+    {
+      "chain": "onex-mainnet-1",
+      "address": "onex-production-wallet",
+      "label": "OneX Native",
+      "balances": { "ONEX": "500000.00000000" }
+    }
+  ]
+}

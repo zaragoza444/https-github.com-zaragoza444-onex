@@ -1,0 +1,15 @@
+{
+  "program": "101.1",
+  "bin": "1011",
+  "description": "Online production virtual cards — 4-digit PIN, full PAN/CVV, NSB + HYBX",
+  "network": "ONLINE 101.1",
+  "env": {
+    "ONEX_LEDGER_MODE": "production",
+    "ONEX_ONLINE_BANK": "1"
+  },
+  "api": {
+    "issue": "POST /bridge/cards/101.1/issue",
+    "list": "GET /bridge/cards",
+    "activate": "POST /bridge/cards/activate"
+  }
+}

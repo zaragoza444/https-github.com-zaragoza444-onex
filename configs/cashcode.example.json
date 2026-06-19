@@ -1,0 +1,17 @@
+{
+  "service": "onex-cashcode",
+  "description": "One-time cash pickup codes — issue, verify, redeem via NSB online bank escrow",
+  "env": {
+    "ONEX_CASHCODE_ENABLED": "1",
+    "ONEX_CASHCODE_TTL_HOURS": "72"
+  },
+  "escrowAccount": "nsb-cashcode-escrow",
+  "api": {
+    "status": "/bridge/cashcode/status",
+    "list": "/bridge/cashcode/list",
+    "issue": "/bridge/cashcode/issue",
+    "verify": "/bridge/cashcode/verify",
+    "redeem": "/bridge/cashcode/redeem",
+    "cancel": "/bridge/cashcode/cancel"
+  }
+}

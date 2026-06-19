@@ -48,6 +48,7 @@ $urls = @(
     @{ Url = "https://$Domain/contact.html"; Label = "Contact page" },
     @{ Url = "https://$Domain/wallet/"; Label = "Wallet" },
     @{ Url = "https://$Domain/bridge/production/status"; Label = "Production status" },
+    @{ Url = "https://$Domain/bridge/bridge7/status"; Label = "Bridge7 status" },
     @{ Url = "https://$Domain/health"; Label = "Health" }
 )
 foreach ($item in $urls) {

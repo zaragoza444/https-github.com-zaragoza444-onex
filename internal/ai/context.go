@@ -48,6 +48,22 @@ func summarizeContext(ctx string) string {
 			if s := summarizeVirtualCards(raw); s != "" {
 				parts = append(parts, s)
 			}
+		case "hybx":
+			if s := summarizeHybx(raw); s != "" {
+				parts = append(parts, s)
+			}
+		case "hybx_middleware":
+			if s := summarizeHybxMiddleware(raw); s != "" {
+				parts = append(parts, s)
+			}
+		case "production_platform":
+			if s := summarizeProductionPlatform(raw); s != "" {
+				parts = append(parts, s)
+			}
+		case "fineract":
+			if s := summarizeFineract(raw); s != "" {
+				parts = append(parts, s)
+			}
 		}
 	}
 
@@ -214,6 +230,8 @@ func summarizeVirtualCards(raw string) string {
 		Mode       string `json:"mode"`
 		Cards      int    `json:"cards"`
 		Active     int    `json:"active"`
+		HybxCards  int    `json:"hybxCards"`
+		NsbCards   int    `json:"nsbCards"`
 	}
 	if err := json.Unmarshal([]byte(raw), &m); err != nil {
 		return ""
@@ -225,7 +243,160 @@ func summarizeVirtualCards(raw string) string {
 	if m.Production {
 		mode = "production"
 	}
-	return fmt.Sprintf("Virtual cards: %d active of %d (%s · Apple Pay · Google Pay · 3DS)", m.Active, m.Cards, mode)
+	hybx := ""
+	if m.HybxCards > 0 {
+		hybx = fmt.Sprintf(" · %d HYBX", m.HybxCards)
+	}
+	return fmt.Sprintf("Virtual cards: %d active of %d (%s · %d NSB%s · Apple Pay · Google Pay · 3DS)", m.Active, m.Cards, mode, m.NsbCards, hybx)
+}
+
+func summarizeHybx(raw string) string {
+	var m struct {
+		Enabled          bool   `json:"enabled"`
+		Online           bool   `json:"online"`
+		Assets           int    `json:"assets"`
+		MirroredAccounts int    `json:"mirroredAccounts"`
+		BaseURL          string `json:"baseUrl"`
+	}
+	if err := json.Unmarshal([]byte(raw), &m); err != nil {
+		return ""
+	}
+	if !m.Enabled {
+		return ""
+	}
+	on := "offline"
+	if m.Online {
+		on = "online"
+	}
+	return fmt.Sprintf("HYBX: %s · %d assets · %d mirrored NSB accounts", on, m.Assets, m.MirroredAccounts)
+}
+
+func summarizeHybxMiddleware(raw string) string {
+	var m struct {
+		Enabled    bool `json:"enabled"`
+		Online     bool `json:"online"`
+		Routes     int  `json:"routes"`
+		Chains     int  `json:"chains"`
+		Mirrors    int  `json:"mirrors"`
+		Federation int  `json:"federation"`
+	}
+	if err := json.Unmarshal([]byte(raw), &m); err != nil {
+		return ""
+	}
+	if !m.Enabled {
+		return ""
+	}
+	on := "offline"
+	if m.Online {
+		on = "online"
+	}
+	return fmt.Sprintf("HYBX middleware: %s · %d routes · %d chains · %d mirrors · %d federation records",
+		on, m.Routes, m.Chains, m.Mirrors, m.Federation)
+}
+
+func summarizeProductionPlatform(raw string) string {
+	var m struct {
+		Production     bool    `json:"production"`
+		Domain         string  `json:"domain"`
+		NodeReady      bool    `json:"nodeReady"`
+		LedgerTotalUsd float64 `json:"ledgerTotalUsd"`
+		LedgerEntries  int     `json:"ledgerEntries"`
+		OnlineBank     struct {
+			Online   bool `json:"online"`
+			Accounts int  `json:"accounts"`
+		} `json:"onlineBank"`
+		Hybx struct {
+			Enabled bool `json:"enabled"`
+			Online  bool `json:"online"`
+		} `json:"hybx"`
+		HybxMiddleware struct {
+			Enabled bool `json:"enabled"`
+			Routes  int  `json:"routes"`
+			Chains  int  `json:"chains"`
+		} `json:"hybxMiddleware"`
+		Fineract struct {
+			Enabled  bool   `json:"enabled"`
+			Online   bool   `json:"online"`
+			Accounts int    `json:"accounts"`
+			Swagger  string `json:"swaggerUrl"`
+		} `json:"fineract"`
+		VirtualCards struct {
+			Active int `json:"active"`
+		} `json:"virtualCards"`
+		Platform struct {
+			TotalTokens int `json:"totalTokens"`
+		} `json:"platform"`
+	}
+	if err := json.Unmarshal([]byte(raw), &m); err != nil {
+		return ""
+	}
+	domain := m.Domain
+	if domain == "" {
+		domain = "onexproduction.com"
+	}
+	node := "offline"
+	if m.NodeReady {
+		node = "online"
+	}
+	bank := "offline"
+	if m.OnlineBank.Online {
+		bank = fmt.Sprintf("online (%d accounts)", m.OnlineBank.Accounts)
+	}
+	hybx := "off"
+	if m.Hybx.Enabled {
+		if m.Hybx.Online {
+			hybx = "on"
+		} else {
+			hybx = "enabled"
+		}
+	}
+	mw := ""
+	if m.HybxMiddleware.Enabled && m.HybxMiddleware.Routes > 0 {
+		mw = fmt.Sprintf(" · HYBX MW %d routes/%d chains", m.HybxMiddleware.Routes, m.HybxMiddleware.Chains)
+	}
+	return fmt.Sprintf(
+		"Production platform (%s): ledger $%.0f · %d entries · node %s · bank %s · HYBX %s · Fineract %s · %d cards · %d tokens%s",
+		domain, m.LedgerTotalUsd, m.LedgerEntries, node, bank, hybx, fineractLine(m.Fineract), m.VirtualCards.Active, m.Platform.TotalTokens, mw,
+	)
+}
+
+func fineractLine(f struct {
+	Enabled  bool   `json:"enabled"`
+	Online   bool   `json:"online"`
+	Accounts int    `json:"accounts"`
+	Swagger  string `json:"swaggerUrl"`
+}) string {
+	if !f.Enabled {
+		return "off"
+	}
+	if f.Online {
+		return fmt.Sprintf("online (%d accounts)", f.Accounts)
+	}
+	return "configured"
+}
+
+func summarizeFineract(raw string) string {
+	var m struct {
+		Enabled    bool   `json:"enabled"`
+		Online     bool   `json:"online"`
+		Configured bool   `json:"configured"`
+		Accounts   int    `json:"accounts"`
+		BaseURL    string `json:"baseUrl"`
+		SwaggerURL string `json:"swaggerUrl"`
+		Tenant     string `json:"tenant"`
+	}
+	if err := json.Unmarshal([]byte(raw), &m); err != nil {
+		return ""
+	}
+	if !m.Enabled {
+		return ""
+	}
+	on := "offline"
+	if m.Online {
+		on = "online"
+	}
+	return fmt.Sprintf("Fineract core banking: %s · tenant %s · %d savings accounts · %s",
+		on, m.Tenant, m.Accounts, m.SwaggerURL)
 }
 
 func min(a, b int) int {

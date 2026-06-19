@@ -3,6 +3,7 @@ package ledger
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -93,5 +94,34 @@ func TestOnlineBankSeedFromFile(t *testing.T) {
 	}
 	if accts[0].IBAN != "DE89370400440532013000" {
 		t.Fatalf("iban %s", accts[0].IBAN)
+	}
+}
+
+func TestOnlineBankWireAndStatement(t *testing.T) {
+	dir := t.TempDir()
+	store := &OnlineBankStore{path: filepath.Join(dir, "online-bank.json")}
+	st := &OnlineBankState{
+		Name: defaultOnlineBankName, Online: true, SWIFT: defaultOnlineBankSWIFT,
+		Accounts: []OnlineBankAccount{
+			{ID: "a1", Name: "Checking", Currency: "USD", Balance: "100.00", IBAN: "US00M1USD00000000000001", Status: "active"},
+		},
+		Transactions: []OnlineBankTransaction{
+			{ID: "t1", Type: "deposit", ToAccount: "a1", Amount: "100.00", Currency: "USD", Status: "completed", CreatedAt: 1700000000},
+		},
+	}
+	if err := store.save(st); err != nil {
+		t.Fatal(err)
+	}
+	wire, err := store.WireInstructions("a1")
+	if err != nil || wire.IBAN != "US00M1USD00000000000001" || wire.SWIFT != defaultOnlineBankSWIFT {
+		t.Fatalf("wire %+v err %v", wire, err)
+	}
+	txs, err := store.ListTransactionsFiltered(10, "a1", "deposit")
+	if err != nil || len(txs) != 1 {
+		t.Fatalf("filtered txs %v err %v", txs, err)
+	}
+	csv, err := store.ExportTransactionsCSV("a1")
+	if err != nil || !strings.Contains(csv, "deposit") {
+		t.Fatalf("csv %q err %v", csv, err)
 	}
 }

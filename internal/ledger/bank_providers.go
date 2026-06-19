@@ -286,6 +286,11 @@ func InitiateBankTransfer(req BankTransferRequest) (string, error) {
 	case "truelayer":
 		return initiateTrueLayerTransfer(cfg, req, ref)
 	}
+	if strings.EqualFold(req.BankName, "hybx") || strings.EqualFold(req.BankName, "hybrix") {
+		if refID, err := InitiateHybrixTransfer(req, ref); err == nil {
+			return refID, nil
+		}
+	}
 	// Book-recorded settlement when no live bank API is configured.
 	return fmt.Sprintf("bank-pending:%s:%s:%s", req.Rail, req.BankName, req.Account), nil
 }

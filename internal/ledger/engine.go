@@ -71,7 +71,7 @@ func (c Config) Status() map[string]interface{} {
 		"evmHolder":    c.EVMHolder != "",
 		"importDir":    c.ImportDir,
 		"fiatCurrency": c.FiatCurrency,
-		"sources":      []string{"bank", "m0", "m1", "nsb", "onex", "evm", "portfolio", "import"},
+		"sources":      []string{"bank", "m0", "m1", "nsb", "onex", "evm", "portfolio", "import", "bridge7"},
 		"fundClasses":  []string{FundM0, FundM1, FundNSB},
 		"fundClassLabels": map[string]string{
 			FundM0:  "M0 — base money",
@@ -189,6 +189,14 @@ func (e *Engine) Read(ctx context.Context, in ReadInput) Snapshot {
 	if (src == "all" || src == "import") && len(in.ImportJSON) > 0 {
 		imp, _ := ParseImportLedger(in.ImportJSON)
 		entries = append(entries, imp...)
+	}
+
+	if src == "all" || src == "bridge7" {
+		if b7 := LoadBridge7Config(); b7.Enabled {
+			if rows, err := LoadBridge7Entries(); err == nil {
+				entries = append(entries, rows...)
+			}
+		}
 	}
 
 	for i := range entries {

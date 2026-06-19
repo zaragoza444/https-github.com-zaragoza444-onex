@@ -108,6 +108,8 @@ func SupportedBanks() []SupportedBank {
 		{ID: "icici", Name: "ICICI Bank", Country: "IN", Rails: []BankRail{RailSWIFT, RailWire}, Example: "bank:icici:swift:ICICINBBXXX:123456789012"},
 		{ID: "emirates", Name: "Emirates NBD", Country: "AE", Rails: []BankRail{RailSWIFT, RailWire}, Example: "bank:emirates:swift:EBILAEAD:AE070331234567890123456"},
 		{ID: "nsb", Name: "NSB — National Sovereign Bank", Country: "*", Rails: []BankRail{RailACH, RailSEPA, RailSWIFT, RailWire, RailIBAN, RailFPS}, Example: "bank:nsb:swift:NSBKLAL2X:US00SOVEREIGN00000001"},
+		{ID: "hybx", Name: "HYBX Multi-Ledger", Country: "*", Rails: []BankRail{RailIBAN, RailSEPA, RailSWIFT, RailWire}, Example: "bank:hybx:iban:HYBX-NSB-MIRROR"},
+		{ID: "fineract", Name: "HYBX Fineract Core Banking", Country: "*", Rails: []BankRail{RailIBAN, RailSEPA, RailSWIFT, RailWire, RailACH}, Example: "bank:fineract:swift:HYBXFIN:000000001"},
 		{ID: "generic", Name: "Any world bank", Country: "*", Rails: []BankRail{RailACH, RailSEPA, RailSWIFT, RailWire, RailIBAN, RailFPS}, Example: "bank:swift:CHASUS33:US00BANK00000000000001"},
 	}
 }

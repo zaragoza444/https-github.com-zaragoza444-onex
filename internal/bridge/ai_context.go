@@ -132,6 +132,41 @@ func (s *Server) buildWalletAIContext(ctx context.Context, evmHolder string) str
 		b.WriteByte('\n')
 	}
 
+	if hx := ledger.NewHybrixClient().Status(); hx != nil {
+		data, _ := json.Marshal(hx)
+		b.WriteString("hybx: ")
+		b.Write(data)
+		b.WriteByte('\n')
+	}
+
+	if mw := ledger.HybxMiddlewareStatus(); mw != nil {
+		data, _ := json.Marshal(mw)
+		b.WriteString("hybx_middleware: ")
+		b.Write(data)
+		b.WriteByte('\n')
+	}
+
+	if fx := ledger.NewFineractClient().Status(); fx != nil {
+		data, _ := json.Marshal(fx)
+		b.WriteString("fineract: ")
+		b.Write(data)
+		b.WriteByte('\n')
+	}
+
+	if b7 := ledger.Bridge7Status(); b7 != nil {
+		data, _ := json.Marshal(b7)
+		b.WriteString("bridge7: ")
+		b.Write(data)
+		b.WriteByte('\n')
+	}
+
+	if prod := s.b.ProductionPlatformStatus(ctx, evmHolder); prod != nil {
+		data, _ := json.Marshal(prod)
+		b.WriteString("production_platform: ")
+		b.Write(data)
+		b.WriteByte('\n')
+	}
+
 	return b.String()
 }
 

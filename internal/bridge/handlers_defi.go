@@ -41,6 +41,8 @@ func (s *Server) registerDeFiRoutes(mux *http.ServeMux) {
 	s.registerLedgerRoutes(mux)
 	s.registerBankRoutes(mux)
 	s.registerCardRoutes(mux)
+	s.registerCashCodeRoutes(mux)
+	s.registerBridge7Routes(mux)
 	s.registerListingRoutes(mux)
 	mux.HandleFunc("/swap", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/wallet/#swap", http.StatusFound)

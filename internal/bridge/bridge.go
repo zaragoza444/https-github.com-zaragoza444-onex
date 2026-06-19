@@ -26,6 +26,7 @@ type Bridge struct {
 	book       *ledger.BookStore
 	assetStore *externalAssetStore
 	cardStore  *virtualCardStore
+	prodBoot   sync.Once
 }
 
 func New(cfg Config) *Bridge {

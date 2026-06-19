@@ -40,7 +40,7 @@
     <div class="hero-grid" aria-hidden="true"></div>
     <div class="hero-glow" aria-hidden="true"></div>
     <div class="container hero-inner">
-      <div class="hero-badge"><span></span> Production · Live on mainnet</div>
+      <div class="hero-badge" id="hero-badge"><span id="hero-badge-dot"></span> <span id="hero-badge-text">Production · Live on mainnet</span></div>
       <h1>Production blockchain.<br><em>Real finance.</em> One platform.</h1>
       <p class="hero-lead">
         OneX combines Ed25519 proof-of-work, a MetaMask-style DeFi wallet, sovereign online banking,
@@ -51,11 +51,11 @@
         <a class="btn btn-secondary" data-explorer href="/explorer/">Block Explorer</a>
         <a class="btn btn-secondary" href="contact.html">Business inquiries</a>
       </div>
-      <div class="stats">
-        <div class="stat"><strong>13+</strong><span>Chains integrated</span></div>
-        <div class="stat"><strong>PoW</strong><span>Ed25519 consensus</span></div>
-        <div class="stat"><strong>ONEX</strong><span>Native asset</span></div>
-        <div class="stat"><strong>Live</strong><span>Bank &amp; cards</span></div>
+      <div class="stats" id="hero-stats">
+        <div class="stat"><strong id="stat-chains">13+</strong><span>Chains integrated</span></div>
+        <div class="stat"><strong id="stat-node">PoW</strong><span id="stat-node-label">Ed25519 consensus</span></div>
+        <div class="stat"><strong id="stat-ledger">ONEX</strong><span id="stat-ledger-label">Native asset</span></div>
+        <div class="stat"><strong id="stat-bank">Live</strong><span id="stat-bank-label">Bank &amp; cards</span></div>
       </div>
     </div>
   </header>
@@ -89,7 +89,7 @@
         <article class="product-card">
           <div class="product-icon">🏦</div>
           <h3>Online Bank &amp; Cards</h3>
-          <p>NSB sovereign banking with IBAN accounts, SEPA/SWIFT, and virtual Visa/Mastercard.</p>
+          <p>NSB sovereign banking with IBAN accounts, SEPA/SWIFT, HYBX exchange middleware, and NSB + HYBX virtual Visa/Mastercard.</p>
           <ul>
             <li>M0 / M1 / NSB fund classes</li>
             <li>Apple Pay · Google Pay · 3DS</li>
@@ -144,8 +144,15 @@
           <div class="network-specs">
             <div class="spec-row"><span>Wallet</span><a data-wallet href="/wallet/">/wallet/</a></div>
             <div class="spec-row"><span>Explorer</span><a data-explorer href="/explorer/">/explorer/</a></div>
-            <div class="spec-row"><span>Bridge API</span><a href="https://onexproduction.com/bridge/production/status">/bridge/</a></div>
+            <div class="spec-row"><span>Bridge API</span><a id="prod-status-api-link" data-status-api href="https://onexproduction.com/bridge/production/status">/bridge/production/status</a></div>
             <div class="spec-row"><span>Domain</span><a href="https://onexproduction.com">onexproduction.com</a></div>
+          </div>
+          <div id="production-status" class="production-status" aria-live="polite">
+            <div class="production-status-head">
+              <span class="status-dot loading" id="prod-status-dot"></span>
+              <strong id="prod-status-title">Connecting to production…</strong>
+            </div>
+            <div class="production-status-grid" id="prod-status-grid"></div>
           </div>
           <p style="font-size:0.85rem;color:var(--text-muted);margin:16px 0 0">
             MetaMask can add the network for read-only info — use OneX Wallet to sign transactions.

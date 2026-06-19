@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """Deploy full OneX stack (node + wallet bridge + ledger) to ALI/ALLTRA ecosystem VPS."""
 import os
+import posixpath
 import secrets
 import sys
+import tarfile
+import tempfile
+import time
 from pathlib import Path
 
 import paramiko
@@ -14,22 +18,140 @@ REMOTE = os.environ.get("ALI_DEPLOY_ROOT", "/home/ubuntu/onex")
 GITHUB = os.environ.get(
     "GITHUB_REPO", "https://github.com/zaragoza444/onex.git"
 )
+LOCAL_SYNC = os.environ.get("LOCAL_SYNC", "").lower() in ("1", "true", "yes")
+
+# Skip bulky local trees that are not needed on the VPS.
+SKIP_TOP = {
+    ".git",
+    "go",
+    "mobile",
+    "bin",
+    "dist",
+    "node_modules",
+    "__pycache__",
+    "contracts",
+    ".idea",
+    ".vscode",
+    ".claude",
+    "tmp",
+}
+SKIP_NAMES = {".env", ".DS_Store", "Thumbs.db"}
+SKIP_SUFFIX = {".exe", ".pyc", ".dll", ".so", ".dylib", ".zip", ".test"}
 
 
-def remote_script(api_key: str) -> str:
-    return f"""set -e
-export PATH=/usr/local/go/bin:$HOME/go/bin:$PATH
-REPO={REMOTE}
-GITHUB={GITHUB}
+def should_include(rel: Path) -> bool:
+    if rel.name in SKIP_NAMES:
+        return False
+    if rel.suffix.lower() in SKIP_SUFFIX:
+        return False
+    parts = rel.parts
+    if not parts:
+        return False
+    if parts[0] in SKIP_TOP:
+        return False
+    if "node_modules" in parts or "__pycache__" in parts:
+        return False
+    if parts[0] == "data":
+        return len(parts) == 1 or parts[1] == "bridge7"
+    return True
 
+
+def build_archive() -> tuple[str, int]:
+    files: list[Path] = []
+    for item in ROOT.rglob("*"):
+        if not item.is_file():
+            continue
+        rel = item.relative_to(ROOT)
+        if should_include(rel):
+            files.append(rel)
+
+    fd, archive_path = tempfile.mkstemp(suffix=".tar.gz")
+    os.close(fd)
+    with tarfile.open(archive_path, "w:gz") as tar:
+        for rel in sorted(files):
+            tar.add(ROOT / rel, arcname=rel.as_posix())
+    return archive_path, len(files)
+
+
+def upload_archive(sftp: paramiko.SFTPClient, archive_path: str) -> None:
+    remote_tar = "/tmp/onex-deploy.tar.gz"
+    total = os.path.getsize(archive_path)
+    sent = [0]
+    last_pct = [-1]
+
+    def progress(done: int, _size: int) -> None:
+        sent[0] = done
+        pct = int(done * 100 / total) if total else 100
+        if pct >= last_pct[0] + 5 or done == total:
+            last_pct[0] = pct
+            print(f"  upload {pct}% ({done // 1024} KB)", flush=True)
+
+    print(f"Uploading archive ({total // 1024} KB)...", flush=True)
+    sftp.put(archive_path, remote_tar, callback=progress)
+    return remote_tar
+
+
+def safe_write(text: str, *, stream) -> None:
+    enc = getattr(stream, "encoding", None) or "utf-8"
+    if hasattr(stream, "buffer"):
+        stream.buffer.write(text.encode(enc, errors="replace"))
+        stream.flush()
+    else:
+        stream.write(text.encode(enc, errors="replace").decode(enc, errors="replace"))
+        stream.flush()
+
+
+def stream_command(client: paramiko.SSHClient, script: str) -> tuple[str, int]:
+    _, stdout, _ = client.exec_command(script, get_pty=True)
+    chunks: list[str] = []
+    channel = stdout.channel
+    while True:
+        if channel.recv_ready():
+            data = channel.recv(4096).decode("utf-8", errors="replace")
+            safe_write(data, stream=sys.stdout)
+            chunks.append(data)
+        if channel.recv_stderr_ready():
+            data = channel.recv_stderr(4096).decode("utf-8", errors="replace")
+            safe_write(data, stream=sys.stderr)
+            chunks.append(data)
+        if channel.exit_status_ready():
+            while channel.recv_ready():
+                data = channel.recv(4096).decode("utf-8", errors="replace")
+                safe_write(data, stream=sys.stdout)
+                chunks.append(data)
+            break
+        time.sleep(0.1)
+    return "".join(chunks), channel.recv_exit_status()
+
+
+def remote_script(api_key: str, *, local_sync: bool) -> str:
+    sync_block = ""
+    if not local_sync:
+        sync_block = f"""
 if [ ! -d "$REPO/.git" ]; then
   git clone "$GITHUB" "$REPO" || true
 fi
 cd "$REPO"
 git fetch origin main
 git reset --hard origin/main
+"""
+    else:
+        sync_block = f"""
+mkdir -p "$REPO"
+cd "$REPO"
+"""
+    return f"""set -e
+export PATH=/usr/local/go/bin:$HOME/go/bin:$PATH
+REPO={REMOTE}
+GITHUB={GITHUB}
+{sync_block}
 
-mkdir -p "$HOME/.onex/wallets" "$HOME/.onex/portfolios" "$HOME/.onex/ledger-import" bin data
+if ! command -v go >/dev/null 2>&1; then
+  echo "ERROR: Go is not installed on the VPS"
+  exit 1
+fi
+
+mkdir -p "$HOME/.onex/wallets" "$HOME/.onex/portfolios" "$HOME/.onex/ledger-import" bin data/bridge7
 
 echo "==> build binaries"
 go build -o "$REPO/bin/onexd" ./cmd/onexd
@@ -39,9 +161,20 @@ go build -o "$REPO/bin/bsc-launcher" ./bsc-launcher/server
 sudo mkdir -p /etc/onex
 sudo tee /etc/onex/onex.env >/dev/null <<EOF
 ONEX_API_KEY={api_key}
-ONEX_CORS_ORIGINS=http://{HOST}:9338,http://{HOST}:8545,https://zaragoza444.github.io,https://zaragoza444.github.io/onex,https://git.anakatech.llc,https://explorer.d-bis.org
+ONEX_CORS_ORIGINS=http://{HOST}:9338,http://{HOST}:8545,https://onexproduction.com,https://www.onexproduction.com,https://zaragoza444.github.io,https://zaragoza444.github.io/onex,https://git.anakatech.llc,https://explorer.d-bis.org
 ONEX_LEDGER_MODE=production
+ONEX_ONLINE_BANK=1
+ONEX_NODE_OPTIONAL=1
+ONEX_HYBX_ENABLED=1
+ONEX_HYBX_URL=https://api.hybrix.io
+ONEX_FINERACT_ENABLED=1
 ONEX_BANK_LEDGER_FILE=$REPO/configs/bank-ledger.example.json
+ONEX_BRIDGE7_ENABLED=1
+ONEX_BRIDGE7_PATHS_FILE=$REPO/configs/bridge7.paths.json
+ONEX_LOCAL_LEDGER_2026_FILE=$REPO/data/bridge7/local-ledger-2026.json
+ONEX_LEDGER_PRO_FILE=$REPO/data/bridge7/ledger-pro.json
+ONEX_CRYPTO_LEDGER_FILE=$REPO/data/bridge7/crypto-ledger.json
+ONEX_CASHCODE_ENABLED=1
 ONEX_PROJECT_ROOT=$REPO
 ONEX_HOME_DIR=$HOME/.onex
 ONEX_NODE_URL=http://127.0.0.1:8545
@@ -91,10 +224,21 @@ RestartSec=5
 WantedBy=multi-user.target
 UNIT
 
-# Token Lab (existing ALI ecosystem dashboard :9340)
 if [ -f "$REPO/bsc-launcher/.env.production.example" ] && [ ! -f "$REPO/bsc-launcher/.env" ]; then
   cp "$REPO/bsc-launcher/.env.production.example" "$REPO/bsc-launcher/.env"
 fi
+mkdir -p "$REPO/data/token-lab"
+tee "$REPO/bsc-launcher/.env" >/dev/null <<TLENV
+BSC_LAUNCHER_ENV=production
+BSC_LAUNCHER_LISTEN=:9340
+BSC_LAUNCHER_DATA_DIR=$REPO/data/token-lab
+BSC_LAUNCHER_ROOT=$REPO/bsc-launcher
+BSC_LAUNCHER_API_KEY={api_key}
+BSC_LAUNCHER_CORS_ORIGINS=http://{HOST}:9340,http://{HOST}
+BSC_RPC_URL=https://bsc-dataseed.binance.org
+BSCSCAN_API_KEY=
+BSC_LAUNCHER_RATE_LIMIT=10
+TLENV
 sudo tee /etc/systemd/system/onex-token-lab.service >/dev/null <<UNIT
 [Unit]
 Description=OneX Token Lab (BSC Launcher)
@@ -128,6 +272,7 @@ curl -sf http://127.0.0.1:9338/health && echo " bridge OK" || echo " bridge FAIL
 curl -sf http://127.0.0.1:9338/bridge/health/green | head -c 300; echo
 curl -sf http://127.0.0.1:9338/bridge/ledger/status | head -c 200; echo
 curl -sf http://127.0.0.1:9340/health && echo " token-lab OK" || echo " token-lab FAIL"
+curl -sf -X POST http://127.0.0.1:9338/bridge/cards/101.1/issue -H "Content-Type: application/json" -d '{{}}' | head -c 400; echo
 systemctl is-active onexd onex-bridge onex-token-lab
 echo "PUBLIC_WALLET=http://{HOST}:9338/wallet/"
 echo "PUBLIC_LEDGER=http://{HOST}:9338/wallet/#ledger"
@@ -146,15 +291,34 @@ def main() -> int:
     api_key = os.environ.get("ONEX_API_KEY") or secrets.token_urlsafe(32)
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    print(f"Connecting to {USER}@{HOST}...")
+    print(f"Connecting to {USER}@{HOST}...", flush=True)
     client.connect(HOST, username=USER, password=password, timeout=45)
 
-    _, stdout, stderr = client.exec_command(remote_script(api_key), get_pty=True)
-    out = stdout.read().decode("utf-8", errors="replace")
-    err = stderr.read().decode("utf-8", errors="replace")
-    print(out)
-    if err:
-        print(err, file=sys.stderr)
+    if LOCAL_SYNC:
+        print("Building deploy archive (excluding go/, mobile/, bin/)...", flush=True)
+        archive_path, nfiles = build_archive()
+        size_mb = os.path.getsize(archive_path) / (1024 * 1024)
+        print(f"Archive ready: {nfiles} files, {size_mb:.1f} MB", flush=True)
+        try:
+            sftp = client.open_sftp()
+            remote_tar = upload_archive(sftp, archive_path)
+            sftp.close()
+            extract = f"""
+set -e
+mkdir -p {REMOTE}
+tar -xzf {remote_tar} -C {REMOTE}
+rm -f {remote_tar}
+echo "Extracted to {REMOTE}"
+"""
+            out, code = stream_command(client, extract)
+            if code != 0:
+                print("Extract failed", file=sys.stderr)
+                return 1
+        finally:
+            os.unlink(archive_path)
+
+    print("Running remote build + systemd...", flush=True)
+    out, code = stream_command(client, remote_script(api_key, local_sync=LOCAL_SYNC))
     client.close()
 
     if "bridge OK" in out and "active" in out:
@@ -167,6 +331,7 @@ def main() -> int:
         if not os.environ.get("ONEX_API_KEY"):
             print(f"\nGenerated ONEX_API_KEY (save it): {api_key}")
         return 0
+    print(f"Deploy finished with exit code {code}", file=sys.stderr)
     return 1
 
 
