@@ -129,11 +129,22 @@ def remote_script(api_key: str, *, local_sync: bool) -> str:
     if not local_sync:
         sync_block = f"""
 if [ ! -d "$REPO/.git" ]; then
-  git clone "$GITHUB" "$REPO" || true
+  if [ -d "$REPO" ] && [ "$(ls -A "$REPO" 2>/dev/null | head -1)" ]; then
+    cd "$REPO"
+    git init
+    git remote add origin "$GITHUB" 2>/dev/null || git remote set-url origin "$GITHUB"
+    git fetch origin main
+    git reset --hard origin/main
+  else
+    git clone "$GITHUB" "$REPO"
+    cd "$REPO"
+  fi
+else
+  cd "$REPO"
+  git remote set-url origin "$GITHUB" 2>/dev/null || git remote add origin "$GITHUB"
+  git fetch origin main
+  git reset --hard origin/main
 fi
-cd "$REPO"
-git fetch origin main
-git reset --hard origin/main
 """
     else:
         sync_block = f"""
@@ -153,6 +164,21 @@ fi
 
 mkdir -p "$HOME/.onex/wallets" "$HOME/.onex/portfolios" "$HOME/.onex/ledger-import" bin data/bridge7
 
+EXISTING_API_KEY=""
+if [ -f /etc/onex/onex.env ]; then
+  EXISTING_API_KEY="$(grep '^ONEX_API_KEY=' /etc/onex/onex.env | cut -d= -f2- || true)"
+fi
+DEPLOY_API_KEY="${{EXISTING_API_KEY:-{api_key}}}"
+
+for pair in local-ledger-2026:configs/local-ledger-2026.example.json ledger-pro:configs/ledger-pro.example.json crypto-ledger:configs/crypto-ledger.example.json; do
+  name="${{pair%%:*}}"
+  src="${{pair##*:}}"
+  dst="data/bridge7/${{name}}.json"
+  if [ ! -f "$dst" ] && [ -f "$src" ]; then
+    cp "$src" "$dst"
+  fi
+done
+
 echo "==> build binaries"
 go build -o "$REPO/bin/onexd" ./cmd/onexd
 go build -o "$REPO/bin/onex-bridge" ./cmd/onex-bridge
@@ -160,7 +186,7 @@ go build -o "$REPO/bin/bsc-launcher" ./bsc-launcher/server
 
 sudo mkdir -p /etc/onex
 sudo tee /etc/onex/onex.env >/dev/null <<EOF
-ONEX_API_KEY={api_key}
+ONEX_API_KEY=$DEPLOY_API_KEY
 ONEX_CORS_ORIGINS=http://{HOST}:9338,http://{HOST}:8545,https://onexproduction.com,https://www.onexproduction.com,https://zaragoza444.github.io,https://zaragoza444.github.io/onex,https://git.anakatech.llc,https://explorer.d-bis.org
 ONEX_LEDGER_MODE=production
 ONEX_ONLINE_BANK=1
@@ -233,7 +259,7 @@ BSC_LAUNCHER_ENV=production
 BSC_LAUNCHER_LISTEN=:9340
 BSC_LAUNCHER_DATA_DIR=$REPO/data/token-lab
 BSC_LAUNCHER_ROOT=$REPO/bsc-launcher
-BSC_LAUNCHER_API_KEY={api_key}
+BSC_LAUNCHER_API_KEY=$DEPLOY_API_KEY
 BSC_LAUNCHER_CORS_ORIGINS=http://{HOST}:9340,http://{HOST}
 BSC_RPC_URL=https://bsc-dataseed.binance.org
 BSCSCAN_API_KEY=
