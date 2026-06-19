@@ -103,6 +103,13 @@ func (b *Bridge) BootstrapProduction(ctx context.Context, evmHolder string) map[
 	}
 	add("swift", "done", "SWIFT "+bic+" · global "+global)
 
+	if swap, err := b.ActivateSwap(ctx); err != nil {
+		add("swap", "warn", err.Error())
+	} else {
+		pools, _ := swap["pools"].(int)
+		add("swap", "done", itoa(pools)+" pools · token swap active")
+	}
+
 	if ledger.CashCodeEnabled() {
 		if err := b.ensureCashCodeEscrow("USD"); err != nil {
 			add("cashcode", "warn", err.Error())

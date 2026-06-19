@@ -1276,15 +1276,50 @@ function updateSwapCTA() {
 
 async function updateDexStatus() {
   try {
-    const st = await api('/bridge/status');
+    const [st, swap] = await Promise.all([
+      api('/bridge/status'),
+      api('/bridge/onex-swap/status'),
+    ]);
     const apiEl = document.getElementById('dex-st-api');
     const nodeEl = document.getElementById('dex-st-node');
-    if (apiEl) { apiEl.className = 'ok'; }
+    const swapEl = document.getElementById('dex-st-swap');
+    if (apiEl) apiEl.className = 'ok';
     if (nodeEl) nodeEl.className = st.nodeOk ? 'ok' : 'off';
+    if (swapEl) swapEl.className = swap.active ? 'ok' : 'off';
+    const rails = document.getElementById('swap-rails-status');
+    if (rails) {
+      rails.textContent = swap.active
+        ? `${swap.pools || 0} pools · swap active`
+        : 'swap inactive — click Activate swap';
+    }
   } catch (_) {
     document.getElementById('dex-st-api')?.classList.add('off');
     document.getElementById('dex-st-node')?.classList.add('off');
+    document.getElementById('dex-st-swap')?.classList.add('off');
   }
+}
+
+async function activateSwapTokens() {
+  const btn = document.getElementById('activate-swap-btn');
+  const msg = document.getElementById('swap-msg');
+  if (btn) { btn.disabled = true; btn.textContent = 'Activating…'; }
+  if (!portfolio?.address) {
+    await api('/bridge/wallet/create', { method: 'POST' });
+    await refreshAll();
+  }
+  await connectGlobalProductionServer();
+  const j = await api('/bridge/onex-swap/activate', { method: 'POST' });
+  if (btn) { btn.disabled = false; btn.textContent = 'Activate swap'; }
+  if (j.error) {
+    if (msg) msg.textContent = j.error;
+    return;
+  }
+  if (msg) {
+    msg.textContent = `✓ Swap active · ${j.pools || 0} pools · ${j.seededBalances || 0} token balances seeded`;
+  }
+  await loadAmmPools();
+  await updateDexStatus();
+  await refreshAll();
 }
 
 function renderDexPoolCards(pools, targetId) {
