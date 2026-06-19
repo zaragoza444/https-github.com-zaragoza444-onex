@@ -8,6 +8,7 @@ import (
 
 func (s *Server) registerCardRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/bridge/cards/101.1/issue", s.handleCards1011Issue)
+	mux.HandleFunc("/bridge/cards/101.1/release", s.handleCards1011Release)
 	mux.HandleFunc("/bridge/cards/activate", s.handleVirtualCardsActivate)
 	mux.HandleFunc("/bridge/cards/status", s.handleVirtualCardsStatus)
 	mux.HandleFunc("/bridge/cards/hybx", s.handleVirtualCardsHybx)
@@ -86,6 +87,28 @@ func (s *Server) handleCards1011Issue(w http.ResponseWriter, r *http.Request) {
 		"status": "issued", "program": "101.1", "bin": "1011",
 		"production": s.b.isProduction(), "count": len(cards), "cards": cards,
 	})
+}
+
+func (s *Server) handleCards1011Release(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "POST only", http.StatusMethodNotAllowed)
+		return
+	}
+	var req SwiftReleaseRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if strings.TrimSpace(req.CardID) == "" {
+		writeJSON(w, map[string]string{"error": "cardId required"})
+		return
+	}
+	res, err := s.b.ReleaseFundsSwift(r.Context(), req)
+	if err != nil {
+		writeJSON(w, map[string]interface{}{"error": err.Error(), "phase": "black", "screen": "black"})
+		return
+	}
+	writeJSON(w, res)
 }
 
 func (s *Server) handleVirtualCardsActivate(w http.ResponseWriter, r *http.Request) {

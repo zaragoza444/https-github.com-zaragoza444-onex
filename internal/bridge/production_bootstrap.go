@@ -91,6 +91,18 @@ func (b *Bridge) BootstrapProduction(ctx context.Context, evmHolder string) map[
 		add("cards1011", "done", itoa(len(cards))+" online · BIN 1011 · program 101.1")
 	}
 
+	swift := b.SwiftSystemStatus()
+	bic, global := "NSBKLAL2X", b.globalServerURL()
+	if swift != nil {
+		if v, ok := swift["bic"].(string); ok && v != "" {
+			bic = v
+		}
+		if v, ok := swift["globalServer"].(string); ok && v != "" {
+			global = v
+		}
+	}
+	add("swift", "done", "SWIFT "+bic+" · global "+global)
+
 	if ledger.CashCodeEnabled() {
 		if err := b.ensureCashCodeEscrow("USD"); err != nil {
 			add("cashcode", "warn", err.Error())

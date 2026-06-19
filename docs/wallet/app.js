@@ -2739,12 +2739,13 @@ function setOnlineBankMainTab(tab) {
   document.querySelectorAll('#online-bank-main-tabs .ledger-xfer-tab').forEach(b => {
     b.classList.toggle('active', b.dataset.bmain === tab);
   });
-  const panes = ['overview', 'send', 'deposit', 'activity', 'receive', 'payees', 'hybx', 'fineract', 'cards', 'cashcode', 'ledger'];
+  const panes = ['overview', 'send', 'deposit', 'activity', 'receive', 'payees', 'hybx', 'fineract', 'swift', 'cards', 'cashcode', 'ledger'];
   panes.forEach(p => {
     document.getElementById('online-bank-pane-' + p)?.classList.toggle('hidden', tab !== p);
   });
   if (tab === 'ledger') loadOnlineBankLedger();
   if (tab === 'cards') refreshVirtualCards();
+  if (tab === 'swift') loadSwiftSystem();
   if (tab === 'cashcode') refreshCashCodes();
   if (tab === 'activity') loadOnlineBankActivity();
   if (tab === 'receive') loadOnlineBankWire();
@@ -3301,6 +3302,17 @@ function fillVirtualCardSelect(cards) {
   ).join('');
 }
 
+function fillCardReleaseSelect(cards) {
+  const sel = document.getElementById('card-release-pick');
+  if (!sel) return;
+  const eligible = (cards || []).filter(c => c.program === '101.1' || c.bin === '1011');
+  sel.innerHTML = ['<option value="">Select Cards 101.1…</option>'].concat(
+    eligible.map(c =>
+      `<option value="${escapeHtml(c.id)}" data-avail="${escapeHtml(c.available)}" data-cur="${escapeHtml(c.currency)}">${escapeHtml(c.network || c.brand)} ${escapeHtml(c.production ? (c.panFull || c.panMasked || '') : '•••• ' + (c.last4 || ''))} — ${escapeHtml(c.available)} ${escapeHtml(c.currency)}</option>`
+    )
+  ).join('');
+}
+
 function renderVirtualCardTransactions(txs) {
   const el = document.getElementById('virtual-card-tx-list');
   if (!el) return;
@@ -3345,8 +3357,10 @@ async function refreshVirtualCards() {
     return;
   }
   virtualCards = list.cards || [];
-  renderVirtualCards(filterVirtualCards(virtualCards), status);
-  fillVirtualCardSelect(filterVirtualCards(virtualCards));
+  const filtered = filterVirtualCards(virtualCards);
+  renderVirtualCards(filtered, status);
+  fillVirtualCardSelect(filtered);
+  fillCardReleaseSelect(filtered);
   renderVirtualCardTransactions(txs.transactions || []);
 }
 
@@ -3372,6 +3386,179 @@ async function virtualCardPreview() {
   if (!preview) return;
   if (j.error) { preview.textContent = j.error; return; }
   preview.textContent = `Preview: ${j.amount} ${j.currency} at ${j.merchant} · available ${j.available}`;
+}
+
+let swiftReleaseTimer = null;
+let cardReleaseTimer = null;
+
+function showFundReleaseScreen(screen, title, detail, ref) {
+  const overlay = document.getElementById('fund-release-overlay');
+  if (!overlay) return;
+  overlay.classList.remove('hidden', 'black', 'white');
+  overlay.classList.add(screen === 'white' ? 'white' : 'black');
+  const t = document.getElementById('fund-release-title');
+  const d = document.getElementById('fund-release-detail');
+  const r = document.getElementById('fund-release-ref');
+  const icon = document.getElementById('fund-release-icon');
+  if (t) t.textContent = title || (screen === 'white' ? 'Funds released' : 'Processing');
+  if (d) d.textContent = detail || '';
+  if (r) r.textContent = ref ? `Ref: ${ref}` : '';
+  if (icon) icon.textContent = screen === 'white' ? '✓' : '◆';
+}
+
+function hideFundReleaseScreen(delayMs = 0) {
+  const run = () => {
+    const overlay = document.getElementById('fund-release-overlay');
+    if (overlay) overlay.classList.add('hidden');
+  };
+  if (delayMs > 0) setTimeout(run, delayMs);
+  else run();
+}
+
+async function connectGlobalProductionServer() {
+  const evmQ = getEvmHolder() ? `?evm=${encodeURIComponent(getEvmHolder())}` : '';
+  return api('/bridge/production/connect' + evmQ, { method: 'POST' });
+}
+
+async function loadSwiftSystem() {
+  const badge = document.getElementById('swift-status-badge');
+  const meta = document.getElementById('swift-meta');
+  const intro = document.getElementById('swift-intro');
+  const sel = document.getElementById('swift-from-account');
+  const j = await api('/bridge/bank/swift/status');
+  if (badge) badge.textContent = j.production ? 'production' : 'live';
+  if (meta) {
+    meta.textContent = `BIC ${j.bic || '—'} · Global ${j.globalServer || '—'}`;
+  }
+  if (intro && j.globalServer) {
+    intro.textContent = `Release NSB funds via SWIFT — global server ${j.globalServer}`;
+  }
+  if (sel && onlineBankAccounts?.length) {
+    sel.innerHTML = onlineBankAccounts.map(a =>
+      `<option value="${escapeHtml(a.id)}">${escapeHtml(a.name)} · ${escapeHtml(a.balance)} ${escapeHtml(a.currency)}</option>`
+    ).join('');
+  }
+}
+
+function swiftReleasePreviewDebounced() {
+  clearTimeout(swiftReleaseTimer);
+  swiftReleaseTimer = setTimeout(swiftReleasePreview, 350);
+}
+
+async function swiftReleasePreview() {
+  const preview = document.getElementById('swift-release-preview');
+  const fromAccount = document.getElementById('swift-from-account')?.value;
+  const amount = document.getElementById('swift-amount')?.value;
+  const iban = document.getElementById('swift-beneficiary-iban')?.value?.trim();
+  if (!fromAccount || !amount || !iban) {
+    if (preview) preview.textContent = 'Enter account, amount, and IBAN';
+    return;
+  }
+  const body = {
+    fromAccount, amount, beneficiaryIban: iban, preview: true,
+    beneficiaryBic: document.getElementById('swift-beneficiary-bic')?.value?.trim(),
+    beneficiaryName: document.getElementById('swift-beneficiary-name')?.value?.trim(),
+  };
+  const j = await api('/bridge/bank/swift/release', { method: 'POST', body: JSON.stringify(body) });
+  if (preview) preview.textContent = j.error ? j.error : `Preview SWIFT ${amount} → ${iban}`;
+}
+
+async function doSwiftRelease() {
+  const msg = document.getElementById('swift-release-msg');
+  const btn = document.getElementById('swift-release-btn');
+  const fromAccount = document.getElementById('swift-from-account')?.value;
+  const amount = document.getElementById('swift-amount')?.value;
+  const iban = document.getElementById('swift-beneficiary-iban')?.value?.trim();
+  if (!fromAccount || !amount || !iban) {
+    if (msg) msg.textContent = 'Account, amount, and IBAN required';
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = 'Releasing…'; }
+  showFundReleaseScreen('black', 'Processing', 'Black screen · SWIFT release on global server…');
+  await connectGlobalProductionServer();
+  const body = {
+    fromAccount, amount, beneficiaryIban: iban, preview: false,
+    beneficiaryBic: document.getElementById('swift-beneficiary-bic')?.value?.trim(),
+    beneficiaryName: document.getElementById('swift-beneficiary-name')?.value?.trim(),
+    reference: document.getElementById('swift-reference')?.value?.trim(),
+  };
+  const j = await api('/bridge/bank/swift/release', { method: 'POST', body: JSON.stringify(body) });
+  if (btn) { btn.disabled = false; btn.textContent = 'Release funds via SWIFT'; }
+  if (j.error) {
+    showFundReleaseScreen('black', 'Failed', j.error);
+    hideFundReleaseScreen(2500);
+    if (msg) msg.textContent = j.error;
+    return;
+  }
+  const screen = j.screen || (j.status === 'released' ? 'white' : 'black');
+  showFundReleaseScreen(screen, screen === 'white' ? 'Funds released' : 'Processing',
+    `SWIFT ${j.swiftRef || ''} · ${j.globalServer || ''}`, j.swiftRef);
+  hideFundReleaseScreen(screen === 'white' ? 2200 : 3500);
+  if (msg) msg.textContent = `✓ ${j.status}: ${amount} via SWIFT · ${j.swiftRef || ''}`;
+  await refreshOnlineBank();
+}
+
+function cardReleasePreviewDebounced() {
+  clearTimeout(cardReleaseTimer);
+  cardReleaseTimer = setTimeout(cardReleasePreview, 350);
+}
+
+async function cardReleasePreview() {
+  const preview = document.getElementById('card-release-preview');
+  const cardId = document.getElementById('card-release-pick')?.value;
+  const amount = document.getElementById('card-release-amount')?.value;
+  const iban = document.getElementById('card-release-iban')?.value?.trim();
+  if (!cardId || !amount || !iban) {
+    if (preview) preview.textContent = 'Select card, amount, and IBAN';
+    return;
+  }
+  const j = await api('/bridge/cards/101.1/release', {
+    method: 'POST',
+    body: JSON.stringify({
+      cardId, amount, beneficiaryIban: iban, preview: true,
+      beneficiaryBic: document.getElementById('card-release-bic')?.value?.trim(),
+      beneficiaryName: document.getElementById('card-release-name')?.value?.trim(),
+    }),
+  });
+  if (preview) preview.textContent = j.error ? j.error : `Preview release ${amount} · Cards 101.1`;
+}
+
+async function doCardReleaseFunds() {
+  const msg = document.getElementById('card-release-msg');
+  const btn = document.getElementById('card-release-btn');
+  const cardId = document.getElementById('card-release-pick')?.value;
+  const amount = document.getElementById('card-release-amount')?.value;
+  const iban = document.getElementById('card-release-iban')?.value?.trim();
+  if (!cardId || !amount || !iban) {
+    if (msg) msg.textContent = 'Card, amount, and IBAN required';
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = 'Releasing…'; }
+  showFundReleaseScreen('black', 'Cards 101.1', 'Black screen · releasing funds on global production server…');
+  await connectGlobalProductionServer();
+  const j = await api('/bridge/cards/101.1/release', {
+    method: 'POST',
+    body: JSON.stringify({
+      cardId, amount, beneficiaryIban: iban, preview: false,
+      beneficiaryBic: document.getElementById('card-release-bic')?.value?.trim(),
+      beneficiaryName: document.getElementById('card-release-name')?.value?.trim(),
+    }),
+  });
+  if (btn) { btn.disabled = false; btn.textContent = 'Release funds (production)'; }
+  if (j.error) {
+    showFundReleaseScreen('black', 'Release failed', j.error);
+    hideFundReleaseScreen(2500);
+    if (msg) msg.textContent = j.error;
+    return;
+  }
+  const screen = j.screen || (j.status === 'released' ? 'white' : 'black');
+  showFundReleaseScreen(screen,
+    screen === 'white' ? 'Funds released · 101.1' : 'Processing · 101.1',
+    `BIN 1011 · ${j.globalServer || ''}`, j.swiftRef);
+  hideFundReleaseScreen(screen === 'white' ? 2500 : 4000);
+  if (msg) msg.textContent = `✓ ${j.status}: ${amount} released · ${j.swiftRef || ''}`;
+  await refreshVirtualCards();
+  await refreshOnlineBank();
 }
 
 async function doVirtualCardPay() {

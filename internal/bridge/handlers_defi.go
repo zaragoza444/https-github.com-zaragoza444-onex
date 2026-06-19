@@ -40,6 +40,7 @@ func (s *Server) registerDeFiRoutes(mux *http.ServeMux) {
 	registerLegacySwapRoutes(mux, s)
 	s.registerLedgerRoutes(mux)
 	s.registerBankRoutes(mux)
+	s.registerSwiftRoutes(mux)
 	s.registerCardRoutes(mux)
 	s.registerCashCodeRoutes(mux)
 	s.registerBridge7Routes(mux)
