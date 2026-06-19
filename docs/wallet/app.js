@@ -3249,8 +3249,13 @@ function renderVirtualCards(cards, status, gridId) {
   if (badge) badge.textContent = prod ? `${activeCount} active · Production` : (status?.mode || '—');
   if (intro) {
     intro.textContent = prod
-      ? `Cards 101.1 online · BIN 1011 · 4-digit PIN · ${activeCount}/${cards?.length || 0} active (${nsb} NSB · ${hybx} HYBX)`
+      ? `Cards 101.1 online · Apple Pay · Google Pay · 2D · wire · ${activeCount}/${cards?.length || 0} active (${nsb} NSB · ${hybx} HYBX)`
       : `NSB + HYBX virtual debit cards · ${activeCount} active (${nsb} NSB · ${hybx} HYBX)`;
+  }
+  const railsEl = document.getElementById('virtual-cards-rails');
+  if (railsEl && status?.rails) {
+    const r = status.rails;
+    railsEl.textContent = `Rails: ${r.applePay ? 'Apple Pay ✓' : 'Apple Pay —'} · ${r.googlePay ? 'Google Pay ✓' : 'Google Pay —'} · ${r.twoD ? '2D ✓' : '2D —'} · ${r.wireTransfer ? 'Wire ✓' : 'Wire —'}`;
   }
   if (!grid) return;
   if (!cards?.length) {
@@ -3286,7 +3291,10 @@ function renderVirtualCards(cards, status, gridId) {
       <div class="virtual-card-wallets">
         ${c.applePay ? '<span class="deploy-badge green">Apple Pay</span>' : ''}
         ${c.googlePay ? '<span class="deploy-badge green">Google Pay</span>' : ''}
+        ${c.twoD ? '<span class="deploy-badge green">2D</span>' : ''}
         ${c.threeDSecure ? '<span class="deploy-badge green">3DS</span>' : ''}
+        ${c.wireTransfer ? '<span class="deploy-badge green">Wire</span>' : ''}
+        ${c.program === '101.1' || c.bin === '1011' ? '<span class="deploy-badge green">101.1</span>' : ''}
         ${renderCardProviders(c.providers)}
       </div>
     </div>`).join('');
@@ -3304,6 +3312,18 @@ function fillVirtualCardSelect(cards) {
 
 function fillCardReleaseSelect(cards) {
   const sel = document.getElementById('card-release-pick');
+  if (!sel) return;
+  const eligible = (cards || []).filter(c => c.program === '101.1' || c.bin === '1011');
+  sel.innerHTML = ['<option value="">Select Cards 101.1…</option>'].concat(
+    eligible.map(c =>
+      `<option value="${escapeHtml(c.id)}" data-avail="${escapeHtml(c.available)}" data-cur="${escapeHtml(c.currency)}">${escapeHtml(c.network || c.brand)} ${escapeHtml(c.production ? (c.panFull || c.panMasked || '') : '•••• ' + (c.last4 || ''))} — ${escapeHtml(c.available)} ${escapeHtml(c.currency)}</option>`
+    )
+  ).join('');
+  fillCardWireSelect(eligible);
+}
+
+function fillCardWireSelect(cards) {
+  const sel = document.getElementById('card-wire-pick');
   if (!sel) return;
   const eligible = (cards || []).filter(c => c.program === '101.1' || c.bin === '1011');
   sel.innerHTML = ['<option value="">Select Cards 101.1…</option>'].concat(
@@ -3331,10 +3351,95 @@ function renderVirtualCardTransactions(txs) {
 }
 
 async function issueCards1011() {
-  const msg = document.getElementById('virtual-card-msg');
+  const msg = document.getElementById('virtual-cards-intro');
   const j = await api('/bridge/cards/101.1/issue', { method: 'POST' });
   if (msg) msg.textContent = j.error ? j.error : `✓ Cards 101.1 · ${j.count || 0} online · BIN ${j.bin || '1011'}`;
   await refreshVirtualCards();
+}
+
+async function activateCardRails1011() {
+  const msg = document.getElementById('virtual-cards-intro');
+  const j = await api('/bridge/cards/101.1/activate-rails', { method: 'POST' });
+  if (msg) {
+    msg.textContent = j.error ? j.error
+      : `✓ Rails active · Apple Pay · Google Pay · 2D · 101.1 · wire · ${j.count || 0} cards`;
+  }
+  await refreshVirtualCards();
+}
+
+let cardWireTimer = null;
+function cardWirePreviewDebounced() {
+  clearTimeout(cardWireTimer);
+  cardWireTimer = setTimeout(cardWirePreview, 350);
+}
+
+async function loadCardWireInstructions() {
+  const box = document.getElementById('card-wire-instructions');
+  const cardId = document.getElementById('card-wire-pick')?.value;
+  if (!box || !cardId) {
+    if (box) { box.classList.add('hidden'); box.innerHTML = ''; }
+    return;
+  }
+  const w = await api('/bridge/cards/wire?cardId=' + encodeURIComponent(cardId));
+  if (w.error) {
+    box.classList.add('hidden');
+    return;
+  }
+  box.classList.remove('hidden');
+  box.innerHTML = `
+    <div class="bank-wire-row"><span>Receive via</span><strong>${escapeHtml(w.accountName || '—')}</strong></div>
+    <div class="bank-wire-row"><span>IBAN</span><code>${escapeHtml(w.iban || '—')}</code></div>
+    <div class="bank-wire-row"><span>SWIFT</span><code>${escapeHtml(w.swift || '—')}</code></div>
+    <div class="bank-wire-row"><span>Reference</span><code>${escapeHtml(w.reference || '—')}</code></div>`;
+}
+
+async function cardWirePreview() {
+  const preview = document.getElementById('card-wire-preview');
+  const cardId = document.getElementById('card-wire-pick')?.value;
+  const amount = document.getElementById('card-wire-amount')?.value;
+  const iban = document.getElementById('card-wire-iban')?.value?.trim();
+  if (!cardId || !amount || !iban) {
+    if (preview) preview.textContent = 'Select card, amount, and IBAN';
+    return;
+  }
+  const j = await api('/bridge/cards/101.1/wire', {
+    method: 'POST',
+    body: JSON.stringify({
+      cardId, amount, beneficiaryIban: iban, preview: true,
+      beneficiaryName: document.getElementById('card-wire-name')?.value?.trim(),
+    }),
+  });
+  if (preview) preview.textContent = j.error ? j.error : `Preview wire ${amount} · Cards 101.1`;
+}
+
+async function doCardWireTransfer() {
+  const msg = document.getElementById('card-wire-msg');
+  const btn = document.getElementById('card-wire-btn');
+  const cardId = document.getElementById('card-wire-pick')?.value;
+  const amount = document.getElementById('card-wire-amount')?.value;
+  const iban = document.getElementById('card-wire-iban')?.value?.trim();
+  if (!cardId || !amount || !iban) {
+    if (msg) msg.textContent = 'Card, amount, and IBAN required';
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  await connectGlobalProductionServer();
+  const j = await api('/bridge/cards/101.1/wire', {
+    method: 'POST',
+    body: JSON.stringify({
+      cardId, amount, beneficiaryIban: iban, preview: false,
+      beneficiaryName: document.getElementById('card-wire-name')?.value?.trim(),
+      reference: document.getElementById('card-wire-reference')?.value?.trim(),
+    }),
+  });
+  if (btn) { btn.disabled = false; btn.textContent = 'Send wire transfer'; }
+  if (j.error) {
+    if (msg) msg.textContent = j.error;
+    return;
+  }
+  if (msg) msg.textContent = `✓ Wire ${j.status}: ${amount} · ${j.wireRef || ''}`;
+  await refreshVirtualCards();
+  await refreshOnlineBank();
 }
 
 async function refreshVirtualCards() {

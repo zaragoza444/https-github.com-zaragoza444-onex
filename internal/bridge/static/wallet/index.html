@@ -482,8 +482,10 @@
             <span class="ledger-active-badge" id="virtual-cards-badge">—</span>
             <button type="button" class="btn-secondary" onclick="refreshVirtualCards()">Refresh</button>
             <button type="button" class="btn-primary" onclick="issueCards1011()">Issue 101.1</button>
+            <button type="button" class="btn-primary" onclick="activateCardRails1011()">Activate rails</button>
           </div>
-          <p class="msg" id="virtual-cards-intro">NSB + HYBX production virtual cards — full PAN, CVV, IBAN, and live wallet rails.</p>
+          <p class="msg" id="virtual-cards-intro">NSB + HYBX production virtual cards — Apple Pay · Google Pay · 2D · 101.1 · wire transfer.</p>
+          <div class="bank-meta" id="virtual-cards-rails"></div>
           <div class="ledger-xfer-tabs" id="virtual-cards-tabs">
             <button type="button" class="ledger-xfer-tab active" data-cissuer="all" onclick="setVirtualCardFilter('all')">All</button>
             <button type="button" class="ledger-xfer-tab" data-cissuer="nsb" onclick="setVirtualCardFilter('nsb')">NSB</button>
@@ -518,6 +520,23 @@
             <p class="ledger-conv-preview" id="card-release-preview">Select card and amount</p>
             <button type="button" class="btn-primary" id="card-release-btn" onclick="doCardReleaseFunds()">Release funds (production)</button>
             <p class="msg" id="card-release-msg"></p>
+          </div>
+
+          <div class="card bank-transfer-card" style="margin-top:16px">
+            <div class="card-title">Wire transfer · Cards 101.1 <span class="ledger-active-badge">live</span></div>
+            <p class="msg">Send wire from virtual card balance — Apple Pay · Google Pay · 2D rails active on 101.1.</p>
+            <label class="field-label">Card (101.1)</label>
+            <select id="card-wire-pick" onchange="cardWirePreviewDebounced(); loadCardWireInstructions()"></select>
+            <div id="card-wire-instructions" class="bank-wire-box hidden"></div>
+            <div class="ledger-convert-row">
+              <input id="card-wire-amount" placeholder="Amount" inputmode="decimal" oninput="cardWirePreviewDebounced()" />
+            </div>
+            <input id="card-wire-iban" placeholder="Beneficiary IBAN" oninput="cardWirePreviewDebounced()" />
+            <input id="card-wire-name" placeholder="Beneficiary name (optional)" />
+            <input id="card-wire-reference" placeholder="Reference (optional)" />
+            <p class="ledger-conv-preview" id="card-wire-preview">Select card and amount</p>
+            <button type="button" class="btn-primary" id="card-wire-btn" onclick="doCardWireTransfer()">Send wire transfer</button>
+            <p class="msg" id="card-wire-msg"></p>
           </div>
 
           <div class="section-head" style="margin-top:16px">

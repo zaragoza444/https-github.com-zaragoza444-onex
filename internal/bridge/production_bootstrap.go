@@ -88,7 +88,7 @@ func (b *Bridge) BootstrapProduction(ctx context.Context, evmHolder string) map[
 	if cards, err := b.IssueCards1011(); err != nil {
 		add("cards1011", "warn", err.Error())
 	} else {
-		add("cards1011", "done", itoa(len(cards))+" online · BIN 1011 · program 101.1")
+		add("cards1011", "done", itoa(len(cards))+" online · BIN 1011 · Apple Pay · Google Pay · 2D · wire")
 	}
 
 	swift := b.SwiftSystemStatus()
