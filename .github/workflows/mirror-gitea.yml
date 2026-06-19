@@ -1,0 +1,33 @@
+name: Mirror to Gitea
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Mirror branch to Gitea
+        env:
+          GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+          GITEA_HOST: ${{ vars.GITEA_HOST }}
+          GITEA_USER: ${{ vars.GITEA_USER }}
+          GITEA_REPO: ${{ vars.GITEA_REPO }}
+        run: |
+          if [ -z "$GITEA_TOKEN" ]; then
+            echo "GITEA_TOKEN secret not configured — skipping Gitea mirror."
+            echo "Add GITEA_TOKEN in GitHub repo Settings → Secrets → Actions."
+            exit 0
+          fi
+          HOST="${GITEA_HOST:-https://git.anakatech.llc}"
+          USER="${GITEA_USER:-zardashtways44}"
+          REPO="${GITEA_REPO:-onex}"
+          BRANCH="${GITHUB_REF_NAME}"
+          git remote add gitea "https://${USER}:${GITEA_TOKEN}@${HOST#https://}/${USER}/${REPO}.git"
+          git push gitea "HEAD:refs/heads/${BRANCH}"
