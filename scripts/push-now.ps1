@@ -2,7 +2,7 @@
 param(
     [string]$GitHubUser = "zaragoza444",
     [string]$RepoName = "onex",
-    [string]$GiteaUrl = ""
+    [string]$GiteaUrl = "https://git.anakatech.llc/zardashtways44/onex.git"
 )
 
 $ErrorActionPreference = "Stop"
@@ -37,6 +37,17 @@ Write-Host "GitHub: https://github.com/$repo"
 if ($GiteaUrl) {
     git remote remove gitea 2>$null
     git remote add gitea $GiteaUrl
+    if ($env:GITEA_TOKEN) {
+        $giteaHost = ($GiteaUrl -replace '^(https?://[^/]+).*$', '$1')
+        $giteaName = ($GiteaUrl -split '/')[-2]
+        $headers = @{ Authorization = "token $env:GITEA_TOKEN"; "Content-Type" = "application/json" }
+        $body = @{ name = $RepoName; private = $false } | ConvertTo-Json
+        try {
+            Invoke-RestMethod -Method Post -Uri "$giteaHost/api/v1/user/repos" -Headers $headers -Body $body | Out-Null
+        } catch {
+            if ($_.Exception.Response.StatusCode.value__ -notin 409, 422) { throw }
+        }
+    }
     git push -u gitea main
     Write-Host "Gitea: $GiteaUrl"
 } elseif (Test-Path "$root\remotes.env") {
