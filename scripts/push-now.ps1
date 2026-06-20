@@ -2,7 +2,7 @@
 param(
     [string]$GitHubUser = "zaragoza444",
     [string]$RepoName = "onex",
-    [string]$GiteaUrl = "https://git.anakatech.llc/zardashtways44/onex.git"
+    [string]$GiteaUrl = "https://git.anakatech.llc/zaragoza/onex.git"
 )
 
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)

@@ -19,7 +19,7 @@ if (-not (Test-Path $envFile) -and (Test-Path $example)) {
 
 $GitHubUser = if ($env:GITHUB_USER) { $env:GITHUB_USER } else { "zaragoza444" }
 $RepoName = if ($env:REPO_NAME) { $env:REPO_NAME } else { "onex" }
-$GiteaUrl = if ($env:GITEA_URL) { $env:GITEA_URL } else { "https://git.anakatech.llc/zardashtways44/onex.git" }
+$GiteaUrl = if ($env:GITEA_URL) { $env:GITEA_URL } else { "https://git.anakatech.llc/zaragoza/onex.git" }
 $GitHubUrl = "https://github.com/${GitHubUser}/${RepoName}.git"
 
 function Remove-GitRemote([string]$Name) {
@@ -57,7 +57,7 @@ try {
 
 if ($env:GITEA_TOKEN) {
     $hostName = ([uri]$GiteaUrl).Host
-    $giteaUser = if ($env:GITEA_USER) { $env:GITEA_USER } else { "zardashtways44" }
+    $giteaUser = if ($env:GITEA_USER) { $env:GITEA_USER } else { "zaragoza" }
     @(
         "protocol=https",
         "host=$hostName",

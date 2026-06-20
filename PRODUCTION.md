@@ -30,6 +30,27 @@ With bridge URL (Render):
 
 ## After first push
 
+### GitHub → Gitea auto-mirror (recommended)
+
+After every push to GitHub `main`, the workflow [`.github/workflows/mirror-gitea.yml`](../.github/workflows/mirror-gitea.yml) mirrors to Anakatech Gitea (creates repo if missing).
+
+**One-time GitHub setup** (repo `zaragoza444/onex`):
+
+1. On https://git.anakatech.llc/ → **Settings → Applications** → **Generate New Token** (scope: `write:repository`, user **zaragoza**).
+2. GitHub repo → **Settings → Secrets and variables → Actions**:
+   - **Secret:** `GITEA_TOKEN` = your Gitea token
+   - **Variables (optional):** `GITEA_HOST` = `https://git.anakatech.llc`, `GITEA_USER` = `zaragoza`, `GITEA_REPO` = `onex`
+3. Push to `main` or run **Actions → Mirror to Gitea → Run workflow**.
+
+**Local dual push** (optional):
+
+```powershell
+copy remotes.env.example remotes.env
+# Set GITEA_TOKEN in remotes.env
+.\scripts\setup-git-push.ps1
+git pushall
+```
+
 ### Gitea (Anakatech)
 
 1. Create empty repo **onex** at https://git.anakatech.llc/ (if it does not exist).

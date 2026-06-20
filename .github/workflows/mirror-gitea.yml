@@ -13,21 +13,50 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Mirror branch to Gitea
+      - name: Ensure Gitea repo and mirror branch
         env:
           GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
           GITEA_HOST: ${{ vars.GITEA_HOST }}
           GITEA_USER: ${{ vars.GITEA_USER }}
           GITEA_REPO: ${{ vars.GITEA_REPO }}
         run: |
-          if [ -z "$GITEA_TOKEN" ]; then
+          set -euo pipefail
+          if [ -z "${GITEA_TOKEN:-}" ]; then
             echo "GITEA_TOKEN secret not configured — skipping Gitea mirror."
-            echo "Add GITEA_TOKEN in GitHub repo Settings → Secrets → Actions."
+            echo "Add GITEA_TOKEN in GitHub → Settings → Secrets → Actions."
             exit 0
           fi
+
           HOST="${GITEA_HOST:-https://git.anakatech.llc}"
-          USER="${GITEA_USER:-zardashtways44}"
+          HOST="${HOST%/}"
+          USER="${GITEA_USER:-zaragoza}"
           REPO="${GITEA_REPO:-onex}"
           BRANCH="${GITHUB_REF_NAME}"
+          API="${HOST}/api/v1/user/repos"
+          REMOTE_URL="${HOST}/${USER}/${REPO}.git"
+
+          echo "Target: ${REMOTE_URL} (branch ${BRANCH})"
+
+          HTTP_CODE=$(curl -sS -o /tmp/gitea-create.json -w "%{http_code}" \
+            -X POST "${API}" \
+            -H "Authorization: token ${GITEA_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"name\":\"${REPO}\",\"private\":false,\"auto_init\":false}")
+
+          if [ "$HTTP_CODE" = "201" ]; then
+            echo "Created Gitea repo ${USER}/${REPO}"
+          elif [ "$HTTP_CODE" = "409" ] || [ "$HTTP_CODE" = "422" ]; then
+            echo "Gitea repo ${USER}/${REPO} already exists"
+          else
+            echo "Gitea repo create returned HTTP ${HTTP_CODE} (continuing if repo exists)"
+            cat /tmp/gitea-create.json 2>/dev/null || true
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git remote remove gitea 2>/dev/null || true
           git remote add gitea "https://${USER}:${GITEA_TOKEN}@${HOST#https://}/${USER}/${REPO}.git"
           git push gitea "HEAD:refs/heads/${BRANCH}"
+
+          echo "Mirrored to ${REMOTE_URL}"

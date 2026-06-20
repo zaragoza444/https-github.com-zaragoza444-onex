@@ -14,7 +14,7 @@ Set-Location $root
 $GitHubUser = if ($env:GITHUB_USER) { $env:GITHUB_USER } else { "zaragoza444" }
 $RepoName = if ($env:REPO_NAME) { $env:REPO_NAME } else { "onex" }
 $GiteaHost = if ($env:GITEA_HOST) { $env:GITEA_HOST.TrimEnd("/") } else { "https://git.anakatech.llc" }
-$GiteaUser = if ($env:GITEA_USER) { $env:GITEA_USER } else { "zardashtways44" }
+$GiteaUser = if ($env:GITEA_USER) { $env:GITEA_USER } else { "zaragoza" }
 $GiteaUrl = if ($env:GITEA_URL) { $env:GITEA_URL } else { "$GiteaHost/$GiteaUser/$RepoName.git" }
 $GitHubUrl = "https://github.com/${GitHubUser}/${RepoName}.git"
 
