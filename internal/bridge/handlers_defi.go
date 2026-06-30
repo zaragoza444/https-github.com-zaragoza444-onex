@@ -41,6 +41,7 @@ func (s *Server) registerDeFiRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/bridge/onex-swap/bridge", s.handleBridgeExec)
 	registerLegacySwapRoutes(mux, s)
 	s.registerLedgerRoutes(mux)
+	s.registerEthereumRoutes(mux)
 	s.registerBankRoutes(mux)
 	s.registerSwiftRoutes(mux)
 	s.registerCardRoutes(mux)

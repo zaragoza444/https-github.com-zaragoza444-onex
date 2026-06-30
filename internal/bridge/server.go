@@ -192,7 +192,9 @@ func needsAPIKey(r *http.Request) bool {
 		"/bridge/onex-swap/swap",
 		"/bridge/onex-swap/liquidity/add",
 		"/bridge/onex-swap/liquidity/remove",
-		"/bridge/onex-swap/bridge":
+		"/bridge/onex-swap/bridge",
+		"/bridge/ethereum/transfer",
+		"/bridge/quiknode/transfer":
 		return true
 	default:
 		return false

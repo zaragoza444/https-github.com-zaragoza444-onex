@@ -21,9 +21,18 @@ func (b *Bridge) SettlementCapabilities() map[string]interface{} {
 			caps["evmSenderAddress"] = addr
 		}
 	}
+	eth := chains.ProbeEthereumRPC(context.Background())
+	caps["ethereumMainnet"] = map[string]interface{}{
+		"configured":   eth.Configured,
+		"online":       eth.Online,
+		"provider":     eth.Provider,
+		"masterWallet": eth.MasterWallet,
+		"blockNumber":  eth.BlockNumber,
+		"transferAPI":  "/bridge/ethereum/transfer",
+		"statusAPI":    "/bridge/ethereum/status",
+	}
 	return caps
 }
-
 func (b *Bridge) SettleLedger(ctx context.Context, evmHolder string, req ledger.SettlementRequest) (*ledger.SettlementResult, error) {
 	if err := b.SyncLedgerBook(ctx, evmHolder); err != nil {
 		return nil, err

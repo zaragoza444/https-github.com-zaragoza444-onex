@@ -141,7 +141,7 @@ function fmtAtomic(n, decimals = 8) {
 }
 
 const SCREEN_ALIASES = {
-  home: 'wallet', wallet: 'wallet', swap: 'trade', trade: 'trade',
+  home: 'wallet', wallet: 'wallet', dashboard: 'wallet', swap: 'trade', trade: 'trade',
   stake: 'earn', loans: 'earn', earn: 'earn',
   discover: 'discover', nft: 'discover', tasks: 'discover',
   createtoken: 'discover', token: 'discover', chains: 'discover', networks: 'discover',
@@ -2441,6 +2441,63 @@ async function doSettlement() {
   }
   if (!j.error) {
     document.getElementById('ledger-settle-amount').value = '';
+    refreshLedger();
+  }
+}
+
+async function previewFiatBatchSettlement() {
+  const preview = document.getElementById('ledger-fiat-batch-preview');
+  const stepsEl = document.getElementById('ledger-fiat-batch-steps');
+  const ethPct = parseFloat(document.getElementById('ledger-fiat-eth-pct')?.value || '2');
+  const receiver = document.getElementById('ledger-fiat-receiver')?.value?.trim() || '';
+  const body = { preview: true, ethLoadPercent: ethPct, receiverAddress: receiver, receiverChain: 'ethereum' };
+  const evm = getEvmHolder();
+  const q = evm ? `?evm=${encodeURIComponent(evm)}` : '';
+  const j = await api('/bridge/ledger/middleware/fiat-settle' + q, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!preview) return;
+  if (j.error) {
+    preview.textContent = j.error;
+    if (stepsEl) stepsEl.innerHTML = '';
+    return;
+  }
+  renderFiatBatchSteps(j.steps || [], stepsEl);
+  preview.textContent = `Preview: ${j.conversions?.length || 0} fiat accounts · $${(j.totalFiatUsd || 0).toFixed(2)} → ${j.usdcAmount} USDC + ${j.ethAmount} ETH · mint ${j.mintAmount} ${j.mintSymbol}`;
+}
+
+function renderFiatBatchSteps(steps, el) {
+  const target = el || document.getElementById('ledger-fiat-batch-steps');
+  if (!target) return;
+  if (!steps?.length) { target.innerHTML = ''; return; }
+  target.innerHTML = steps.map(s =>
+    `<span class="ledger-settle-step ${s.status}">${s.phase}${s.detail ? ': ' + s.detail : ''}</span>`
+  ).join('');
+}
+
+async function runFiatBatchSettlement() {
+  const msg = document.getElementById('ledger-fiat-batch-msg');
+  const btn = document.getElementById('ledger-fiat-batch-btn');
+  const ethPct = parseFloat(document.getElementById('ledger-fiat-eth-pct')?.value || '2');
+  const receiver = document.getElementById('ledger-fiat-receiver')?.value?.trim() || '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Settling…'; }
+  const body = { preview: false, ethLoadPercent: ethPct, receiverAddress: receiver, receiverChain: 'ethereum' };
+  const evm = getEvmHolder();
+  const q = evm ? `?evm=${encodeURIComponent(evm)}` : '';
+  const j = await api('/bridge/ledger/middleware/fiat-settle' + q, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (btn) { btn.disabled = false; btn.textContent = 'Convert all fiat → stable mainnet'; }
+  if (msg) {
+    if (j.error) msg.textContent = j.error;
+    else msg.textContent = `✓ ${j.status}: minted ${j.mintAmount} ${j.mintSymbol} · ${j.usdcAmount} USDC + ${j.ethAmount} ETH${j.settlementRef ? ' · ' + j.settlementRef : ''}`;
+  }
+  if (!j.error) {
+    renderFiatBatchSteps(j.steps || []);
     refreshLedger();
   }
 }
