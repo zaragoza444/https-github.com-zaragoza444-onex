@@ -97,6 +97,14 @@ build_and_restart_docker() {
   sleep 8
 }
 
+uses_systemd_bridge() {
+  systemctl is-active onex-bridge >/dev/null 2>&1
+}
+
+uses_docker_bridge() {
+  docker ps --format '{{.Names}} {{.Ports}}' 2>/dev/null | grep -qE 'onex.*9338|9338.*onex'
+}
+
 echo "==> make-ethereum-200"
 if [ "$(http_code "$STATUS_URL")" = "200" ]; then
   echo "Already 200"
@@ -109,7 +117,9 @@ REPO="$(find_repo)" || REPO="$HOME/onex"
 mkdir -p "$REPO"
 ensure_repo "$REPO"
 
-if docker ps --format '{{.Names}}' 2>/dev/null | grep -qiE 'onex-bridge|bridge'; then
+if uses_systemd_bridge; then
+  build_and_restart_systemd "$REPO"
+elif uses_docker_bridge; then
   build_and_restart_docker "$REPO"
 else
   build_and_restart_systemd "$REPO"
