@@ -8,6 +8,14 @@ REPO="${ONEX_REPO:-$HOME/onex}"
 ENV_FILE="/etc/onex/onex.env"
 QN_FILE="/etc/onex/quiknode.env"
 
+# Load persisted QuickNode secrets if present
+if [ -f "$QN_FILE" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$QN_FILE"
+  set +a
+fi
+
 cd "$REPO"
 git fetch origin main 2>/dev/null || true
 git reset --hard origin/main 2>/dev/null || true
@@ -16,8 +24,10 @@ export PATH="/usr/local/go/bin:$HOME/go/bin:$PATH"
 
 # QuickNode secrets — prefer /etc/onex/quiknode.env (never commit this file)
 if [ -f "$QN_FILE" ]; then
+  set -a
   # shellcheck disable=SC1090
   source "$QN_FILE"
+  set +a
 fi
 
 : "${ONEX_ETHEREUM_RPC:?Set ONEX_ETHEREUM_RPC in $QN_FILE or environment}"
