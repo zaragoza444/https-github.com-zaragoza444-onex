@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -33,6 +34,18 @@ func (b *Bridge) EthereumStatus(ctx context.Context) chains.EthereumRPCStatus {
 	return chains.ProbeEthereumRPC(ctx)
 }
 
+func (b *Bridge) EthereumBlock(ctx context.Context, number string, fullTx bool) (json.RawMessage, error) {
+	return chains.GetEthereumBlock(ctx, number, fullTx)
+}
+
+func (b *Bridge) EthereumTransaction(ctx context.Context, hash string) (json.RawMessage, error) {
+	return chains.GetEthereumTransaction(ctx, hash)
+}
+
+func (b *Bridge) EthereumTransactionReceipt(ctx context.Context, hash string) (json.RawMessage, error) {
+	return chains.GetEthereumTransactionReceipt(ctx, hash)
+}
+
 func (b *Bridge) EthereumTransfer(ctx context.Context, req EthereumTransferRequest) (*EthereumTransferResult, error) {
 	to := chains.FormatAddress(strings.TrimSpace(req.To))
 	if to == "" {
@@ -59,10 +72,15 @@ func (b *Bridge) EthereumTransfer(ctx context.Context, req EthereumTransferReque
 	if err != nil {
 		return nil, fmt.Errorf("evm sender not configured: set ONEX_EVM_SENDER_KEY (64 hex private key)")
 	}
+	signerSource := "sender"
 
 	decimals, contract, _ := b.evmSendMeta("ethereum", asset)
 
 	if req.Preview {
+		if signer, serr := chains.ResolveEthereumSigner(ctx); serr == nil {
+			fromAddr = signer.Address
+			signerSource = signer.Source
+		}
 		return &EthereumTransferResult{
 			Status:  "preview",
 			Preview: true,
@@ -71,19 +89,20 @@ func (b *Bridge) EthereumTransfer(ctx context.Context, req EthereumTransferReque
 			Asset:   asset,
 			Amount:  amt,
 			RPC:     chains.MaskRPCURL(rpcURL),
-			Note:    req.Note,
+			Note:    strings.TrimSpace(req.Note + " · signer:" + signerSource),
 		}, nil
 	}
 
-	keyHex, err := chains.LoadBridgeSenderKey()
+	signer, err := chains.ResolveEthereumSigner(ctx)
 	if err != nil {
 		return nil, err
 	}
+	fromAddr = signer.Address
 
 	txHash, err := chains.SendEVMTransfer(ctx, chains.EVMSendInput{
 		RPCURL:        rpcURL,
 		ChainID:       chains.EthereumMainnetChainID,
-		PrivateKeyHex: keyHex,
+		PrivateKeyHex: signer.PrivateKeyHex,
 		ToAddress:     to,
 		Asset:         asset,
 		AmountHuman:   amt,
@@ -113,4 +132,8 @@ func (b *Bridge) EthereumTransfer(ctx context.Context, req EthereumTransferReque
 		RPC:         chains.MaskRPCURL(rpcURL),
 		Note:        req.Note,
 	}, nil
+}
+
+func (b *Bridge) FundEVMSender(ctx context.Context) (map[string]interface{}, error) {
+	return chains.FundEVMSenderIfNeeded(ctx)
 }

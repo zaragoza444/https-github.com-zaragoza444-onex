@@ -333,11 +333,13 @@ func (s *BookStore) RunFiatSettlementMiddleware(
 				return nil, fmt.Errorf("usdc load: %w", err)
 			}
 		}
-		if poolEthUSD > 0 {
+		pool, _ = s.GetAccount(poolID)
+		remaining := parseHuman(pool.Balance)
+		if remaining > 0 {
 			_, err = s.Transfer(TransferRequest{
 				FromAccount: poolID,
 				ToAccount:   bookVaultID("ETH"),
-				Amount:      formatFloat(poolEthUSD),
+				Amount:      formatFloat(remaining),
 				ConvertTo:   "ETH",
 				Note:        "fiat-settlement-eth-gas",
 			}, prices, nil)

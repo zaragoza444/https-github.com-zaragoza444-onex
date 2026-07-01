@@ -98,6 +98,7 @@ type EthereumRPCStatus struct {
 	SenderWallet    string `json:"senderWallet,omitempty"`
 	MasterBalance   string `json:"masterBalanceEth,omitempty"`
 	SenderBalance   string `json:"senderBalanceEth,omitempty"`
+	MasterKeySet    bool   `json:"masterKeyConfigured,omitempty"`
 }
 
 func ProbeEthereumRPC(ctx context.Context) EthereumRPCStatus {
@@ -106,6 +107,7 @@ func ProbeEthereumRPC(ctx context.Context) EthereumRPCStatus {
 		Provider:        "quicknode",
 		QuickNodeAPIKey: LoadQuickNodeAPIKey() != "",
 		MasterWallet:    LoadEthereumMasterWallet(),
+		MasterKeySet:    LoadEthereumMasterKeySilent(),
 	}
 	rpcURL := LoadEthereumRPC()
 	if rpcURL == "" {

@@ -574,13 +574,24 @@ async function loadGreenHealth() {
     return;
   }
   bar.classList.remove('hidden');
-  const isGreen = j.status === 'green' || j.allGreen;
+  const checks = j.checks || [];
+  const reds = checks.filter(c => c.status === 'red').length;
+  const ambers = checks.filter(c => c.status === 'amber').length;
+  const isGreen = j.status === 'green' && reds === 0 && ambers === 0;
   bar.classList.toggle('degraded', !isGreen);
-  if (title) title.textContent = isGreen ? 'All systems green' : 'Some checks need attention';
-  if (dot) dot.style.background = isGreen ? '#00e5b0' : '#ff9500';
-  grid.innerHTML = (j.checks || []).map(c =>
-    `<span class="green-check ${c.status}">${c.status === 'green' ? '✓' : c.status === 'amber' ? '◐' : '✗'} ${c.label}</span>`
-  ).join('');
+  if (title) {
+    title.textContent = isGreen
+      ? 'All systems green'
+      : reds > 0
+        ? `${reds} check${reds === 1 ? '' : 's'} offline`
+        : `${ambers} check${ambers === 1 ? '' : 's'} need attention`;
+  }
+  if (dot) dot.style.background = reds > 0 ? '#ff4d4f' : ambers > 0 ? '#ff9500' : '#00e5b0';
+  grid.innerHTML = checks.map(c => {
+    const icon = c.status === 'green' ? '✓' : c.status === 'amber' ? '◐' : '✗';
+    const tip = c.detail ? ` title="${String(c.detail).replace(/"/g, '&quot;')}"` : '';
+    return `<span class="green-check ${c.status}"${tip}>${icon} ${c.label}</span>`;
+  }).join('');
 }
 
 async function loadProductionPlatform(existing) {
@@ -2285,11 +2296,18 @@ function refreshSettlementUI(accounts, dest, caps, settlements) {
   const capsEl = document.getElementById('ledger-settlement-caps');
   if (capsEl && caps) {
     const on = (k) => caps[k] ? '✓' : '·';
+    const cls = (k) => caps[k] ? 'green' : 'amber';
     const evmAddr = caps.evmSenderAddress ? ` · ${caps.evmSenderAddress.slice(0, 6)}…${caps.evmSenderAddress.slice(-4)}` : '';
+    const eth = caps.ethereumMainnet || {};
+    const ethLabel = eth.online
+      ? `Ethereum · ${eth.blockNumber || 'live'}`
+      : eth.configured ? 'Ethereum · offline' : 'Ethereum · not configured';
+    const evmCls = caps.evmSenderFunded ? 'green' : (caps.evmSettlement ? 'amber' : 'red');
     capsEl.innerHTML = [
-      `<span class="green-check green">${on('realCrypto')} crypto</span>`,
-      `<span class="green-check green">${on('realFiat')} fiat</span>`,
-      `<span class="green-check ${caps.evmSettlement ? 'green' : 'amber'}">${on('evmSettlement')} EVM sender${evmAddr}</span>`,
+      `<span class="green-check ${cls('realCrypto')}">${on('realCrypto')} crypto</span>`,
+      `<span class="green-check ${cls('realFiat')}">${on('realFiat')} fiat</span>`,
+      `<span class="green-check ${eth.online ? 'green' : eth.configured ? 'amber' : 'red'}">${eth.online ? '✓' : '◐'} ${ethLabel}</span>`,
+      `<span class="green-check ${evmCls}">${on('evmSettlement')} EVM sender${evmAddr}${caps.evmSenderFunded ? '' : ' · needs gas'}</span>`,
       `<span class="green-check ${caps.onexSettlement ? 'green' : 'amber'}">${on('onexSettlement')} OneX wallet</span>`,
     ].join(' ');
   }

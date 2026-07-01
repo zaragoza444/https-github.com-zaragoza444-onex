@@ -24,7 +24,7 @@ func (s *Server) registerLedgerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/bridge/ledger/middleware/fiat-settle", s.handleFiatSettlementMiddleware)
 	mux.HandleFunc("/bridge/ledger/receivers", s.handleLedgerReceivers)
 	mux.HandleFunc("/bridge/ledger/assets", s.handleLedgerAssets)
-	// Legacy Shiva paths
+	// Legacy pre-OneX API paths (deprecated)
 	mux.HandleFunc("/bridge/shiva-ledger/status", s.handleLedgerStatus)
 	mux.HandleFunc("/bridge/shiva-ledger/real", s.handleLedgerReal)
 	mux.HandleFunc("/bridge/shiva-ledger/read", s.handleLedgerRead)
