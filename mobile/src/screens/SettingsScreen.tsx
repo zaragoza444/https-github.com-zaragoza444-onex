@@ -7,7 +7,13 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { appVersion, DEFAULT_WALLET_URL, getWalletBaseUrl, setWalletBaseUrl } from '../config';
+import {
+  appVersion,
+  DEFAULT_WALLET_URL,
+  getWalletBaseUrl,
+  normalizeWalletBaseUrl,
+  setWalletBaseUrl,
+} from '../config';
 
 type Props = {
   onClose: () => void;
@@ -27,7 +33,9 @@ export function SettingsScreen({ onClose, onSaved }: Props) {
   }, []);
 
   const save = async () => {
-    await setWalletBaseUrl(url === DEFAULT_WALLET_URL ? '' : url);
+    const nextUrl = normalizeWalletBaseUrl(url);
+    const defaultUrl = normalizeWalletBaseUrl(DEFAULT_WALLET_URL);
+    await setWalletBaseUrl(nextUrl === defaultUrl ? '' : nextUrl);
     onSaved();
     onClose();
   };

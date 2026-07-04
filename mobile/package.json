@@ -8,6 +8,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "test:wallet-url": "node scripts/test-wallet-url.cjs",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit"
   },

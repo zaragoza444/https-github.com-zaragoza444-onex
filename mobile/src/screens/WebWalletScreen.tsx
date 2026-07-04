@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import type { WebViewNavigation } from 'react-native-webview/lib/WebViewTypes';
-import { getWalletBaseUrl, walletUrlWithHash } from '../config';
+import { getWalletBaseUrl, shouldOpenWalletRequestExternally, walletUrlWithHash } from '../config';
 import { INJECTED_BRIDGE_JS } from '../injectedBridge';
 
 type Props = {
@@ -49,23 +49,9 @@ export function WebWalletScreen({ deepLinkHash, onOpenSettings }: Props) {
     }
   }, [deepLinkHash, url]);
 
-  const shouldOpenExternally = (requestUrl: string, base: string) => {
-    try {
-      const req = new URL(requestUrl);
-      const baseUrl = new URL(base);
-      if (req.origin !== baseUrl.origin) return true;
-      if (!req.pathname.startsWith('/wallet') && !req.pathname.startsWith('/bridge')) {
-        return true;
-      }
-    } catch {
-      return true;
-    }
-    return false;
-  };
-
   const onShouldStartLoadWithRequest = (event: { url: string }) => {
     if (!url) return true;
-    if (shouldOpenExternally(event.url, url)) {
+    if (shouldOpenWalletRequestExternally(event.url, url)) {
       Linking.openURL(event.url);
       return false;
     }

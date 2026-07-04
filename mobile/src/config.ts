@@ -1,5 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+export {
+  normalizeWalletBaseUrl,
+  shouldOpenWalletRequestExternally,
+  walletUrlWithHash,
+} from './walletUrl';
+import { normalizeWalletBaseUrl } from './walletUrl';
 
 const STORAGE_KEY = 'onex_wallet_url_override';
 
@@ -12,23 +18,16 @@ export async function getWalletBaseUrl(): Promise<string> {
     override = await AsyncStorage.getItem('shiva_wallet_url_override');
     if (override) await AsyncStorage.setItem(STORAGE_KEY, override);
   }
-  const base = (override?.trim() || DEFAULT_WALLET_URL).replace(/\/?$/, '/');
-  return base;
+  return normalizeWalletBaseUrl(override || DEFAULT_WALLET_URL);
 }
 
 export async function setWalletBaseUrl(url: string): Promise<void> {
-  const trimmed = url.trim();
-  if (!trimmed) {
+  const normalized = normalizeWalletBaseUrl(url);
+  if (!normalized) {
     await AsyncStorage.removeItem(STORAGE_KEY);
     return;
   }
-  await AsyncStorage.setItem(STORAGE_KEY, trimmed);
-}
-
-export function walletUrlWithHash(base: string, hash: string): string {
-  const clean = base.replace(/#.*$/, '').replace(/\/?$/, '/');
-  const h = hash.replace(/^#/, '');
-  return h ? `${clean}#${h}` : clean;
+  await AsyncStorage.setItem(STORAGE_KEY, normalized);
 }
 
 export function resolveDeepLink(path: string | null): string | null {
