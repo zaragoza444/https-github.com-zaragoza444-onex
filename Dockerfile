@@ -16,8 +16,7 @@ RUN apk add --no-cache ca-certificates tzdata wget
 WORKDIR /app
 COPY --from=builder /onexd /onex /onex-bridge /usr/local/bin/
 COPY configs /app/configs
-COPY data/bridge7 /app/data/bridge7
-RUN adduser -D -H onex && mkdir -p /data /bridge-data && chown -R onex:onex /data /bridge-data
+RUN adduser -D -H onex && mkdir -p /data /bridge-data /app/data/bridge7 && chown -R onex:onex /data /bridge-data /app/data
 USER onex
 EXPOSE 8545 30303 9338
 VOLUME ["/data", "/bridge-data"]
