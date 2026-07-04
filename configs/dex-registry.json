@@ -1,0 +1,425 @@
+{
+  "version": 1,
+  "chains": {
+    "bsc": {
+      "name": "BNB Chain",
+      "networkId": 56,
+      "explorer": "https://bscscan.com",
+      "dexChainId": "bsc",
+      "wrappedNative": { "id": "wbnb", "symbol": "WBNB", "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", "decimals": 18 },
+      "stablecoins": [
+        { "id": "usdt", "symbol": "USDT", "address": "0x55d398326f99059fF775485246999027B3197955", "decimals": 18 },
+        { "id": "usdc", "symbol": "USDC", "address": "0x8AC76a51cc950d9822EeB29FE1D565E5E2fdAA4", "decimals": 18 }
+      ],
+      "dexes": [
+        {
+          "id": "pancake-v2",
+          "name": "PancakeSwap V2",
+          "version": 2,
+          "type": "uniswap-v2",
+          "liquidityMode": "router-v2",
+          "router": "0x10ED43C718714eb63d5aA57B78B54704E256024E",
+          "factory": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73",
+          "routerAbi": "PancakeRouter.json",
+          "factoryAbi": "PancakeFactory.json",
+          "liquidityUrl": "https://pancakeswap.finance/v2/add",
+          "infoUrl": "https://pancakeswap.finance/info/v2/pairs/",
+          "swapUrl": "https://pancakeswap.finance/swap",
+          "dexscreenerId": "pancakeswap"
+        },
+        {
+          "id": "pancake-v3",
+          "name": "PancakeSwap V3",
+          "version": 3,
+          "type": "uniswap-v3",
+          "liquidityMode": "link-only",
+          "router": "0x13f4EA83D0bd40E75C8222255bc855a974568Dd4",
+          "factory": "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865",
+          "positionManager": "0x46A15B0b2737ced2BF16C1AE047eE2D049B7DA68",
+          "liquidityUrl": "https://pancakeswap.finance/liquidity/select",
+          "infoUrl": "https://pancakeswap.finance/info/v3/pairs/",
+          "swapUrl": "https://pancakeswap.finance/swap",
+          "dexscreenerId": "pancakeswap"
+        },
+        {
+          "id": "pancake-v4",
+          "name": "PancakeSwap Infinity (V4)",
+          "version": 4,
+          "type": "pancake-infinity",
+          "liquidityMode": "link-only",
+          "liquidityUrl": "https://pancakeswap.finance/liquidity/pool",
+          "infoUrl": "https://pancakeswap.finance/info/v4/",
+          "swapUrl": "https://pancakeswap.finance/swap",
+          "dexscreenerId": "pancakeswap"
+        },
+        {
+          "id": "sushi-v2",
+          "name": "SushiSwap V2",
+          "version": 2,
+          "type": "uniswap-v2",
+          "liquidityMode": "router-v2",
+          "router": "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506",
+          "factory": "0xc35DADB65012eC5796536bD9864eD8773aBc29C4",
+          "routerAbi": "PancakeRouter.json",
+          "factoryAbi": "PancakeFactory.json",
+          "liquidityUrl": "https://www.sushi.com/pool/add",
+          "infoUrl": "https://www.sushi.com/explore/pool/",
+          "swapUrl": "https://www.sushi.com/swap",
+          "dexscreenerId": "sushiswap"
+        }
+      ]
+    },
+    "ethereum": {
+      "name": "Ethereum",
+      "networkId": 1,
+      "explorer": "https://etherscan.io",
+      "dexChainId": "ethereum",
+      "wrappedNative": { "id": "weth", "symbol": "WETH", "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", "decimals": 18 },
+      "stablecoins": [
+        { "id": "usdt", "symbol": "USDT", "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7", "decimals": 6 },
+        { "id": "usdc", "symbol": "USDC", "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", "decimals": 6 }
+      ],
+      "dexes": [
+        {
+          "id": "uniswap-v2",
+          "name": "Uniswap V2",
+          "version": 2,
+          "type": "uniswap-v2",
+          "liquidityMode": "router-v2",
+          "router": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2F668",
+          "factory": "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
+          "routerAbi": "PancakeRouter.json",
+          "factoryAbi": "PancakeFactory.json",
+          "liquidityUrl": "https://app.uniswap.org/#/add/v2",
+          "infoUrl": "https://info.uniswap.org/#/pools/",
+          "swapUrl": "https://app.uniswap.org/#/swap",
+          "dexscreenerId": "uniswap"
+        },
+        {
+          "id": "uniswap-v3",
+          "name": "Uniswap V3",
+          "version": 3,
+          "type": "uniswap-v3",
+          "liquidityMode": "link-only",
+          "router": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
+          "factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+          "positionManager": "0xC36442b4a4522E871399CD717aBDD847Ab11FE88",
+          "liquidityUrl": "https://app.uniswap.org/#/add",
+          "infoUrl": "https://info.uniswap.org/#/pools/",
+          "swapUrl": "https://app.uniswap.org/#/swap",
+          "dexscreenerId": "uniswap"
+        },
+        {
+          "id": "pancake-v3",
+          "name": "PancakeSwap V3",
+          "version": 3,
+          "type": "uniswap-v3",
+          "liquidityMode": "link-only",
+          "router": "0x13f4EA83D0bd40E75C8222255bc855a974568Dd4",
+          "factory": "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865",
+          "liquidityUrl": "https://pancakeswap.finance/liquidity/select",
+          "infoUrl": "https://pancakeswap.finance/info/v3/pairs/",
+          "swapUrl": "https://pancakeswap.finance/swap",
+          "dexscreenerId": "pancakeswap"
+        },
+        {
+          "id": "sushi-v2",
+          "name": "SushiSwap V2",
+          "version": 2,
+          "type": "uniswap-v2",
+          "liquidityMode": "router-v2",
+          "router": "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F",
+          "factory": "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2C4",
+          "routerAbi": "PancakeRouter.json",
+          "factoryAbi": "PancakeFactory.json",
+          "liquidityUrl": "https://www.sushi.com/pool/add",
+          "infoUrl": "https://www.sushi.com/explore/pool/",
+          "swapUrl": "https://www.sushi.com/swap",
+          "dexscreenerId": "sushiswap"
+        }
+      ]
+    },
+    "polygon": {
+      "name": "Polygon",
+      "networkId": 137,
+      "explorer": "https://polygonscan.com",
+      "dexChainId": "polygon",
+      "wrappedNative": { "id": "wmatic", "symbol": "WMATIC", "address": "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", "decimals": 18 },
+      "stablecoins": [
+        { "id": "usdt", "symbol": "USDT", "address": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", "decimals": 6 },
+        { "id": "usdc", "symbol": "USDC", "address": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", "decimals": 6 }
+      ],
+      "dexes": [
+        {
+          "id": "quickswap-v2",
+          "name": "QuickSwap V2",
+          "version": 2,
+          "type": "uniswap-v2",
+          "liquidityMode": "router-v2",
+          "router": "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff",
+          "factory": "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32",
+          "routerAbi": "PancakeRouter.json",
+          "factoryAbi": "PancakeFactory.json",
+          "liquidityUrl": "https://quickswap.exchange/#/add",
+          "infoUrl": "https://info.quickswap.exchange/#/pairs/",
+          "swapUrl": "https://quickswap.exchange/#/swap",
+          "dexscreenerId": "quickswap"
+        },
+        {
+          "id": "uniswap-v3",
+          "name": "Uniswap V3",
+          "version": 3,
+          "type": "uniswap-v3",
+          "liquidityMode": "link-only",
+          "router": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
+          "factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+          "liquidityUrl": "https://app.uniswap.org/#/add",
+          "infoUrl": "https://info.uniswap.org/#/pools/",
+          "swapUrl": "https://app.uniswap.org/#/swap",
+          "dexscreenerId": "uniswap"
+        },
+        {
+          "id": "sushi-v2",
+          "name": "SushiSwap V2",
+          "version": 2,
+          "type": "uniswap-v2",
+          "liquidityMode": "router-v2",
+          "router": "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506",
+          "factory": "0xc35DADB65012eC5796536bD9864eD8773aBc29C4",
+          "routerAbi": "PancakeRouter.json",
+          "factoryAbi": "PancakeFactory.json",
+          "liquidityUrl": "https://www.sushi.com/pool/add",
+          "infoUrl": "https://www.sushi.com/explore/pool/",
+          "swapUrl": "https://www.sushi.com/swap",
+          "dexscreenerId": "sushiswap"
+        }
+      ]
+    },
+    "arbitrum": {
+      "name": "Arbitrum One",
+      "networkId": 42161,
+      "explorer": "https://arbiscan.io",
+      "dexChainId": "arbitrum",
+      "wrappedNative": { "id": "weth", "symbol": "WETH", "address": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", "decimals": 18 },
+      "stablecoins": [
+        { "id": "usdt", "symbol": "USDT", "address": "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9", "decimals": 6 },
+        { "id": "usdc", "symbol": "USDC", "address": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", "decimals": 6 }
+      ],
+      "dexes": [
+        {
+          "id": "uniswap-v3",
+          "name": "Uniswap V3",
+          "version": 3,
+          "type": "uniswap-v3",
+          "liquidityMode": "link-only",
+          "router": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
+          "factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+          "liquidityUrl": "https://app.uniswap.org/#/add",
+          "infoUrl": "https://info.uniswap.org/#/pools/",
+          "swapUrl": "https://app.uniswap.org/#/swap",
+          "dexscreenerId": "uniswap"
+        },
+        {
+          "id": "sushi-v2",
+          "name": "SushiSwap V2",
+          "version": 2,
+          "type": "uniswap-v2",
+          "liquidityMode": "router-v2",
+          "router": "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506",
+          "factory": "0xc35DADB65012eC5796536bD9864eD8773aBc29C4",
+          "routerAbi": "PancakeRouter.json",
+          "factoryAbi": "PancakeFactory.json",
+          "liquidityUrl": "https://www.sushi.com/pool/add",
+          "infoUrl": "https://www.sushi.com/explore/pool/",
+          "swapUrl": "https://www.sushi.com/swap",
+          "dexscreenerId": "sushiswap"
+        },
+        {
+          "id": "pancake-v3",
+          "name": "PancakeSwap V3",
+          "version": 3,
+          "type": "uniswap-v3",
+          "liquidityMode": "link-only",
+          "router": "0x13f4EA83D0bd40E75C8222255bc855a974568Dd4",
+          "factory": "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865",
+          "liquidityUrl": "https://pancakeswap.finance/liquidity/select",
+          "infoUrl": "https://pancakeswap.finance/info/v3/pairs/",
+          "swapUrl": "https://pancakeswap.finance/swap",
+          "dexscreenerId": "pancakeswap"
+        }
+      ]
+    },
+    "optimism": {
+      "name": "Optimism",
+      "networkId": 10,
+      "explorer": "https://optimistic.etherscan.io",
+      "dexChainId": "optimism",
+      "wrappedNative": { "id": "weth", "symbol": "WETH", "address": "0x4200000000000000000000000000000000000006", "decimals": 18 },
+      "stablecoins": [
+        { "id": "usdc", "symbol": "USDC", "address": "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85", "decimals": 6 },
+        { "id": "usdt", "symbol": "USDT", "address": "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58", "decimals": 6 }
+      ],
+      "dexes": [
+        {
+          "id": "uniswap-v3",
+          "name": "Uniswap V3",
+          "version": 3,
+          "type": "uniswap-v3",
+          "liquidityMode": "link-only",
+          "router": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
+          "factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+          "liquidityUrl": "https://app.uniswap.org/#/add",
+          "infoUrl": "https://info.uniswap.org/#/pools/",
+          "swapUrl": "https://app.uniswap.org/#/swap",
+          "dexscreenerId": "uniswap"
+        },
+        {
+          "id": "sushi-v2",
+          "name": "SushiSwap V2",
+          "version": 2,
+          "type": "uniswap-v2",
+          "liquidityMode": "router-v2",
+          "router": "0x6BDED42c6DA8FbD095d99361ad206AbCc82fD0",
+          "factory": "0xc35DADB65012eC5796536bD9864eD8773aBc29C4",
+          "routerAbi": "PancakeRouter.json",
+          "factoryAbi": "PancakeFactory.json",
+          "liquidityUrl": "https://www.sushi.com/pool/add",
+          "infoUrl": "https://www.sushi.com/explore/pool/",
+          "swapUrl": "https://www.sushi.com/swap",
+          "dexscreenerId": "sushiswap"
+        }
+      ]
+    },
+    "avalanche": {
+      "name": "Avalanche C-Chain",
+      "networkId": 43114,
+      "explorer": "https://snowtrace.io",
+      "dexChainId": "avalanche",
+      "wrappedNative": { "id": "wavax", "symbol": "WAVAX", "address": "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7", "decimals": 18 },
+      "stablecoins": [
+        { "id": "usdt", "symbol": "USDT", "address": "0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7", "decimals": 6 },
+        { "id": "usdc", "symbol": "USDC", "address": "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E", "decimals": 6 }
+      ],
+      "dexes": [
+        {
+          "id": "traderjoe-v2",
+          "name": "Trader Joe V2",
+          "version": 2,
+          "type": "uniswap-v2",
+          "liquidityMode": "router-v2",
+          "router": "0x60aE616a2155Ee3d9A68541BaEaeBC5dC331Ee5E",
+          "factory": "0x9Ad6C38BE81606CbA3905483759eE39D8A3Afb6b",
+          "routerAbi": "PancakeRouter.json",
+          "factoryAbi": "PancakeFactory.json",
+          "liquidityUrl": "https://traderjoexyz.com/avalanche/pool",
+          "infoUrl": "https://traderjoexyz.com/avalanche/pool/",
+          "swapUrl": "https://traderjoexyz.com/avalanche/trade",
+          "dexscreenerId": "traderjoe"
+        },
+        {
+          "id": "sushi-v2",
+          "name": "SushiSwap V2",
+          "version": 2,
+          "type": "uniswap-v2",
+          "liquidityMode": "router-v2",
+          "router": "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506",
+          "factory": "0xc35DADB65012eC5796536bD9864eD8773aBc29C4",
+          "routerAbi": "PancakeRouter.json",
+          "factoryAbi": "PancakeFactory.json",
+          "liquidityUrl": "https://www.sushi.com/pool/add",
+          "infoUrl": "https://www.sushi.com/explore/pool/",
+          "swapUrl": "https://www.sushi.com/swap",
+          "dexscreenerId": "sushiswap"
+        }
+      ]
+    },
+    "base": {
+      "name": "Base",
+      "networkId": 8453,
+      "explorer": "https://basescan.org",
+      "dexChainId": "base",
+      "wrappedNative": { "id": "weth", "symbol": "WETH", "address": "0x4200000000000000000000000000000000000006", "decimals": 18 },
+      "stablecoins": [
+        { "id": "usdc", "symbol": "USDC", "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "decimals": 6 },
+        { "id": "usdt", "symbol": "USDT", "address": "0xfde4C96c8593536E31F229EA8f37b25AD2635fa2", "decimals": 6 }
+      ],
+      "dexes": [
+        {
+          "id": "uniswap-v3",
+          "name": "Uniswap V3",
+          "version": 3,
+          "type": "uniswap-v3",
+          "liquidityMode": "link-only",
+          "router": "0x2626664c2603336E57B97c5f0a0bA1D943eD14Af",
+          "factory": "0x33128a8fC17869897dcE68Ed026d694621f6FDfD",
+          "liquidityUrl": "https://app.uniswap.org/#/add",
+          "infoUrl": "https://info.uniswap.org/#/pools/",
+          "swapUrl": "https://app.uniswap.org/#/swap",
+          "dexscreenerId": "uniswap"
+        },
+        {
+          "id": "sushi-v2",
+          "name": "SushiSwap V2",
+          "version": 2,
+          "type": "uniswap-v2",
+          "liquidityMode": "router-v2",
+          "router": "0x6BDED42c6DA8FbD095d99361ad206AbCc82fD0",
+          "factory": "0xc35DADB65012eC5796536bD9864eD8773aBc29C4",
+          "routerAbi": "PancakeRouter.json",
+          "factoryAbi": "PancakeFactory.json",
+          "liquidityUrl": "https://www.sushi.com/pool/add",
+          "infoUrl": "https://www.sushi.com/explore/pool/",
+          "swapUrl": "https://www.sushi.com/swap",
+          "dexscreenerId": "sushiswap"
+        },
+        {
+          "id": "pancake-v3",
+          "name": "PancakeSwap V3",
+          "version": 3,
+          "type": "uniswap-v3",
+          "liquidityMode": "link-only",
+          "router": "0x13f4EA83D0bd40E75C8222255bc855a974568Dd4",
+          "factory": "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865",
+          "liquidityUrl": "https://pancakeswap.finance/liquidity/select",
+          "infoUrl": "https://pancakeswap.finance/info/v3/pairs/",
+          "swapUrl": "https://pancakeswap.finance/swap",
+          "dexscreenerId": "pancakeswap"
+        }
+      ]
+    },
+    "tron": {
+      "name": "TRON",
+      "networkId": 0,
+      "explorer": "https://tronscan.org",
+      "dexChainId": "tron",
+      "wrappedNative": { "id": "wtrx", "symbol": "WTRX", "address": "TNUC9Qb1rRpS5Cb3mP1q8iE3nFZ9RKqXw", "decimals": 6 },
+      "stablecoins": [
+        { "id": "usdt", "symbol": "USDT", "address": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", "decimals": 6 }
+      ],
+      "dexes": [
+        {
+          "id": "sunswap-v2",
+          "name": "SunSwap V2",
+          "version": 2,
+          "type": "tron-sunswap",
+          "liquidityMode": "link-only",
+          "liquidityUrl": "https://sunswap.com/#/add",
+          "infoUrl": "https://sunswap.com/#/scan/pooldetail/",
+          "swapUrl": "https://sunswap.com/#/swap",
+          "dexscreenerId": "sunswap"
+        },
+        {
+          "id": "sunswap-v3",
+          "name": "SunSwap V3",
+          "version": 3,
+          "type": "tron-sunswap",
+          "liquidityMode": "link-only",
+          "liquidityUrl": "https://sunswap.com/#/v3/add",
+          "infoUrl": "https://sunswap.com/#/scan/pooldetail/",
+          "swapUrl": "https://sunswap.com/#/v3/swap",
+          "dexscreenerId": "sunswap"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,137 @@
+# Production stack: node + wallet bridge + optional TLS proxy
+# Usage:
+#   cp .env.example .env   # set ONEX_API_KEY, ONEX_CORS_ORIGINS, etc.
+#   docker compose -f docker-compose.prod.yml up -d
+#   docker compose -f docker-compose.prod.yml --profile proxy up -d
+
+services:
+  onexd:
+    build: .
+    image: onex:latest
+    ports:
+      - "8545:8545"
+      - "30303:30303"
+    volumes:
+      - onex-data:/data
+    environment:
+      ONEX_CORS_ORIGINS: ${ONEX_CORS_ORIGINS:-*}
+      ONEX_API_KEY: ${ONEX_API_KEY:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8545/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  onex-bridge:
+    build: .
+    image: onex:latest
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        mkdir -p /bridge-data/wallets
+        exec /usr/local/bin/onex-bridge \
+          -node http://onexd:8545 \
+          -listen :9338 \
+          -config /bridge-data/bridge.json \
+          -wallet /bridge-data/wallets/default.json
+    ports:
+      - "9338:9338"
+    volumes:
+      - bridge-data:/bridge-data
+    environment:
+      ONEX_NODE_URL: http://onexd:8545
+      ONEX_PROJECT_ROOT: /app
+      ONEX_API_KEY: ${ONEX_API_KEY:-}
+      ONEX_CORS_ORIGINS: ${ONEX_CORS_ORIGINS:-*}
+      # Persist bridge + token platform storage under the same mounted volume.
+      ONEX_HOME_DIR: /bridge-data
+      ONEX_LEDGER_MODE: production
+      ONEX_BRIDGE7_ENABLED: ${ONEX_BRIDGE7_ENABLED:-1}
+      ONEX_BRIDGE7_PATHS_FILE: ${ONEX_BRIDGE7_PATHS_FILE:-configs/bridge7.paths.json}
+      ONEX_LOCAL_LEDGER_2026_FILE: ${ONEX_LOCAL_LEDGER_2026_FILE:-data/bridge7/local-ledger-2026.json}
+      ONEX_LEDGER_PRO_FILE: ${ONEX_LEDGER_PRO_FILE:-data/bridge7/ledger-pro.json}
+      ONEX_CRYPTO_LEDGER_FILE: ${ONEX_CRYPTO_LEDGER_FILE:-data/bridge7/crypto-ledger.json}
+    depends_on:
+      onexd:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:9338/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  nginx:
+    image: nginx:alpine
+    profiles: ["proxy"]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/certs:/etc/nginx/certs:ro
+      - ./website:/var/www/onex-site:ro
+      - certbot-webroot:/var/www/certbot:ro
+    depends_on:
+      - onexd
+      - onex-bridge
+    restart: unless-stopped
+
+  bsc-launcher:
+    build:
+      context: .
+      dockerfile: bsc-launcher/Dockerfile
+    image: bsc-launcher:latest
+    profiles: ["bsc-launcher"]
+    ports:
+      - "${BSC_LAUNCHER_PORT:-9340}:9340"
+    env_file:
+      - bsc-launcher/.env
+    environment:
+      BSC_LAUNCHER_ENV: production
+      BSC_LAUNCHER_LISTEN: :9340
+      BSC_LAUNCHER_DATA_DIR: /data
+      BSC_LAUNCHER_ROOT: /app/bsc-launcher
+    volumes:
+      - bsc-launcher-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:9340/ready"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 15s
+
+  onexd-testnet:
+    build: .
+    image: onex:latest
+    profiles: ["testnet"]
+    ports:
+      - "8547:8547"
+      - "30305:30305"
+    command:
+      - "-datadir"
+      - "/data"
+      - "-genesis"
+      - "/app/configs/genesis-testnet.json"
+      - "-api"
+      - ":8547"
+      - "-listen"
+      - ":30305"
+      - "-mine"
+      - "-faucet"
+    volumes:
+      - onex-testnet:/data
+    environment:
+      ONEX_FAUCET_PRIVATE_KEY: ${ONEX_FAUCET_PRIVATE_KEY:-}
+    restart: unless-stopped
+
+volumes:
+  onex-data:
+  bridge-data:
+  bsc-launcher-data:
+  onex-testnet:
+  certbot-webroot:

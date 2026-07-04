@@ -1,0 +1,16 @@
+{
+  "service": "onex-bridge7",
+  "description": "Bridge7 integrates local-ledger-2026, ledger-pro, and crypto-ledger into the OneX real ledger",
+  "pathsFile": "configs/bridge7.paths.json",
+  "env": {
+    "ONEX_BRIDGE7_ENABLED": "1",
+    "ONEX_BRIDGE7_PATHS_FILE": "configs/bridge7.paths.json"
+  },
+  "ledgers": ["local-ledger-2026", "ledger-pro", "crypto-ledger"],
+  "api": {
+    "status": "/bridge/bridge7/status",
+    "ledgers": "/bridge/bridge7/ledgers",
+    "sync": "/bridge/bridge7/sync",
+    "import": "/bridge/bridge7/import"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "provider": "local-ledger-2026",
+  "year": 2026,
+  "description": "Local fiat ledger export for Bridge7",
+  "accounts": [
+    {
+      "id": "nsb-operating",
+      "name": "NSB Operating · M1",
+      "fundClass": "m1",
+      "balances": { "USD": "250000.00", "EUR": "48000.00", "GBP": "12000.00" }
+    },
+    {
+      "id": "nsb-reserve",
+      "name": "NSB Reserve · M0",
+      "fundClass": "m0",
+      "balances": { "USD": "1000000.00" }
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+# Binaries & data
+bin/
+data/
+!bsc-launcher/data/
+!bsc-launcher/data/.gitkeep
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Local SDK bundle (breaks go mod tidy if committed)
+go/
+go-sdk.zip
+
+# Secrets & env
+.env
+.env.*
+!.env.example
+!.env.production.example
+remotes.env
+configs/faucet-testnet.env
+configs/quiknode.env
+**/wallets/*.json
+!**/wallets/.gitkeep
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+*.lnk
+.idea/
+.vscode/
+.claude/
+*.swp
+docs/wallet/config.js.bak
+
+# Certs (use deploy/certs/README only)
+deploy/certs/*.pem
+deploy/certs/*.key
+
+# Test / temp
+coverage.out
+*.test
+tmp/
+node_modules/
+
+# Solidity compile output (embedded artifact: internal/bridge/chains/flashcoin.json)
+contracts/out/

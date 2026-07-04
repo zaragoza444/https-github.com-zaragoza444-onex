@@ -1,0 +1,5 @@
+{
+  "nodeUrl": "http://127.0.0.1:8545",
+  "listen": ":9338",
+  "walletPath": ""
+}

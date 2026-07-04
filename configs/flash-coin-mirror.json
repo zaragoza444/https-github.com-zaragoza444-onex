@@ -1,0 +1,22 @@
+{
+  "name": "Flash Coin",
+  "symbol": "FLASH",
+  "decimals": 8,
+  "supply": "1000000000",
+  "supplyNote": "Human decimal amount (1,000,000,000 = 1 billion FLASH); not base units",
+  "originChain": "onex-mainnet-1",
+  "mirrorChains": [
+    "ethereum",
+    "bsc",
+    "polygon",
+    "arbitrum",
+    "optimism",
+    "avalanche",
+    "base"
+  ],
+  "wrapAmountPerChain": "1000000000",
+  "wrapAmountNote": "Human decimal amount per mirror chain (1 billion per chain)",
+  "mirrorMode": "create2-same-address",
+  "mirrorModeNote": "One real contract address on all EVM chains (like USDT/BNB), not per-chain ERC-20",
+  "canonicalOwner": "0x05868c29D58d1EC275Cf078356c03F79B1975600"
+}

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>OneX — Explorer & Wallet</title>
+  <script src="https://cdn.jsdelivr.net/npm/@noble/ed25519@2.1.0/+esm" type="module"></script>
+  <script src="onex-provider.js" defer></script>
+  <style>
+    :root { --bg: #0a0e14; --card: #141b26; --accent: #00e5b0; --accent2: #7c5cff; --text: #eef2f8; --muted: #7d8da6; --danger: #ff6b6b; }
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; min-height: 100vh; min-height: 100dvh; }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 1.25rem; border-bottom: 1px solid #243044;
+      flex-wrap: wrap; gap: 0.75rem;
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(10, 14, 20, 0.92);
+      backdrop-filter: blur(10px);
+    }
+    header h1 { margin: 0; font-size: 1.15rem; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    nav { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    nav button {
+      background: transparent; border: 1px solid #2a3544; color: var(--muted);
+      padding: 0.5rem 0.85rem; border-radius: 8px; cursor: pointer;
+      font-size: 0.9rem; min-height: 44px;
+    }
+    nav button.active { border-color: var(--accent); color: var(--accent); background: rgba(0,229,176,0.08); }
+    main { max-width: 1100px; margin: 0 auto; padding: 1.25rem; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
+    .card { background: var(--card); padding: 1.15rem; border-radius: 12px; border: 1px solid #243044; min-width: 0; }
+    .card label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .card .val { font-size: 1.25rem; font-weight: 600; margin-top: 0.35rem; word-break: break-all; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 1rem; }
+    table { width: 100%; border-collapse: collapse; min-width: 520px; }
+    th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid #243044; }
+    th { color: var(--muted); font-size: 0.75rem; }
+    .hash { font-family: ui-monospace, monospace; font-size: 0.8rem; }
+    input, textarea, select {
+      width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid #2a3544;
+      background: #0f1419; color: var(--text); margin-bottom: 0.75rem; font-family: inherit;
+      font-size: 16px;
+    }
+    button.primary {
+      background: var(--accent); color: #0a0e14; border: none;
+      padding: 0.65rem 1.25rem; border-radius: 8px; font-weight: 600; cursor: pointer;
+      min-height: 44px;
+    }
+    button.secondary {
+      background: transparent; border: 1px solid #2a3544; color: var(--text);
+      padding: 0.65rem 1.25rem; border-radius: 8px; cursor: pointer; margin-right: 0.5rem;
+      min-height: 44px;
+    }
+    .wallet-addr { font-family: monospace; font-size: 0.75rem; word-break: break-all; color: var(--accent); }
+    .msg { color: var(--muted); font-size: 0.9rem; margin-top: 0.5rem; word-break: break-word; }
+    .msg.err { color: var(--danger); }
+    .badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; background: rgba(0,229,176,0.15); color: var(--accent); }
+    .row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+    #connect-status { font-size: 0.85rem; color: var(--muted); word-break: break-all; }
+    .wallet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 768px) {
+      main { padding: 1rem; }
+      header { padding: 0.85rem 1rem; }
+      header h1 { flex: 1 1 100%; }
+      .row { width: 100%; }
+      #btn-connect { flex: 1; min-width: 140px; }
+      .wallet-grid { grid-template-columns: 1fr; gap: 1rem; }
+      button.secondary { width: 100%; margin-right: 0; margin-bottom: 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>OneX Blockchain</h1>
+    <nav>
+      <button type="button" class="active" data-tab="explorer">Explorer</button>
+      <button type="button" data-tab="wallet">Wallet</button>
+    </nav>
+    <div class="row">
+      <span id="connect-status">Not connected</span>
+      <button type="button" class="primary" id="btn-connect">Connect Wallet</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="panel-explorer" class="panel active">
+      <p class="msg">Production node API · JSON-RPC at <code>/rpc</code> · Network ID <span id="net-id">—</span></p>
+      <div class="grid" id="stats"></div>
+      <h2>Recent blocks</h2>
+      <div class="table-wrap">
+      <table><thead><tr><th>Height</th><th>Hash</th><th>Txs</th><th>Miner</th></tr></thead><tbody id="blocks"></tbody></table>
+      </div>
+      <div id="faucet-box" style="margin-top:2rem;display:none">
+        <h2>Testnet faucet</h2>
+        <input id="faucet-addr" placeholder="Your 64-char address" />
+        <button type="button" class="primary" onclick="drip()">Request ONEX</button>
+        <div class="msg" id="faucet-msg"></div>
+      </div>
+    </section>
+
+    <section id="panel-wallet" class="panel">
+      <div class="card" style="margin-bottom:1.5rem">
+        <span class="badge">MetaMask-style</span>
+        <p class="msg" style="margin-top:0.75rem">OneX uses <strong>Ed25519</strong> (64-char addresses), not Ethereum accounts. Use this wallet or the <strong>OneX Wallet</strong> browser extension — standard MetaMask cannot sign OneX transactions.</p>
+      </div>
+
+      <div class="wallet-grid">
+        <div class="card">
+          <h3>Create / import</h3>
+          <button type="button" class="secondary" onclick="createWallet()">Create new wallet</button>
+          <textarea id="import-key" placeholder="Paste private key (hex, 64 bytes)" rows="3"></textarea>
+          <button type="button" class="secondary" onclick="importWallet()">Import</button>
+          <p class="wallet-addr" id="wallet-addr"></p>
+          <p class="msg" id="wallet-msg"></p>
+        </div>
+        <div class="card">
+          <h3>Send ONEX</h3>
+          <input id="send-to" placeholder="To address (64 hex)" />
+          <input id="send-amount" placeholder="Amount e.g. 10.5" />
+          <input id="send-fee" placeholder="Fee (default 0.001)" value="0.001" />
+          <button type="button" class="primary" onclick="sendTx()">Send</button>
+          <p class="msg" id="send-msg"></p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1.5rem">
+        <h3>Balance</h3>
+        <div class="val" id="wallet-balance">—</div>
+        <button type="button" class="secondary" style="margin-top:0.75rem" onclick="refreshBalance()">Refresh</button>
+        <button type="button" class="secondary" onclick="copyAddress()">Copy address</button>
+        <button type="button" class="secondary" onclick="installExtensionHint()">OneX Wallet extension</button>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import * as ed from 'https://cdn.jsdelivr.net/npm/@noble/ed25519@2.1.0/+esm';
+
+    const STORAGE_KEY = 'onex_wallet_v1';
+    let wallet = null; // { address, privateKey }
+
+    function bytesToHex(b) {
+      return Array.from(b).map(x => x.toString(16).padStart(2, '0')).join('');
+    }
+    function hexToBytes(h) {
+      h = h.replace(/^0x/, '').trim();
+      const out = new Uint8Array(h.length / 2);
+      for (let i = 0; i < out.length; i++) out[i] = parseInt(h.slice(i * 2, i * 2 + 2), 16);
+      return out;
+    }
+    function txPayload(tx) {
+      return new TextEncoder().encode(`${tx.from}:${tx.to}:${tx.amount}:${tx.fee}:${tx.nonce}`);
+    }
+    function parseAmount(s) {
+      const parts = String(s).trim().split('.');
+      const whole = BigInt(parts[0] || '0');
+      let frac = parts[1] || '';
+      if (frac.length > 8) throw new Error('max 8 decimals');
+      while (frac.length < 8) frac += '0';
+      return whole * 100000000n + BigInt(frac || '0');
+    }
+    function formatAmount(n) {
+      const v = BigInt(n);
+      const whole = v / 100000000n;
+      const frac = (v % 100000000n).toString().padStart(8, '0');
+      return `${whole}.${frac} ONEX`;
+    }
+
+    function saveWallet() {
+      if (wallet) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(wallet));
+      else sessionStorage.removeItem(STORAGE_KEY);
+      syncProvider();
+    }
+    function loadWallet() {
+      try {
+        const raw = sessionStorage.getItem(STORAGE_KEY);
+        if (raw) wallet = JSON.parse(raw);
+      } catch (_) {}
+      syncProvider();
+      updateUI();
+    }
+    function syncProvider() {
+      window.__onexWalletAddress = wallet?.address || null;
+      window.__onexSignTransaction = wallet ? async (tx) => {
+        const priv = hexToBytes(wallet.privateKey);
+        const sig = await ed.signAsync(txPayload(tx), priv);
+        tx.from = wallet.address;
+        tx.signature = bytesToHex(sig);
+      } : null;
+      if (window.onex) {
+        window.onex.selectedAddress = wallet?.address || null;
+      }
+      document.getElementById('connect-status').textContent = wallet
+        ? `Connected: ${wallet.address.slice(0, 12)}…`
+        : 'Not connected';
+      document.getElementById('wallet-addr').textContent = wallet?.address || '';
+    }
+
+    window.createWallet = async function () {
+      const priv = ed.utils.randomPrivateKey();
+      const pub = await ed.getPublicKeyAsync(priv);
+      wallet = { address: bytesToHex(pub), privateKey: bytesToHex(priv) };
+      saveWallet();
+      document.getElementById('wallet-msg').textContent = 'Wallet created. Back up your private key offline.';
+      updateUI();
+    };
+
+    window.importWallet = async function () {
+      const key = document.getElementById('import-key').value.trim().replace(/^0x/, '');
+      const priv = hexToBytes(key);
+      if (priv.length !== 32) {
+        document.getElementById('wallet-msg').textContent = 'Invalid key length (need 64 hex chars)';
+        return;
+      }
+      const pub = await ed.getPublicKeyAsync(priv);
+      wallet = { address: bytesToHex(pub), privateKey: bytesToHex(priv) };
+      saveWallet();
+      document.getElementById('wallet-msg').textContent = 'Imported.';
+      updateUI();
+    };
+
+    window.connectWallet = function () {
+      if (!wallet) {
+        document.querySelector('[data-tab="wallet"]').click();
+        document.getElementById('wallet-msg').textContent = 'Create or import a wallet first.';
+        return;
+      }
+      syncProvider();
+      if (window.onex) window.onex.request({ method: 'onex_requestAccounts' }).catch(() => {});
+    };
+
+    window.refreshBalance = async function () {
+      if (!wallet) return;
+      const r = await fetch(`/api/v1/balance/${wallet.address}`).then(x => x.json());
+      document.getElementById('wallet-balance').textContent = formatAmount(r.balance);
+    };
+
+    window.sendTx = async function () {
+      if (!wallet) { document.getElementById('send-msg').textContent = 'Connect wallet first'; return; }
+      try {
+        const to = document.getElementById('send-to').value.trim().toLowerCase();
+        const amount = Number(parseAmount(document.getElementById('send-amount').value));
+        const fee = Number(parseAmount(document.getElementById('send-fee').value || '0.001'));
+        const bal = await fetch(`/api/v1/balance/${wallet.address}`).then(x => x.json());
+        const tx = { from: wallet.address, to, amount, fee, nonce: bal.nonce, signature: '' };
+        await window.__onexSignTransaction(tx);
+        const res = await fetch('/api/v1/tx', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(tx),
+        });
+        const j = await res.json();
+        document.getElementById('send-msg').textContent = res.ok ? 'Sent: ' + (j.status || 'ok') : (j.error || res.statusText);
+        refreshBalance();
+      } catch (e) {
+        document.getElementById('send-msg').className = 'msg err';
+        document.getElementById('send-msg').textContent = e.message;
+      }
+    };
+
+    window.copyAddress = () => {
+      if (wallet) navigator.clipboard.writeText(wallet.address);
+    };
+
+    window.installExtensionHint = () => {
+      alert('Load the extension from the repo folder extension/ in Chrome → Extensions → Developer mode → Load unpacked. Then refresh this page.');
+    };
+
+    window.drip = async function () {
+      const address = document.getElementById('faucet-addr').value.trim();
+      const res = await fetch('/api/v1/faucet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ address }) });
+      const j = await res.json();
+      document.getElementById('faucet-msg').textContent = j.message || j.error || (res.ok ? 'ok' : 'failed');
+    };
+
+    async function loadExplorer() {
+      const status = await fetch('/api/v1/status').then(r => r.json());
+      document.getElementById('net-id').textContent = status.networkId ?? '—';
+      document.getElementById('stats').innerHTML = `
+        <div class="card"><label>Chain</label><div class="val" style="font-size:1rem">${status.chainId}</div></div>
+        <div class="card"><label>Height</label><div class="val">${status.height}</div></div>
+        <div class="card"><label>Peers</label><div class="val">${status.peers}</div></div>
+        <div class="card"><label>Mining</label><div class="val">${status.mining ? 'yes' : 'no'}</div></div>`;
+      const blocks = await fetch('/api/v1/blocks?limit=10').then(r => r.json());
+      document.getElementById('blocks').innerHTML = blocks.map(b => `
+        <tr><td>${b.index}</td><td class="hash">${(b.hash||'').slice(0,20)}…</td><td>${b.txCount}</td><td class="hash">${(b.miner||'').slice(0,12)}…</td></tr>`).join('');
+      try {
+        const f = await fetch('/api/v1/faucet', { method: 'POST', body: '{}' });
+        if (f.status !== 405) document.getElementById('faucet-box').style.display = 'block';
+      } catch (_) {}
+    }
+
+    document.querySelectorAll('nav button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    document.getElementById('btn-connect').addEventListener('click', connectWallet);
+
+    function updateUI() {
+      syncProvider();
+      if (wallet) refreshBalance();
+    }
+
+    loadWallet();
+    loadExplorer();
+    setInterval(loadExplorer, 10000);
+  </script>
+</body>
+</html>
