@@ -1,0 +1,17 @@
+#!/bin/sh
+# Auto-push to GitHub (+ Gitea via push-all) after each commit. Disable: SKIP_AUTO_PUSH=1
+if [ -n "$SKIP_AUTO_PUSH" ]; then
+  exit 0
+fi
+if [ -d ".git/rebase-merge" ] || [ -d ".git/rebase-apply" ]; then
+  exit 0
+fi
+branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)"
+case "$branch" in main|master) ;; *) exit 0 ;; esac
+
+if command -v powershell.exe >/dev/null 2>&1; then
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/push-all.ps1 -Branch "$branch" </dev/null >/dev/null 2>&1 &
+elif command -v pwsh >/dev/null 2>&1; then
+  pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/push-all.ps1 -Branch "$branch" </dev/null >/dev/null 2>&1 &
+fi
+exit 0

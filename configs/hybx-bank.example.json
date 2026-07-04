@@ -1,0 +1,16 @@
+{
+  "provider": "HYBX",
+  "baseUrl": "https://api.hybrix.io",
+  "description": "HYBX multi-ledger bridge for NSB online bank mirroring, virtual cards, and cross-chain settlement",
+  "env": {
+    "ONEX_HYBX_ENABLED": "1",
+    "ONEX_HYBX_URL": "https://api.hybrix.io"
+  },
+  "currencySymbols": {
+    "USD": "usd",
+    "EUR": "eur",
+    "GBP": "gbp",
+    "CNY": "cny",
+    "HY": "hy"
+  }
+}

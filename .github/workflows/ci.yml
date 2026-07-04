@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - run: go test ./internal/...
+      - run: go build -o bin/onexd ./cmd/onexd
+      - run: go build -o bin/onex ./cmd/onex
+      - run: go build -o bin/onex-bridge ./cmd/onex-bridge
+      - run: go build -o bin/onex-ai ./cmd/onex-ai
+      - run: go build -o bin/bsc-launcher ./bsc-launcher/server
+      - run: go test ./internal/ai/...
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t onex:ci .
+      - run: docker build -f bsc-launcher/Dockerfile -t bsc-launcher:ci .

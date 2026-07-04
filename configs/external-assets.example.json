@@ -1,0 +1,70 @@
+{
+  "assets": [
+    {
+      "id": "wallet-bsc-bridge",
+      "kind": "wallet",
+      "label": "BSC Bridge Sender",
+      "chainId": "bsc",
+      "address": "0x28397643D5A8E9C752Fd72362eBbBfA3e4F8C195"
+    },
+    {
+      "id": "wallet-dbis-138",
+      "kind": "wallet",
+      "label": "DBIS 138 Settlement",
+      "chainId": "dbis-138",
+      "address": "0x28397643D5A8E9C752Fd72362eBbBfA3e4F8C195"
+    },
+    {
+      "id": "wallet-eth-treasury",
+      "kind": "wallet",
+      "label": "Ethereum Treasury",
+      "chainId": "ethereum",
+      "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"
+    },
+    {
+      "id": "bank-nsb-usd-iban",
+      "kind": "bank",
+      "label": "NSB USD Sovereign — IBAN",
+      "bankId": "nsb",
+      "rail": "iban",
+      "iban": "NSB00US00000000000001",
+      "currency": "USD"
+    },
+    {
+      "id": "bank-deutsche-eur",
+      "kind": "bank",
+      "label": "Deutsche Bank EUR — SEPA IBAN",
+      "bankId": "deutsche",
+      "rail": "sepa",
+      "iban": "DE89370400440532013000",
+      "currency": "EUR"
+    },
+    {
+      "id": "bank-barclays-gbp",
+      "kind": "bank",
+      "label": "Barclays GBP — IBAN",
+      "bankId": "barclays",
+      "rail": "iban",
+      "iban": "GB29BARC20001512345678",
+      "currency": "GBP"
+    },
+    {
+      "id": "bank-bnp-eur",
+      "kind": "bank",
+      "label": "BNP Paribas EUR — IBAN",
+      "bankId": "bnp",
+      "rail": "iban",
+      "iban": "FR1420041010050500013M02606",
+      "currency": "EUR"
+    },
+    {
+      "id": "bank-hsbc-gbp",
+      "kind": "bank",
+      "label": "HSBC GBP — SWIFT IBAN",
+      "bankId": "hsbc",
+      "rail": "swift",
+      "iban": "GB82WEST12345698765432",
+      "currency": "GBP"
+    }
+  ]
+}

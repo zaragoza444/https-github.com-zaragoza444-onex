@@ -1,0 +1,9 @@
+[
+  {"from": "onex-mainnet-1:ONEX", "to": "onex-mainnet-1:wONEX", "rate": "1.0"},
+  {"from": "onex-mainnet-1:ONEX", "to": "onex-mainnet-1:sONEX", "rate": "0.95"},
+  {"from": "ethereum:USDT", "to": "onex-mainnet-1:ONEX", "rate": "100.0"},
+  {"from": "ethereum:ETH", "to": "onex-mainnet-1:ONEX", "rate": "25000.0"},
+  {"from": "bsc:BNB", "to": "onex-mainnet-1:ONEX", "rate": "4500.0"},
+  {"from": "polygon:MATIC", "to": "onex-mainnet-1:ONEX", "rate": "0.85"},
+  {"from": "bitcoin:BTC", "to": "onex-mainnet-1:ONEX", "rate": "650000.0"}
+]

@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#000000" id="meta-theme">
+  <title>OneX Wallet</title>
+  <link rel="stylesheet" href="okx.css">
+  <link rel="stylesheet" href="dex-swap.css">
+  <script src="config.js"></script>
+  <script src="fallback-catalog.js"></script>
+  <script src="token-meta.js"></script>
+</head>
+<body data-theme="dark">
+  <div class="app">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="avatar">X</div>
+        <button type="button" class="network-pill" id="network-pill" onclick="refreshAll()">
+          <span class="network-dot" id="network-dot"></span>
+          <span id="network-name">OneX</span>
+        </button>
+      </div>
+      <div class="topbar-right">
+        <button type="button" class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="Theme">☀</button>
+        <button type="button" class="icon-btn" onclick="refreshAll()" title="Refresh">↻</button>
+        <button type="button" class="icon-btn" onclick="openSheet('settings')" title="Settings">⚙</button>
+      </div>
+    </header>
+
+    <main class="screens">
+      <!-- WALLET (Home) -->
+      <section id="screen-wallet" class="screen active">
+        <div id="green-health-bar" class="green-health-bar hidden">
+          <div class="green-health-head">
+            <span class="green-health-dot" id="green-health-dot"></span>
+            <strong id="green-health-title">All systems operational</strong>
+          </div>
+          <div class="green-health-grid" id="green-health-grid"></div>
+        </div>
+        <div id="production-platform-banner" class="production-platform-banner hidden">
+          <p><strong>OneX Production Platform</strong> <span id="production-platform-badge">—</span></p>
+          <p class="msg" id="production-platform-detail">Ledger + token platform connected</p>
+        </div>
+        <div id="external-banner" class="external-banner hidden">
+          <p><strong>External wallet.</strong> Set your bridge URL for send, swap &amp; portfolio sync.</p>
+          <button type="button" class="btn-secondary" onclick="openSheet('settings')">Connect bridge</button>
+        </div>
+        <div class="balance-section">
+          <div class="balance-label">Total assets</div>
+          <div class="balance-total" id="balance-total">—</div>
+          <div class="balance-sub balance-change positive" id="balance-sub">Production · real assets only</div>
+          <p class="addr" id="addr-short"></p>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-periods">
+            <button type="button" class="active" data-period="24h" onclick="setChartPeriod('24h')">24h</button>
+            <button type="button" data-period="7d" onclick="setChartPeriod('7d')">7d</button>
+            <button type="button" data-period="30d" onclick="setChartPeriod('30d')">30d</button>
+          </div>
+          <div class="chart-wrap">
+            <svg id="portfolio-chart" viewBox="0 0 360 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <div class="chart-empty hidden" id="chart-empty">Balance history builds as you use the wallet</div>
+          </div>
+          <div class="chart-stats">
+            <span id="chart-change">—</span>
+            <span class="chart-stat-label" id="chart-period-label">24h change</span>
+          </div>
+        </div>
+
+        <div class="quick-actions">
+          <button type="button" class="quick-action" onclick="openSheet('send')">
+            <div class="quick-action-icon">↑</div>
+            <span>Send</span>
+          </button>
+          <button type="button" class="quick-action" onclick="openSheet('receive')">
+            <div class="quick-action-icon">↓</div>
+            <span>Receive</span>
+          </button>
+          <button type="button" class="quick-action" onclick="showTab('trade')">
+            <div class="quick-action-icon">⇄</div>
+            <span>Swap</span>
+          </button>
+          <button type="button" class="quick-action" onclick="openSheet('deposit')">
+            <div class="quick-action-icon">⊕</div>
+            <span>Deposit</span>
+          </button>
+        </div>
+
+        <div class="section-head">
+          <h2>Tokens</h2>
+          <a href="#" onclick="refreshAll();return false">Refresh</a>
+        </div>
+        <div class="asset-list" id="portfolio-grid"></div>
+      </section>
+
+      <!-- TRADE (AlltraSwap-style DEX) -->
+      <section id="screen-trade" class="screen">
+        <div class="dex-header">
+          <div class="dex-badge">MODULE::ONEX_SWAP_v1</div>
+          <h1>Swap Tokens</h1>
+          <p class="dex-sub">Trade instantly on OneX · AMM x·y=k · <span id="swap-rails-status">—</span></p>
+          <button type="button" class="btn-primary" id="activate-swap-btn" onclick="activateSwapTokens()">Activate swap</button>
+        </div>
+
+        <div class="dex-stats">
+          <div class="dex-stat"><span>Total liquidity</span><strong id="dex-stat-tvl">—</strong></div>
+          <div class="dex-stat"><span>24h volume</span><strong id="dex-stat-volume">—</strong></div>
+          <div class="dex-stat"><span>Active pools</span><strong id="dex-stat-pools">0</strong></div>
+          <div class="dex-stat"><span>Tokens</span><strong id="dex-stat-tokens">0</strong></div>
+        </div>
+
+        <div class="dex-tabs">
+          <button type="button" class="active" id="sub-swap" onclick="setSwapMode('swap')">Swap</button>
+          <button type="button" id="sub-pool" onclick="setSwapMode('pool')">Liquidity</button>
+          <button type="button" id="sub-bridge" onclick="setSwapMode('bridge')">Bridge</button>
+        </div>
+
+        <div id="swap-mode-swap">
+          <div class="dex-swap-box">
+            <div class="dex-panel">
+              <div class="dex-panel-head">
+                <label>YOU PAY</label>
+                <button type="button" class="dex-max" onclick="setMaxSwap()">MAX</button>
+              </div>
+              <div class="dex-row">
+                <input id="swap-amount" placeholder="0" inputmode="decimal" oninput="swapQuoteDebounced()" />
+                <div class="dex-token-wrap">
+                  <select id="swap-from-token" onchange="swapQuoteDebounced()"></select>
+                  <select id="swap-from-chain" class="chain-select dex-chain-mini" onchange="onChainChange(this,'swap-from-token'); swapQuoteDebounced()"></select>
+                </div>
+              </div>
+            </div>
+            <div class="dex-flip-wrap">
+              <button type="button" onclick="flipSwap()" aria-label="Flip tokens">⇅</button>
+            </div>
+            <div class="dex-panel">
+              <div class="dex-panel-head">
+                <label>YOU RECEIVE</label>
+              </div>
+              <div class="dex-row">
+                <input id="swap-out" placeholder="0" readonly />
+                <div class="dex-token-wrap">
+                  <select id="swap-to-token" onchange="swapQuoteDebounced()"></select>
+                  <select id="swap-to-chain" class="chain-select dex-chain-mini" onchange="onChainChange(this,'swap-to-token'); swapQuoteDebounced()"></select>
+                </div>
+              </div>
+            </div>
+            <div class="dex-details">
+              <div class="dex-details-row">
+                <button type="button" class="dex-slippage-btn" onclick="toggleSlippagePanel()">Slippage: <span id="slip-display">0.5%</span></button>
+                <span id="swap-fee-hint">Fee 0.30%</span>
+              </div>
+              <div id="dex-slippage-panel" class="dex-slippage-panel hidden">
+                <label>Slippage tolerance (%)</label>
+                <input id="swap-slippage" value="0.5" oninput="updateSlipDisplay(); swapQuoteDebounced()" />
+              </div>
+              <p class="dex-quote" id="swap-quote"></p>
+            </div>
+            <button type="button" class="dex-cta" id="swap-cta" onclick="doOneXSwap()">Connect Wallet to Swap</button>
+            <p class="msg" id="swap-msg"></p>
+          </div>
+          <p class="dex-footer">POWERED_BY::ONEX_SMARTCHAIN · FEE 0.30% · SLIPPAGE_PROTECTED</p>
+          <div class="dex-status-bar" id="dex-status-bar">
+            <span class="off" id="dex-st-api">API</span>
+            <span class="off" id="dex-st-node">NODE</span>
+            <span class="ok" id="dex-st-swap">SWAP</span>
+            <span class="ok" id="dex-st-price">PRICE</span>
+          </div>
+          <div class="dex-section-title">MODULE::TOP_POOLS</div>
+          <div class="dex-pools-list" id="dex-top-pools"></div>
+        </div>
+
+        <div id="swap-mode-pool" class="hidden">
+          <div class="dex-swap-box">
+            <div class="dex-panel-head"><label>ADD LIQUIDITY</label></div>
+            <label>Pool</label>
+            <select id="liq-pool" onchange="showPoolReserves()"></select>
+            <p class="msg" id="pool-reserves"></p>
+            <div class="row2">
+              <input id="liq-amount0" placeholder="Amount token A" />
+              <input id="liq-amount1" placeholder="Amount token B" />
+            </div>
+            <button type="button" class="dex-cta" onclick="addLiquidity()">Add liquidity</button>
+            <label style="margin-top:16px">Remove LP shares</label>
+            <input id="liq-remove-shares" placeholder="LP shares" />
+            <button type="button" class="dex-cta secondary" onclick="removeLiquidity()">Remove liquidity</button>
+            <p class="msg" id="liq-msg"></p>
+          </div>
+          <div class="dex-section-title">ALL POOLS</div>
+          <div class="dex-pools-list" id="amm-pools"></div>
+        </div>
+
+        <div id="swap-mode-bridge" class="hidden">
+          <div class="dex-swap-box">
+            <div class="dex-panel-head"><label>CROSS-CHAIN BRIDGE</label></div>
+            <p class="msg">Route via ONEX hub pools</p>
+            <label>From</label>
+            <select id="bridge-from-chain" class="chain-select" onchange="onChainChange(this,'bridge-from-token')"></select>
+            <select id="bridge-from-token"></select>
+            <label>To</label>
+            <select id="bridge-to-chain" class="chain-select" onchange="onChainChange(this,'bridge-to-token')"></select>
+            <select id="bridge-to-token"></select>
+            <input id="bridge-amount" placeholder="Amount" />
+            <button type="button" class="dex-cta secondary" onclick="bridgeQuote()">Get quote</button>
+            <p class="msg" id="bridge-quote"></p>
+            <button type="button" class="dex-cta" onclick="bridgeSwap()">Bridge swap</button>
+            <p class="msg" id="bridge-msg"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- EARN -->
+      <section id="screen-earn" class="screen">
+        <h1 class="trade-header">Earn</h1>
+        <div class="card">
+          <div class="card-title">Stake</div>
+          <div class="grid" id="stake-pools"></div>
+          <select id="stake-pool"></select>
+          <input id="stake-amount" placeholder="Amount" />
+          <button type="button" class="btn-primary" onclick="doStake()">Stake</button>
+          <p class="msg" id="stake-msg"></p>
+        </div>
+        <div class="card">
+          <div class="card-title">Your stakes</div>
+          <div id="stake-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Loans</div>
+          <div id="loan-list"></div>
+          <select id="loan-type"><option value="borrow">Borrow</option><option value="lend">Lend</option></select>
+          <input id="loan-col-key" value="onex-mainnet-1:ONEX" placeholder="Collateral" />
+          <input id="loan-col-amt" placeholder="Collateral amt" />
+          <input id="loan-debt-key" value="onex-mainnet-1:wONEX" placeholder="Debt token" />
+          <input id="loan-debt-amt" placeholder="Debt amt" />
+          <input id="loan-apy" value="5.5" placeholder="APY" />
+          <button type="button" class="btn-primary" onclick="createLoan()">Open loan</button>
+          <p class="msg" id="loan-msg"></p>
+        </div>
+      </section>
+
+      <!-- ONLINE BANK -->
+      <section id="screen-onlinebank" class="screen">
+        <div class="bank-header">
+          <h1 class="trade-header">Online Bank</h1>
+          <span class="ledger-mode-badge green" id="online-bank-badge">NSB</span>
+        </div>
+        <p class="msg bank-intro">National Sovereign Bank — live IBAN accounts, internal transfers, and SEPA/SWIFT payouts.</p>
+
+        <div class="bank-total-card">
+          <div class="balance-label">Total deposits</div>
+          <div class="balance-total" id="online-bank-total">—</div>
+          <div class="bank-meta" id="online-bank-meta"></div>
+        </div>
+
+        <div id="online-bank-production" class="production-platform-banner hidden">
+          <p><strong>Production platform</strong> <span id="online-bank-production-badge">—</span></p>
+          <p class="msg" id="online-bank-production-detail">Connected via /bridge/production/status</p>
+        </div>
+
+        <div class="section-head">
+          <h2>Accounts</h2>
+          <a href="#" onclick="refreshOnlineBank();return false">Refresh</a>
+        </div>
+        <div id="online-bank-accounts" class="bank-account-grid"></div>
+
+        <div class="ledger-xfer-tabs" id="online-bank-main-tabs">
+          <button type="button" class="ledger-xfer-tab active" data-bmain="overview" onclick="setOnlineBankMainTab('overview')">Overview</button>
+          <button type="button" class="ledger-xfer-tab" data-bmain="send" onclick="setOnlineBankMainTab('send')">Send</button>
+          <button type="button" class="ledger-xfer-tab" data-bmain="deposit" onclick="setOnlineBankMainTab('deposit')">Deposit</button>
+          <button type="button" class="ledger-xfer-tab" data-bmain="activity" onclick="setOnlineBankMainTab('activity')">Activity</button>
+          <button type="button" class="ledger-xfer-tab" data-bmain="receive" onclick="setOnlineBankMainTab('receive')">Receive</button>
+          <button type="button" class="ledger-xfer-tab" data-bmain="payees" onclick="setOnlineBankMainTab('payees')">Payees</button>
+          <button type="button" class="ledger-xfer-tab" data-bmain="hybx" onclick="setOnlineBankMainTab('hybx')">HYBX</button>
+          <button type="button" class="ledger-xfer-tab" data-bmain="fineract" onclick="setOnlineBankMainTab('fineract')">Fineract</button>
+          <button type="button" class="ledger-xfer-tab" data-bmain="swift" onclick="setOnlineBankMainTab('swift')">SWIFT</button>
+          <button type="button" class="ledger-xfer-tab" data-bmain="cards" onclick="setOnlineBankMainTab('cards')">Cards</button>
+          <button type="button" class="ledger-xfer-tab" data-bmain="cashcode" onclick="setOnlineBankMainTab('cashcode')">Cash code</button>
+          <button type="button" class="ledger-xfer-tab" data-bmain="ledger" onclick="setOnlineBankMainTab('ledger')">Statements</button>
+        </div>
+
+        <div id="online-bank-pane-overview" class="card bank-transfer-card">
+          <div class="card-title">Quick actions</div>
+          <div class="bank-quick-actions">
+            <button type="button" class="btn-secondary" onclick="onlineBankQuick('send')">Send money</button>
+            <button type="button" class="btn-secondary" onclick="onlineBankQuick('deposit')">Deposit</button>
+            <button type="button" class="btn-secondary" onclick="onlineBankQuick('receive')">Receive / IBAN</button>
+            <button type="button" class="btn-secondary" onclick="onlineBankQuick('activity')">Activity</button>
+          </div>
+          <div class="section-head" style="margin-top:16px">
+            <h2>Recent activity</h2>
+          </div>
+          <div id="online-bank-recent-tx" class="asset-list"></div>
+        </div>
+
+        <div id="online-bank-pane-send" class="card bank-transfer-card hidden">
+          <div class="card-title">Send <span class="ledger-active-badge">live</span></div>
+          <div class="ledger-xfer-tabs" id="online-bank-tabs">
+            <button type="button" class="ledger-xfer-tab active" data-bmode="internal" onclick="setOnlineBankMode('internal')">Internal</button>
+            <button type="button" class="ledger-xfer-tab" data-bmode="iban" onclick="setOnlineBankMode('iban')">IBAN / SEPA</button>
+          </div>
+          <label class="field-label">From account</label>
+          <select id="online-bank-from" onchange="onlineBankPreviewDebounced()"></select>
+          <div class="ledger-convert-row">
+            <input id="online-bank-amount" placeholder="Amount" inputmode="decimal" oninput="onlineBankPreviewDebounced()" />
+            <button type="button" class="dex-max ledger-max" onclick="setOnlineBankMax()">MAX</button>
+          </div>
+          <div id="online-bank-panel-internal">
+            <label class="field-label">To account</label>
+            <select id="online-bank-to" onchange="onlineBankPreviewDebounced()"></select>
+          </div>
+          <div id="online-bank-panel-iban" class="hidden">
+            <label class="field-label">Destination bank</label>
+            <select id="online-bank-dest-bank" onchange="onlineBankPreviewDebounced()"></select>
+            <label class="field-label">Rail</label>
+            <select id="online-bank-rail" onchange="onlineBankPreviewDebounced()">
+              <option value="iban">IBAN</option>
+              <option value="sepa">SEPA</option>
+              <option value="swift">SWIFT</option>
+              <option value="wire">Wire</option>
+            </select>
+            <label class="field-label">Saved IBAN</label>
+            <select id="online-bank-iban-saved" onchange="onOnlineBankIbanPick()">
+              <option value="">Saved accounts…</option>
+            </select>
+            <input id="online-bank-iban" placeholder="IBAN / account number" oninput="onlineBankPreviewDebounced()" />
+          </div>
+          <input id="online-bank-ref" placeholder="Reference (optional)" oninput="onlineBankPreviewDebounced()" />
+          <p class="ledger-conv-preview" id="online-bank-preview">Select accounts and amount</p>
+          <button type="button" class="btn-primary" id="online-bank-btn" onclick="doOnlineBankSend()">Send payment</button>
+          <p class="msg" id="online-bank-msg"></p>
+        </div>
+
+        <div id="online-bank-pane-deposit" class="card bank-transfer-card hidden">
+          <div class="card-title">Deposit <span class="ledger-active-badge">live</span></div>
+          <p class="msg">Credit an NSB account from wire, SEPA, SWIFT, or cash deposit.</p>
+          <label class="field-label">To account</label>
+          <select id="online-bank-deposit-to" onchange="onlineBankDepositPreviewDebounced()"></select>
+          <div class="ledger-convert-row">
+            <input id="online-bank-deposit-amount" placeholder="Amount" inputmode="decimal" oninput="onlineBankDepositPreviewDebounced()" />
+          </div>
+          <label class="field-label">Deposit source</label>
+          <select id="online-bank-deposit-source" onchange="onlineBankDepositPreviewDebounced()">
+            <option value="wire">Wire</option>
+            <option value="sepa">SEPA</option>
+            <option value="swift">SWIFT</option>
+            <option value="ach">ACH</option>
+            <option value="cash">Cash / branch</option>
+          </select>
+          <input id="online-bank-deposit-ref" placeholder="Reference (optional)" oninput="onlineBankDepositPreviewDebounced()" />
+          <p class="ledger-conv-preview" id="online-bank-deposit-preview">Enter amount to preview</p>
+          <button type="button" class="btn-primary" onclick="doOnlineBankDeposit()">Confirm deposit</button>
+          <p class="msg" id="online-bank-deposit-msg"></p>
+        </div>
+
+        <div id="online-bank-pane-activity" class="hidden">
+          <div class="card bank-transfer-card">
+            <div class="card-title">Activity</div>
+            <div class="bank-filter-row">
+              <select id="online-bank-activity-account" onchange="loadOnlineBankActivity()">
+                <option value="">All accounts</option>
+              </select>
+              <select id="online-bank-activity-type" onchange="loadOnlineBankActivity()">
+                <option value="">All types</option>
+                <option value="internal">Internal</option>
+                <option value="send">Send / IBAN</option>
+                <option value="deposit">Deposit</option>
+              </select>
+              <button type="button" class="btn-secondary" onclick="exportOnlineBankStatement()">Export CSV</button>
+            </div>
+            <div id="online-bank-activity-list" class="asset-list"></div>
+          </div>
+        </div>
+
+        <div id="online-bank-pane-receive" class="card bank-transfer-card hidden">
+          <div class="card-title">Receive money</div>
+          <p class="msg">Share these details to receive wire, SEPA, or SWIFT into your NSB account.</p>
+          <label class="field-label">Account</label>
+          <select id="online-bank-receive-account" onchange="loadOnlineBankWire()"></select>
+          <div id="online-bank-wire-details" class="bank-wire-box"></div>
+        </div>
+
+        <div id="online-bank-pane-payees" class="hidden">
+          <div class="card bank-transfer-card">
+            <div class="card-title">Saved payees</div>
+            <p class="msg">Pay saved IBAN beneficiaries from Send → IBAN / SEPA.</p>
+            <div id="online-bank-payees-list" class="bank-payee-grid"></div>
+          </div>
+        </div>
+
+        <div id="online-bank-pane-hybx" class="hidden">
+          <div class="card bank-transfer-card">
+            <div class="card-title">HYBX bridge <span class="ledger-active-badge" id="hybx-status-badge">—</span></div>
+            <p class="msg" id="hybx-intro">Mirror NSB online bank balances to HYBX multi-ledger virtual accounts for cross-chain settlement.</p>
+            <div class="bank-meta" id="hybx-meta"></div>
+            <button type="button" class="btn-secondary" onclick="syncHybrixMirrors()">Sync NSB → HYBX</button>
+            <button type="button" class="btn-secondary" onclick="issueHybxVirtualCards()" style="margin-left:8px">Issue HYBX virtual cards</button>
+            <span class="ledger-active-badge" id="hybx-cards-badge">—</span>
+          </div>
+          <div id="hybx-cards-grid" class="virtual-card-grid" style="margin-bottom:12px"></div>
+          <div class="section-head" style="margin-top:16px"><h2>Mirrored accounts</h2></div>
+          <div id="hybx-mirror-list" class="bank-account-grid"></div>
+          <div class="card bank-transfer-card" style="margin-top:16px">
+            <div class="card-title">Convert NSB ↔ HYBX</div>
+            <label class="field-label">NSB account</label>
+            <select id="hybx-account" onchange="hybrixPreviewDebounced()"></select>
+            <label class="field-label">Direction</label>
+            <select id="hybx-direction" onchange="hybrixPreviewDebounced()">
+              <option value="nsb-to-hybx">NSB → HYBX (mirror out)</option>
+              <option value="hybx-to-nsb">HYBX → NSB (mirror in)</option>
+            </select>
+            <input id="hybx-amount" placeholder="Amount" inputmode="decimal" oninput="hybrixPreviewDebounced()" />
+            <p class="ledger-conv-preview" id="hybx-preview">Select account and amount</p>
+            <button type="button" class="btn-primary" onclick="doHybrixConvert()">Convert</button>
+            <p class="msg" id="hybx-msg"></p>
+          </div>
+          <div class="card bank-transfer-card" style="margin-top:16px">
+            <div class="card-title">HYBX exchange middleware <span class="ledger-active-badge" id="hybx-mw-badge">—</span></div>
+            <p class="msg" id="hybx-mw-intro">Exchange across NSB, Fineract, HYBX, blockchains, and token platform.</p>
+            <label class="field-label">Route</label>
+            <select id="hybx-exchange-route" onchange="hybxExchangePreviewDebounced()"></select>
+            <div class="ledger-convert-row">
+              <input id="hybx-exchange-amount" placeholder="Amount" inputmode="decimal" oninput="hybxExchangePreviewDebounced()" />
+              <input id="hybx-exchange-chain" placeholder="Chain ID (optional)" oninput="hybxExchangePreviewDebounced()" />
+            </div>
+            <input id="hybx-exchange-address" placeholder="Chain address or bank account (optional)" oninput="hybxExchangePreviewDebounced()" />
+            <p class="ledger-conv-preview" id="hybx-exchange-preview">Select route and amount</p>
+            <button type="button" class="btn-primary" onclick="doHybxExchange()">Execute exchange</button>
+            <p class="msg" id="hybx-exchange-msg"></p>
+          </div>
+          <div class="section-head" style="margin-top:16px"><h2>Federation log</h2></div>
+          <div id="hybx-federation-list" class="asset-list"></div>
+        </div>
+
+        <div id="online-bank-pane-fineract" class="hidden">
+          <div class="card bank-transfer-card">
+            <div class="card-title">Fineract · core banking <span class="ledger-active-badge" id="fineract-status-badge">—</span></div>
+            <p class="msg" id="fineract-intro">Apache Fineract savings accounts from HYBX Finance — sync into NSB online bank.</p>
+            <div class="bank-meta" id="fineract-meta"></div>
+            <a class="btn-secondary" id="fineract-swagger-link" href="https://fineract.hybxfinance.com/fineract-provider/swagger-ui/index.html" target="_blank" rel="noopener">Open Swagger API</a>
+            <button type="button" class="btn-secondary" onclick="syncFineractAccounts()" style="margin-left:8px">Sync Fineract → Online Bank</button>
+          </div>
+          <div class="section-head" style="margin-top:16px"><h2>Fineract savings accounts</h2></div>
+          <div id="fineract-account-list" class="bank-account-grid"></div>
+        </div>
+
+        <div id="online-bank-pane-ledger" class="hidden">
+          <div class="card">
+            <div class="card-title">Statements <span class="ledger-active-badge">live</span></div>
+            <p class="msg" id="online-bank-ledger-summary">Account balances and movements</p>
+            <div id="online-bank-ledger-entries" class="asset-list"></div>
+          </div>
+          <div class="section-head" style="margin-top:16px">
+            <h2>Movements</h2>
+          </div>
+          <div id="online-bank-tx-list" class="asset-list"></div>
+        </div>
+
+        <div id="online-bank-pane-swift" class="hidden">
+          <div class="card bank-transfer-card">
+            <div class="card-title">SWIFT release <span class="ledger-active-badge" id="swift-status-badge">—</span></div>
+            <p class="msg" id="swift-intro">Release NSB funds to any world bank via SWIFT MT103 — integrated with the global production server.</p>
+            <div class="bank-meta" id="swift-meta"></div>
+            <label class="field-label">From account</label>
+            <select id="swift-from-account" onchange="swiftReleasePreviewDebounced()"></select>
+            <div class="ledger-convert-row">
+              <input id="swift-amount" placeholder="Amount" inputmode="decimal" oninput="swiftReleasePreviewDebounced()" />
+            </div>
+            <input id="swift-beneficiary-name" placeholder="Beneficiary name" oninput="swiftReleasePreviewDebounced()" />
+            <input id="swift-beneficiary-iban" placeholder="Beneficiary IBAN" oninput="swiftReleasePreviewDebounced()" />
+            <input id="swift-beneficiary-bic" placeholder="SWIFT / BIC (optional)" oninput="swiftReleasePreviewDebounced()" />
+            <input id="swift-reference" placeholder="Reference (optional)" />
+            <p class="ledger-conv-preview" id="swift-release-preview">Enter amount and beneficiary</p>
+            <button type="button" class="btn-primary" id="swift-release-btn" onclick="doSwiftRelease()">Release funds via SWIFT</button>
+            <p class="msg" id="swift-release-msg"></p>
+          </div>
+        </div>
+
+        <div id="online-bank-pane-cards" class="hidden">
+          <div class="section-head">
+            <h2>Virtual cards</h2>
+            <span class="ledger-active-badge" id="virtual-cards-badge">—</span>
+            <button type="button" class="btn-secondary" onclick="refreshVirtualCards()">Refresh</button>
+            <button type="button" class="btn-primary" onclick="issueCards1011()">Issue 101.1</button>
+            <button type="button" class="btn-primary" onclick="activateCardRails1011()">Activate rails</button>
+          </div>
+          <p class="msg" id="virtual-cards-intro">NSB + HYBX production virtual cards — Apple Pay · Google Pay · 2D · 101.1 · wire transfer.</p>
+          <div class="bank-meta" id="virtual-cards-rails"></div>
+          <div class="ledger-xfer-tabs" id="virtual-cards-tabs">
+            <button type="button" class="ledger-xfer-tab active" data-cissuer="all" onclick="setVirtualCardFilter('all')">All</button>
+            <button type="button" class="ledger-xfer-tab" data-cissuer="nsb" onclick="setVirtualCardFilter('nsb')">NSB</button>
+            <button type="button" class="ledger-xfer-tab" data-cissuer="hybx" onclick="setVirtualCardFilter('hybx')">HYBX</button>
+          </div>
+          <div id="virtual-cards-grid" class="virtual-card-grid"></div>
+
+          <div class="card bank-transfer-card" style="margin-top:16px">
+            <div class="card-title">Pay with card <span class="ledger-active-badge">live</span></div>
+            <label class="field-label">Card</label>
+            <select id="virtual-card-pick" onchange="virtualCardPreviewDebounced()"></select>
+            <div class="ledger-convert-row">
+              <input id="virtual-card-amount" placeholder="Amount" inputmode="decimal" oninput="virtualCardPreviewDebounced()" />
+            </div>
+            <input id="virtual-card-merchant" placeholder="Merchant (optional)" oninput="virtualCardPreviewDebounced()" />
+            <p class="ledger-conv-preview" id="virtual-card-preview">Select card and amount</p>
+            <button type="button" class="btn-primary" id="virtual-card-btn" onclick="doVirtualCardPay()">Authorize payment</button>
+            <p class="msg" id="virtual-card-msg"></p>
+          </div>
+
+          <div class="card bank-transfer-card" style="margin-top:16px">
+            <div class="card-title">Release funds · Cards 101.1 <span class="ledger-active-badge">SWIFT</span></div>
+            <p class="msg">Production release shows black screen (processing) then white screen (released) on the global server.</p>
+            <label class="field-label">Card (101.1)</label>
+            <select id="card-release-pick" onchange="cardReleasePreviewDebounced()"></select>
+            <div class="ledger-convert-row">
+              <input id="card-release-amount" placeholder="Amount" inputmode="decimal" oninput="cardReleasePreviewDebounced()" />
+            </div>
+            <input id="card-release-iban" placeholder="Beneficiary IBAN" oninput="cardReleasePreviewDebounced()" />
+            <input id="card-release-bic" placeholder="SWIFT / BIC (optional)" />
+            <input id="card-release-name" placeholder="Beneficiary name (optional)" />
+            <p class="ledger-conv-preview" id="card-release-preview">Select card and amount</p>
+            <button type="button" class="btn-primary" id="card-release-btn" onclick="doCardReleaseFunds()">Release funds (production)</button>
+            <p class="msg" id="card-release-msg"></p>
+          </div>
+
+          <div class="card bank-transfer-card" style="margin-top:16px">
+            <div class="card-title">Wire transfer · Cards 101.1 <span class="ledger-active-badge">live</span></div>
+            <p class="msg">Send wire from virtual card balance — Apple Pay · Google Pay · 2D rails active on 101.1.</p>
+            <label class="field-label">Card (101.1)</label>
+            <select id="card-wire-pick" onchange="cardWirePreviewDebounced(); loadCardWireInstructions()"></select>
+            <div id="card-wire-instructions" class="bank-wire-box hidden"></div>
+            <div class="ledger-convert-row">
+              <input id="card-wire-amount" placeholder="Amount" inputmode="decimal" oninput="cardWirePreviewDebounced()" />
+            </div>
+            <input id="card-wire-iban" placeholder="Beneficiary IBAN" oninput="cardWirePreviewDebounced()" />
+            <input id="card-wire-name" placeholder="Beneficiary name (optional)" />
+            <input id="card-wire-reference" placeholder="Reference (optional)" />
+            <p class="ledger-conv-preview" id="card-wire-preview">Select card and amount</p>
+            <button type="button" class="btn-primary" id="card-wire-btn" onclick="doCardWireTransfer()">Send wire transfer</button>
+            <p class="msg" id="card-wire-msg"></p>
+          </div>
+
+          <div class="section-head" style="margin-top:16px">
+            <h2>Card transactions</h2>
+          </div>
+          <div id="virtual-card-tx-list" class="asset-list"></div>
+        </div>
+
+        <div id="online-bank-pane-cashcode" class="hidden">
+          <div class="section-head">
+            <h2>Cash codes</h2>
+            <span class="ledger-active-badge" id="cashcode-badge">—</span>
+          </div>
+          <p class="msg" id="cashcode-intro">Issue one-time pickup codes backed by NSB escrow — redeem into any online bank account.</p>
+
+          <div class="card bank-transfer-card">
+            <div class="card-title">Issue cash code <span class="ledger-active-badge">live</span></div>
+            <label class="field-label">From account</label>
+            <select id="cashcode-issue-from" onchange="cashCodeIssuePreviewDebounced()"></select>
+            <div class="ledger-convert-row">
+              <input id="cashcode-issue-amount" placeholder="Amount" inputmode="decimal" oninput="cashCodeIssuePreviewDebounced()" />
+            </div>
+            <input id="cashcode-issue-pin" placeholder="PIN (optional, 4-8 digits)" inputmode="numeric" maxlength="8" />
+            <input id="cashcode-issue-memo" placeholder="Memo (optional)" />
+            <p class="ledger-conv-preview" id="cashcode-issue-preview">Enter amount to preview</p>
+            <button type="button" class="btn-primary" id="cashcode-issue-btn" onclick="doCashCodeIssue()">Issue code</button>
+            <p class="msg" id="cashcode-issue-msg"></p>
+            <div id="cashcode-issued-box" class="hidden card" style="margin-top:12px;padding:12px">
+              <strong>Share this code once</strong>
+              <div class="balance-total" id="cashcode-issued-value" style="font-size:1.4rem;letter-spacing:0.08em"></div>
+              <p class="msg" id="cashcode-issued-detail"></p>
+            </div>
+          </div>
+
+          <div class="card bank-transfer-card" style="margin-top:16px">
+            <div class="card-title">Redeem cash code <span class="ledger-active-badge">live</span></div>
+            <input id="cashcode-redeem-code" placeholder="XXXX-XXXX-XXXX" oninput="cashCodeRedeemPreviewDebounced()" />
+            <input id="cashcode-redeem-pin" placeholder="PIN (if required)" inputmode="numeric" maxlength="8" />
+            <label class="field-label">Credit to account</label>
+            <select id="cashcode-redeem-to" onchange="cashCodeRedeemPreviewDebounced()"></select>
+            <p class="ledger-conv-preview" id="cashcode-redeem-preview">Enter code to verify</p>
+            <button type="button" class="btn-primary" id="cashcode-redeem-btn" onclick="doCashCodeRedeem()">Redeem</button>
+            <p class="msg" id="cashcode-redeem-msg"></p>
+          </div>
+
+          <div class="section-head" style="margin-top:16px">
+            <h2>Issued codes</h2>
+          </div>
+          <div id="cashcode-list" class="asset-list"></div>
+        </div>
+      </section>
+
+      <!-- REAL LEDGER -->
+      <section id="screen-ledger" class="screen">
+        <div class="ledger-header">
+          <h1 class="trade-header">Real Ledger</h1>
+          <span class="ledger-mode-badge green" id="ledger-mode-badge">—</span>
+        </div>
+        <p class="msg ledger-intro">Unified bank, on-chain, and imported balances — converted to real fiat &amp; crypto.</p>
+
+        <div class="ledger-total-card">
+          <div class="balance-label">Total (real)</div>
+          <div class="balance-total" id="ledger-total-usd">—</div>
+          <div class="ledger-source-totals" id="ledger-source-totals"></div>
+        </div>
+
+        <div class="ledger-charts">
+          <div class="chart-card ledger-chart-card">
+            <div class="chart-periods ledger-chart-periods">
+              <button type="button" class="active" data-period="24h" onclick="setLedgerChartPeriod('24h')">24h</button>
+              <button type="button" data-period="7d" onclick="setLedgerChartPeriod('7d')">7d</button>
+              <button type="button" data-period="30d" onclick="setLedgerChartPeriod('30d')">30d</button>
+            </div>
+            <div class="chart-wrap">
+              <svg id="ledger-history-chart" viewBox="0 0 360 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+              <div class="chart-empty hidden" id="ledger-chart-empty">Ledger history builds on refresh</div>
+            </div>
+            <div class="chart-stats">
+              <span id="ledger-chart-change">—</span>
+              <span class="chart-stat-label" id="ledger-chart-period-label">24h change</span>
+            </div>
+          </div>
+          <div class="ledger-allocation-card">
+            <div class="card-title">Allocation</div>
+            <div class="ledger-allocation-wrap">
+              <svg id="ledger-allocation-chart" viewBox="0 0 120 120" aria-hidden="true"></svg>
+              <div class="ledger-allocation-legend" id="ledger-allocation-legend"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ledger-filters">
+          <button type="button" class="ledger-filter active" data-src="all" onclick="setLedgerSource('all')">All</button>
+          <button type="button" class="ledger-filter" data-src="bank" onclick="setLedgerSource('bank')">Bank</button>
+          <button type="button" class="ledger-filter" data-src="m0" onclick="setLedgerSource('m0')">M0</button>
+          <button type="button" class="ledger-filter" data-src="m1" onclick="setLedgerSource('m1')">M1</button>
+          <button type="button" class="ledger-filter" data-src="nsb" onclick="setLedgerSource('nsb')" title="National Sovereign Bank">NSB Sovereign</button>
+          <button type="button" class="ledger-filter" data-src="onex" onclick="setLedgerSource('onex')">OneX</button>
+          <button type="button" class="ledger-filter" data-src="evm" onclick="setLedgerSource('evm')">EVM</button>
+          <button type="button" class="ledger-filter" data-src="import" onclick="setLedgerSource('import')">Import</button>
+        </div>
+
+        <div class="section-head">
+          <h2>Entries</h2>
+          <a href="#" onclick="refreshLedger();return false">Refresh</a>
+        </div>
+        <div class="asset-list" id="ledger-entries"></div>
+
+        <div class="card ledger-settlement-card orchestration-panel">
+          <div class="card-title">Settlement middleware <span class="ledger-active-badge">live</span></div>
+          <p class="msg">Convert fiat &amp; crypto ledger → real funds &amp; real crypto. Pipeline: quote → debit → convert → settle.</p>
+          <div class="ledger-settlement-caps" id="ledger-settlement-caps"></div>
+
+          <div class="ledger-xfer-tabs" id="ledger-settle-tabs">
+            <button type="button" class="ledger-xfer-tab active" data-skind="real_crypto" onclick="setSettlementKind('real_crypto')">Real crypto</button>
+            <button type="button" class="ledger-xfer-tab" data-skind="real_fiat" onclick="setSettlementKind('real_fiat')">Real fiat</button>
+            <button type="button" class="ledger-xfer-tab" data-skind="vault" onclick="setSettlementKind('vault')">Vault convert</button>
+            <button type="button" class="ledger-xfer-tab" data-skind="internal" onclick="setSettlementKind('internal')">Internal</button>
+          </div>
+
+          <label class="field-label">From ledger account</label>
+          <select id="ledger-settle-from" onchange="settlementPreviewDebounced()"></select>
+          <div class="ledger-convert-row">
+            <input id="ledger-settle-amount" placeholder="Amount" inputmode="decimal" oninput="settlementPreviewDebounced()" />
+            <button type="button" class="dex-max ledger-max" onclick="setSettlementMax()">MAX</button>
+          </div>
+          <label class="field-label">Payout asset</label>
+          <select id="ledger-settle-payout" onchange="settlementPreviewDebounced()">
+            <option value="BNB">BNB</option>
+            <option value="USDT">USDT</option>
+            <option value="ETH">ETH</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="BTC">BTC</option>
+            <option value="ONEX">ONEX</option>
+          </select>
+
+          <div id="ledger-settle-panel-crypto">
+            <label class="field-label">Chain</label>
+            <select id="ledger-settle-chain" onchange="settlementPreviewDebounced()"></select>
+            <label class="field-label">Saved wallet</label>
+            <select id="ledger-settle-wallet-saved" onchange="onSavedWalletPick('settle')">
+              <option value="">Saved wallets…</option>
+            </select>
+            <label class="field-label">Recipient address</label>
+            <div class="ledger-convert-row">
+              <input id="ledger-settle-address" placeholder="0x…" oninput="settlementPreviewDebounced()" />
+              <button type="button" class="dex-max ledger-max" onclick="fillSettlementMyAddress()">My address</button>
+              <button type="button" class="dex-max ledger-max" onclick="saveCurrentWalletAsset('settle')">Save</button>
+            </div>
+          </div>
+
+          <div id="ledger-settle-panel-fiat" class="hidden">
+            <label class="field-label">Bank</label>
+            <select id="ledger-settle-bank" onchange="onSettlementBankChange()"></select>
+            <label class="field-label">Rail</label>
+            <select id="ledger-settle-rail" onchange="settlementPreviewDebounced()"></select>
+            <label class="field-label">Saved IBAN / account</label>
+            <select id="ledger-settle-bank-saved" onchange="onSavedBankPick('settle')">
+              <option value="">Saved bank accounts…</option>
+            </select>
+            <div class="ledger-convert-row">
+              <input id="ledger-settle-bank-acct" placeholder="IBAN / account" oninput="settlementPreviewDebounced()" />
+              <button type="button" class="dex-max ledger-max" onclick="saveCurrentBankAsset('settle')">Save IBAN</button>
+            </div>
+          </div>
+
+          <div id="ledger-settle-panel-internal" class="hidden">
+            <label class="field-label">To account</label>
+            <select id="ledger-settle-to" onchange="settlementPreviewDebounced()"></select>
+          </div>
+
+          <div class="ledger-settlement-steps" id="ledger-settlement-steps"></div>
+          <p class="ledger-conv-preview" id="ledger-settle-preview">Configure settlement</p>
+          <button type="button" class="btn-primary" id="ledger-settle-btn" onclick="doSettlement()">Settle to real funds</button>
+          <p class="msg" id="ledger-settle-msg"></p>
+
+          <div class="ledger-xfer-history">
+            <div class="section-head" style="margin-top:16px"><h2>Settlement history</h2></div>
+            <div id="ledger-settlement-history" class="asset-list"></div>
+          </div>
+        </div>
+
+        <div class="card ledger-fiat-batch-card orchestration-panel">
+          <div class="card-title">Fiat → stable mainnet <span class="ledger-active-badge">middleware</span></div>
+          <p class="msg">Convert all fiat balances through M1+M2+M3+M4+MINT pools → load USDC &amp; ETH on Ethereum mainnet → mint ONEXUSD stablecoin.</p>
+          <label class="field-label">ETH gas load %</label>
+          <input id="ledger-fiat-eth-pct" type="number" min="0.5" max="20" step="0.5" value="2" />
+          <label class="field-label">Ethereum recipient (optional on-chain USDC)</label>
+          <input id="ledger-fiat-receiver" placeholder="0x…" />
+          <p class="ledger-conv-preview" id="ledger-fiat-batch-preview">Preview batch settlement</p>
+          <div class="ledger-settlement-steps" id="ledger-fiat-batch-steps"></div>
+          <div class="ledger-convert-row">
+            <button type="button" class="dex-max ledger-max" onclick="previewFiatBatchSettlement()">Preview</button>
+            <button type="button" class="btn-primary" id="ledger-fiat-batch-btn" onclick="runFiatBatchSettlement()">Convert all fiat → stable mainnet</button>
+          </div>
+          <p class="msg" id="ledger-fiat-batch-msg"></p>
+        </div>
+
+        <div class="card ledger-convert-card">
+          <div class="card-title">Convert <span class="ledger-active-badge">live</span></div>
+          <p class="msg">Convert M0 (base cash), M1 (demand deposits), or NSB (National Sovereign Bank) to any crypto or fiat.</p>
+          <label class="field-label">From account</label>
+          <select id="ledger-conv-from-acct" onchange="onLedgerConvAccountChange()"></select>
+          <div class="ledger-convert-row">
+            <input id="ledger-conv-amt" placeholder="Amount" inputmode="decimal" oninput="ledgerConvQuoteDebounced()" />
+            <button type="button" class="dex-max ledger-max" onclick="setLedgerConvMax()">MAX</button>
+            <select id="ledger-conv-to" onchange="ledgerConvQuoteDebounced()"></select>
+          </div>
+          <p class="ledger-conv-preview" id="ledger-conv-preview">Enter amount for live quote</p>
+
+          <div class="ledger-convert-advanced">
+            <label class="ledger-check-row">
+              <input type="checkbox" id="ledger-conv-create-contract" onchange="toggleLedgerConvTokenPanel()">
+              Deploy token contract on chain
+            </label>
+            <div id="ledger-conv-token-panel" class="hidden">
+              <label class="field-label">Chain</label>
+              <select id="ledger-conv-token-chain"></select>
+              <div class="ledger-convert-row">
+                <input id="ledger-conv-token-name" placeholder="Token name" />
+                <input id="ledger-conv-token-symbol" placeholder="Symbol" />
+              </div>
+              <input id="ledger-conv-token-supply" placeholder="Supply" value="1000000" inputmode="decimal" />
+            </div>
+
+            <label class="field-label">Receiver wallet</label>
+            <div class="ledger-convert-row">
+              <select id="ledger-conv-receiver-saved" onchange="onLedgerConvReceiverPick()">
+                <option value="">Saved receivers…</option>
+              </select>
+              <input id="ledger-conv-receiver" placeholder="0x… receiver on chain" oninput="ledgerConvQuoteDebounced()" />
+              <button type="button" class="dex-max ledger-max" onclick="fillLedgerConvMyAddress()">My address</button>
+            </div>
+            <div class="ledger-convert-row">
+              <select id="ledger-conv-receiver-chain" onchange="ledgerConvQuoteDebounced()"></select>
+              <button type="button" class="dex-max ledger-max" onclick="saveLedgerConvReceiver()">Save receiver</button>
+            </div>
+            <label class="ledger-check-row">
+              <input type="checkbox" id="ledger-conv-settle" checked onchange="ledgerConvQuoteDebounced()">
+              Settle converted amount to receiver on chain
+            </label>
+            <label class="ledger-check-row">
+              <input type="checkbox" id="ledger-conv-save-receiver">
+              Remember receiver wallet
+            </label>
+          </div>
+
+          <button type="button" class="btn-primary" id="ledger-conv-btn" onclick="doLedgerConvert()">Convert from ledger</button>
+          <p class="msg" id="ledger-conv-result"></p>
+        </div>
+
+		<div class="card ledger-transfer-card">
+          <div class="card-title">Bridge to chain</div>
+          <p class="msg">Debit your local ledger and settle on IDBIS/DBIS chain 138, BSC, or another chain. The bridge auto-provisions an EVM sender at <code>~/.onex/evm-sender.key</code> — fund that address for live on-chain payout.</p>
+
+          <div class="ledger-xfer-tabs" id="ledger-bridge-tabs">
+            <button type="button" class="ledger-xfer-tab active" data-mode="dbis" onclick="setLedgerXferMode('dbis')">Bridge to DBIS 138</button>
+            <button type="button" class="ledger-xfer-tab" data-mode="bsc" onclick="setLedgerXferMode('bsc')">Bridge to BSC</button>
+            <button type="button" class="ledger-xfer-tab" data-mode="chain" onclick="setLedgerXferMode('chain')">Other chain</button>
+            <button type="button" class="ledger-xfer-tab" data-mode="bank" onclick="setLedgerXferMode('bank')">Other bank</button>
+            <button type="button" class="ledger-xfer-tab" data-mode="internal" onclick="setLedgerXferMode('internal')">Internal</button>
+          </div>
+
+          <label class="field-label">From ledger account</label>
+          <select id="ledger-xfer-from" onchange="ledgerXferPreviewDebounced()"></select>
+          <div class="ledger-convert-row">
+            <input id="ledger-xfer-amount" placeholder="Amount" inputmode="decimal" oninput="ledgerXferPreviewDebounced()" />
+            <button type="button" class="dex-max ledger-max" onclick="setLedgerXferMax()">MAX</button>
+          </div>
+
+          <div id="ledger-xfer-panel-chain">
+            <label class="field-label">Destination chain</label>
+            <select id="ledger-xfer-chain" onchange="onLedgerXferChainChange()"></select>
+            <label class="field-label">Saved wallet</label>
+            <select id="ledger-xfer-wallet-saved" onchange="onSavedWalletPick('xfer')">
+              <option value="">Saved wallets…</option>
+            </select>
+            <label class="field-label">BSC / EVM wallet address</label>
+            <div class="ledger-convert-row">
+              <input id="ledger-xfer-address" placeholder="0x… recipient on BSC" oninput="ledgerXferPreviewDebounced()" />
+              <button type="button" class="dex-max ledger-max" onclick="fillLedgerXferMyAddress()">My address</button>
+              <button type="button" class="dex-max ledger-max" onclick="saveCurrentWalletAsset('xfer')">Save</button>
+            </div>
+          </div>
+
+          <div id="ledger-xfer-panel-bank" class="hidden">
+            <label class="field-label">Destination bank</label>
+            <select id="ledger-xfer-bank" onchange="onLedgerXferBankChange()"></select>
+            <label class="field-label">Settlement rail</label>
+            <select id="ledger-xfer-rail" onchange="ledgerXferPreviewDebounced()"></select>
+            <label class="field-label">Saved IBAN / account</label>
+            <select id="ledger-xfer-bank-saved" onchange="onSavedBankPick('xfer')">
+              <option value="">Saved bank accounts…</option>
+            </select>
+            <div class="ledger-convert-row">
+              <input id="ledger-xfer-bank-acct" placeholder="IBAN or account number" oninput="ledgerXferPreviewDebounced()" />
+              <button type="button" class="dex-max ledger-max" onclick="saveCurrentBankAsset('xfer')">Save IBAN</button>
+            </div>
+          </div>
+
+          <div id="ledger-xfer-panel-internal" class="hidden">
+            <label class="field-label">To ledger account</label>
+            <select id="ledger-xfer-to" onchange="ledgerXferPreviewDebounced()"></select>
+          </div>
+
+          <label class="field-label">Convert to (optional)</label>
+          <select id="ledger-xfer-convert" onchange="ledgerXferPreviewDebounced()">
+            <option value="">Same asset</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+            <option value="BTC">BTC</option>
+            <option value="ETH">ETH</option>
+            <option value="USDT">USDT</option>
+            <option value="USDC">USDC</option>
+            <option value="BNB">BNB</option>
+            <option value="SOL">SOL</option>
+            <option value="ONEX">ONEX</option>
+          </select>
+
+          <p class="ledger-conv-preview" id="ledger-xfer-preview">Select account, amount, and destination</p>
+          <button type="button" class="btn-primary" id="ledger-xfer-btn" onclick="doLedgerTransfer()">Bridge to BSC</button>
+          <p class="msg" id="ledger-xfer-msg"></p>
+
+          <div class="ledger-xfer-history">
+            <div class="section-head" style="margin-top:16px">
+              <h2>Recent transfers</h2>
+            </div>
+            <div id="ledger-xfer-history" class="asset-list"></div>
+          </div>
+        </div>
+
+        <div class="card ledger-import-card">
+          <div class="card-title">Bridge7 <span class="ledger-active-badge" id="bridge7-badge">—</span></div>
+          <p class="msg" id="bridge7-intro">Integrates local-ledger-2026, ledger-pro, and crypto-ledger into the real ledger.</p>
+          <div id="bridge7-sources" class="asset-list" style="margin-bottom:8px"></div>
+          <button type="button" class="btn-primary" onclick="syncBridge7()">Sync all Bridge7 ledgers</button>
+          <p class="msg" id="bridge7-msg"></p>
+        </div>
+
+        <div class="card ledger-import-card">
+          <div class="card-title">Import any ledger <span class="ledger-active-badge">active</span></div>
+          <p class="msg">Paste bank JSON, crypto map, or exchange rows — valued at live prices and synced to your ledger book.</p>
+          <textarea id="ledger-import-json" rows="4" placeholder='{"balances":{"BTC":"0.5","USD":"1000"}}' oninput="ledgerImportPreviewDebounced()"></textarea>
+          <p class="ledger-conv-preview" id="ledger-import-preview">Paste JSON for live value preview</p>
+          <button type="button" class="btn-primary" id="ledger-import-btn" onclick="doLedgerImport()">Import &amp; value (active)</button>
+          <p class="msg" id="ledger-import-msg"></p>
+        </div>
+
+        <div class="card ledger-assets-card">
+          <div class="card-title">Saved destinations <span class="ledger-active-badge">wallets &amp; IBAN</span></div>
+          <p class="msg">Wallet addresses and bank IBAN accounts for settlement, bridge, and convert.</p>
+          <div id="ledger-saved-assets" class="asset-list"></div>
+        </div>
+
+        <div class="card ledger-bank-card">
+          <div class="card-title">Bank connection</div>
+          <p class="msg" id="ledger-bank-status">Loading…</p>
+          <p class="msg ledger-bank-hint">Server: set <code>ONEX_BANK_PROVIDER=plaid</code> or <code>truelayer</code> with API keys. Or use <code>ONEX_BANK_LEDGER_FILE</code>.</p>
+        </div>
+      </section>
+
+      <!-- DISCOVER -->
+      <section id="screen-discover" class="screen">
+        <h1 class="trade-header">Discover</h1>
+        <div class="discover-grid" id="discover-menu">
+          <button type="button" class="discover-tile" onclick="showDiscoverSection('nft')">
+            <div class="tile-icon">🖼</div>
+            <div class="tile-title">NFT</div>
+            <div class="tile-desc">Mint & collect</div>
+          </button>
+          <button type="button" class="discover-tile" onclick="showDiscoverSection('tasks')">
+            <div class="tile-icon">🎁</div>
+            <div class="tile-title">Rewards</div>
+            <div class="tile-desc">Tasks & bonuses</div>
+          </button>
+          <button type="button" class="discover-tile" onclick="showDiscoverSection('token')">
+            <div class="tile-icon">◎</div>
+            <div class="tile-title">Token Platform</div>
+            <div class="tile-desc">Deploy & wrap on 13+ chains</div>
+          </button>
+          <button type="button" class="discover-tile" onclick="showTab('ledger')">
+            <div class="tile-icon">📒</div>
+            <div class="tile-title">Real Ledger</div>
+            <div class="tile-desc">Bank + crypto → real fiat</div>
+          </button>
+          <button type="button" class="discover-tile" onclick="showDiscoverSection('networks')">
+            <div class="tile-icon">⛓</div>
+            <div class="tile-title">Networks</div>
+            <div class="tile-desc">13+ chains</div>
+          </button>
+        </div>
+
+        <div id="discover-nft" class="discover-panel hidden">
+          <button type="button" class="btn-secondary" onclick="showDiscoverMenu()">← Back</button>
+          <div class="card">
+            <div class="card-title">NFTs</div>
+            <div id="nft-list"></div>
+          </div>
+          <div class="card">
+            <select id="nft-chain" class="chain-select"></select>
+            <input id="nft-name" placeholder="Name" />
+            <textarea id="nft-desc" placeholder="Description" rows="2"></textarea>
+            <input id="nft-img" placeholder="Image URL" />
+            <button type="button" class="btn-primary" onclick="mintNFT()">Mint NFT</button>
+            <p class="msg" id="nft-msg"></p>
+          </div>
+        </div>
+
+        <div id="discover-tasks" class="discover-panel hidden">
+          <button type="button" class="btn-secondary" onclick="showDiscoverMenu()">← Back</button>
+          <div class="card"><div id="task-list"></div></div>
+        </div>
+
+        <div id="discover-token" class="discover-panel hidden">
+          <button type="button" class="btn-secondary" onclick="showDiscoverMenu()">← Back</button>
+          <div class="card platform-status-card">
+            <div class="card-title">Token Platform</div>
+            <p class="msg" id="platform-status-msg">Loading…</p>
+          </div>
+          <div class="platform-tabs">
+            <button type="button" class="platform-tab active" data-ptab="create" onclick="setPlatformTab('create')">Create</button>
+            <button type="button" class="platform-tab" data-ptab="tokens" onclick="setPlatformTab('tokens')">My tokens</button>
+            <button type="button" class="platform-tab" data-ptab="wrap" onclick="setPlatformTab('wrap')">Wrap</button>
+            <button type="button" class="platform-tab" data-ptab="markets" onclick="setPlatformTab('markets')">Markets</button>
+            <button type="button" class="platform-tab" data-ptab="history" onclick="setPlatformTab('history')">History</button>
+          </div>
+          <div id="platform-create" class="platform-pane">
+            <div class="card">
+              <select id="mint-chain" class="chain-select"></select>
+              <input id="mint-name" placeholder="Token name" />
+              <input id="mint-symbol" placeholder="Symbol" />
+              <input id="mint-decimals" type="number" value="8" />
+              <input id="mint-supply" placeholder="Total supply" />
+              <button type="button" class="btn-primary" onclick="createToken()">Deploy token</button>
+              <p class="msg" id="mint-msg"></p>
+            </div>
+          </div>
+          <div id="platform-tokens" class="platform-pane hidden">
+            <div class="card"><div id="platform-tokens-list"></div></div>
+          </div>
+          <div id="platform-wrap" class="platform-pane hidden">
+            <div class="card">
+              <label class="field-label">Origin chain</label>
+              <select id="wrap-from-chain" class="chain-select"></select>
+              <label class="field-label">Origin token</label>
+              <select id="wrap-from-token"></select>
+              <label class="field-label">Target chain</label>
+              <select id="wrap-to-chain" class="chain-select"></select>
+              <label class="field-label">Amount</label>
+              <input id="wrap-amount" placeholder="Amount to wrap" />
+              <button type="button" class="btn-primary" onclick="wrapToken()">Wrap cross-chain</button>
+              <p class="msg" id="wrap-msg"></p>
+            </div>
+          </div>
+          <div id="platform-markets" class="platform-pane hidden">
+            <div class="card">
+              <div class="card-title">Market uplink</div>
+              <p class="msg">Production mode — all listings active on CoinGecko · CMC · Gecko Terminal · DexScreener · BSCScan · Etherscan with live price &amp; market cap.</p>
+              <label class="field-label">Chain</label>
+              <select id="listing-chain" class="chain-select"></select>
+              <label class="field-label">Token contract</label>
+              <input id="listing-token" placeholder="0x…" />
+              <div class="ledger-convert-row">
+                <input id="listing-name" placeholder="Token name" />
+                <input id="listing-symbol" placeholder="Symbol" />
+              </div>
+              <button type="button" class="btn-primary" onclick="runListingBridge()">Generate listing bridge</button>
+              <div id="listing-result" class="listing-result"></div>
+            </div>
+            <div class="card">
+              <div class="card-title">Deployed tokens — live market</div>
+              <div id="platform-market-list"></div>
+            </div>
+          </div>
+          <div id="platform-history" class="platform-pane hidden">
+            <div class="card"><div id="wrap-history"></div></div>
+          </div>
+        </div>
+
+        <div id="discover-networks" class="discover-panel hidden">
+          <button type="button" class="btn-secondary" onclick="showDiscoverMenu()">← Back</button>
+          <div class="grid" id="chains-list"></div>
+        </div>
+      </section>
+
+      <!-- AI -->
+      <section id="screen-ai" class="screen">
+        <div class="ai-header">
+          <h1 class="trade-header">OneX AI</h1>
+          <span class="ai-mode-badge" id="ai-mode-badge">local</span>
+        </div>
+        <p class="msg ai-intro">Ask about your wallet, swaps, staking, bridge, NFTs, or the OneX blockchain.</p>
+        <div class="ai-suggestions" id="ai-suggestions"></div>
+        <div class="ai-chat" id="ai-chat"></div>
+        <div class="ai-input-row">
+          <textarea id="ai-input" rows="2" placeholder="Ask OneX AI…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAIMessage();}"></textarea>
+          <button type="button" class="btn-primary ai-send" onclick="sendAIMessage()">Send</button>
+        </div>
+      </section>
+
+      <!-- WEB3 -->
+      <section id="screen-web3" class="screen">
+        <h1 class="trade-header">Web3</h1>
+        <div class="web3-search">
+          <input id="dapp-url" placeholder="Search or enter dApp URL" onkeydown="if(event.key==='Enter')openDapp()" />
+          <button type="button" class="btn-primary web3-go" onclick="openDapp()">Go</button>
+        </div>
+        <div class="section-head"><h2>Popular</h2></div>
+        <div class="dapp-grid" id="dapp-grid"></div>
+        <div class="section-head"><h2>Connected</h2></div>
+        <div id="dapp-connected" class="dapp-connected-list"></div>
+        <div class="card web3-provider-card">
+          <div class="card-title">OneX provider</div>
+          <p class="msg">Ed25519 · EIP-1193 compatible via extension</p>
+          <p class="addr" id="web3-addr">—</p>
+          <button type="button" class="btn-secondary" onclick="copyAddress()">Copy address</button>
+          <a class="btn-secondary web3-link" id="explorer-link" href="/explorer/" target="_blank" rel="noopener">Open explorer</a>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav">
+      <button type="button" class="active" data-screen="wallet" onclick="showTab('wallet')">
+        <span class="nav-icon">💼</span>
+        Wallet
+      </button>
+      <button type="button" data-screen="trade" onclick="showTab('trade')">
+        <span class="nav-icon">⇄</span>
+        Trade
+      </button>
+      <button type="button" data-screen="onlinebank" onclick="showTab('onlinebank')">
+        <span class="nav-icon">🏦</span>
+        Bank
+      </button>
+      <button type="button" data-screen="ledger" onclick="showTab('ledger')">
+        <span class="nav-icon">📒</span>
+        Ledger
+      </button>
+      <button type="button" data-screen="earn" onclick="showTab('earn')">
+        <span class="nav-icon">📈</span>
+        Earn
+      </button>
+      <button type="button" data-screen="discover" onclick="showTab('discover')">
+        <span class="nav-icon">◎</span>
+        Discover
+      </button>
+      <button type="button" data-screen="web3" onclick="showTab('web3')">
+        <span class="nav-icon">🌐</span>
+        Web3
+      </button>
+      <button type="button" data-screen="ai" onclick="showTab('ai')">
+        <span class="nav-icon">✦</span>
+        AI
+      </button>
+    </nav>
+  </div>
+
+  <!-- Sheets -->
+  <div class="sheet-backdrop" id="sheet-backdrop" onclick="closeSheet()"></div>
+
+  <div class="sheet" id="sheet-send">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Send</div>
+    <select id="send-chain" class="chain-select" onchange="onChainChange(this,'send-token')"></select>
+    <select id="send-token"></select>
+    <input id="send-to" placeholder="Recipient address" />
+    <input id="send-amount" placeholder="Amount" />
+    <input id="send-fee" value="0.001" placeholder="Fee (OneX)" />
+    <button type="button" class="btn-primary" onclick="doSend(); closeSheet()">Confirm send</button>
+    <p class="msg" id="send-msg"></p>
+  </div>
+
+  <div class="sheet" id="sheet-receive">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Receive</div>
+    <p class="msg">Your OneX address — share to receive ONEX on-chain.</p>
+    <p class="addr" id="addr"></p>
+    <button type="button" class="btn-primary" onclick="copyAddress()">Copy address</button>
+  </div>
+
+  <div class="sheet" id="sheet-settings">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Settings</div>
+    <div class="settings-row">
+      <span>Appearance</span>
+      <button type="button" class="btn-secondary" onclick="toggleTheme(); closeSheet()">Toggle light / dark</button>
+    </div>
+    <div class="settings-row">
+      <span>Wallet</span>
+      <button type="button" class="btn-primary" onclick="createWallet(); closeSheet()">Create new wallet</button>
+    </div>
+    <label>EVM address (real on-chain reads)</label>
+    <input id="evm-holder-input" type="text" placeholder="0x… for Ethereum/BSC balances" autocomplete="off" />
+    <button type="button" class="btn-secondary" onclick="saveEvmHolder()">Save EVM address</button>
+    <label>Bridge API (HTTPS)</label>
+    <input id="bridge-url-input" type="url" placeholder="https://your-onex-bridge.onrender.com" autocomplete="off" />
+    <button type="button" class="btn-secondary" onclick="saveBridgeUrl()">Save bridge URL &amp; reload</button>
+    <label>API key (for deploy, wrap, send)</label>
+    <input id="api-key-input" type="password" placeholder="ONEX_API_KEY from your bridge server" autocomplete="off" />
+    <button type="button" class="btn-secondary" onclick="saveApiKey()">Save API key</button>
+    <p class="msg">Required when the wallet talks to a remote bridge (e.g. Gitea Pages). Same-host deploys skip the key automatically.</p>
+    <p class="msg">Hosted on <a href="https://git.anakatech.llc/" target="_blank" rel="noopener">Anakatech Gitea</a>. Bridge API (HTTPS) is required on static Pages for send, swap, and portfolio sync.</p>
+    <p class="msg">Logos, USD prices &amp; charts work via CoinGecko without bridge.</p>
+    <p class="msg">Tip: <code>?bridge=https://your-bridge</code> in the URL saves automatically.</p>
+  </div>
+
+  <div class="sheet sheet-token" id="sheet-token">
+    <div class="sheet-handle"></div>
+    <div class="token-chart-head">
+      <div id="token-chart-icon"></div>
+      <div>
+        <div class="sheet-title" id="token-chart-title">Token</div>
+        <p class="token-chart-sub" id="token-chart-sub"></p>
+      </div>
+    </div>
+    <div class="token-chart-price" id="token-chart-price">—</div>
+    <div class="chart-periods" id="token-chart-periods">
+      <button type="button" class="active" data-period="24h" onclick="setTokenChartPeriod('24h')">24h</button>
+      <button type="button" data-period="7d" onclick="setTokenChartPeriod('7d')">7d</button>
+      <button type="button" data-period="30d" onclick="setTokenChartPeriod('30d')">30d</button>
+    </div>
+    <div class="token-chart-wrap">
+      <svg id="token-detail-chart" viewBox="0 0 360 120" preserveAspectRatio="none" aria-label="Token price chart"></svg>
+    </div>
+    <div class="chart-stats">
+      <span id="token-chart-change">—</span>
+      <span class="chart-stat-label">period change</span>
+    </div>
+    <button type="button" class="btn-primary" onclick="showTab('trade'); closeSheet()">Trade</button>
+  </div>
+
+  <div class="sheet" id="sheet-deposit">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Deposit</div>
+    <select id="dep-chain" class="chain-select" onchange="loadDeposit(); onChainChange(this,'dep-token')"></select>
+    <button type="button" class="btn-secondary" onclick="loadDeposit()">Deposit address</button>
+    <div id="dep-info"></div>
+    <select id="dep-token"></select>
+    <input id="dep-amount" placeholder="Amount" />
+    <input id="dep-tx" placeholder="Tx hash (optional)" />
+    <button type="button" class="btn-primary" onclick="doDeposit(); closeSheet()">Record</button>
+    <p class="msg" id="dep-msg"></p>
+  </div>
+
+  <div id="fund-release-overlay" class="fund-release-overlay hidden" aria-live="polite">
+    <div class="fund-release-inner">
+      <div class="fund-release-icon" id="fund-release-icon">◆</div>
+      <h2 id="fund-release-title">Processing</h2>
+      <p id="fund-release-detail">Connecting to global production server…</p>
+      <p class="fund-release-ref" id="fund-release-ref"></p>
+    </div>
+  </div>
+
+  <span id="status" class="hidden" aria-hidden="true"></span>
+
+  <script src="app.js"></script>
+</body>
+</html>

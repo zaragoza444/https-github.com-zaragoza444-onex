@@ -1,0 +1,9 @@
+bin/
+data/
+go/
+go-sdk.zip
+*.md
+.git
+.github
+extension/
+agent-transcripts/

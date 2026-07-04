@@ -1,0 +1,29 @@
+{
+  "service": "onex-hybx-middleware",
+  "description": "HYBX exchange middleware connecting NSB, Fineract, blockchains, token platform, and virtual cards",
+  "env": {
+    "ONEX_HYBX_ENABLED": "1",
+    "ONEX_HYBX_URL": "https://api.hybrix.io",
+    "ONEX_LEDGER_MODE": "production",
+    "ONEX_FINERACT_ENABLED": "1",
+    "ONEX_FINERACT_URL": "https://fineract.hybxfinance.com/fineract-provider"
+  },
+  "routes": [
+    "nsb-hybx",
+    "hybx-nsb",
+    "nsb-fineract",
+    "fineract-hybx",
+    "hybx-bank",
+    "hybx-platform",
+    "hybx-ethereum",
+    "hybx-bsc"
+  ],
+  "api": {
+    "status": "/bridge/bank/hybx/middleware/status",
+    "routes": "/bridge/bank/hybx/exchange/routes",
+    "exchange": "/bridge/bank/hybx/exchange",
+    "settle": "/bridge/bank/hybx/settle",
+    "federation": "/bridge/bank/hybx/federation",
+    "cards": "/bridge/cards/hybx"
+  }
+}

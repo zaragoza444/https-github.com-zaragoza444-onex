@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>OneX Blockchain — Production PoW Chain &amp; DeFi Wallet</title>
+  <meta name="description" content="OneX is a production proof-of-work blockchain with a full DeFi wallet, real ledger, online bank, virtual cards, and multi-chain token platform.">
+  <meta name="theme-color" content="#06080c">
+  <link rel="icon" href="assets/onex.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    window.ONEX_SITE = {
+      productionUrl: 'https://onexproduction.com',
+      walletPath: '/wallet/',
+      consoleUrl: 'https://onexproduction.com/token-lab/'
+    };
+  </script>
+</head>
+<body>
+  <nav class="site-nav">
+    <div class="container nav-inner">
+      <a class="brand" href="index.html">
+        <img src="assets/onex.svg" alt="OneX" width="36" height="36">
+        OneX
+      </a>
+      <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="portal-nav">☰</button>
+      <div class="nav-links" id="portal-nav">
+        <a href="#products">Products</a>
+        <a href="#features">Features</a>
+        <a href="#network">Network</a>
+        <a data-console href="/token-lab/">Mission Control</a>
+        <a data-explorer href="/explorer/">Explorer</a>
+        <a href="contact.html">Contact</a>
+        <a class="btn btn-primary" data-wallet href="/wallet/">Open Wallet</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="hero-grid" aria-hidden="true"></div>
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="container hero-inner">
+      <div class="hero-badge" id="hero-badge"><span id="hero-badge-dot"></span> <span id="hero-badge-text">Production · Live on mainnet</span></div>
+      <h1>Production blockchain.<br><em>Real finance.</em> One platform.</h1>
+      <p class="hero-lead">
+        OneX combines Ed25519 proof-of-work, a MetaMask-style DeFi wallet, sovereign online banking,
+        virtual cards, and a 13-chain token platform — built for real assets, not demos.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" data-wallet href="/wallet/">Launch OneX Wallet</a>
+        <a class="btn btn-secondary" data-explorer href="/explorer/">Block Explorer</a>
+        <a class="btn btn-secondary" href="contact.html">Business inquiries</a>
+      </div>
+      <div class="stats" id="hero-stats">
+        <div class="stat"><strong id="stat-chains">13+</strong><span>Chains integrated</span></div>
+        <div class="stat"><strong id="stat-node">PoW</strong><span id="stat-node-label">Ed25519 consensus</span></div>
+        <div class="stat"><strong id="stat-ledger">ONEX</strong><span id="stat-ledger-label">Native asset</span></div>
+        <div class="stat"><strong id="stat-bank">Live</strong><span id="stat-bank-label">Bank &amp; cards</span></div>
+      </div>
+    </div>
+  </header>
+
+  <section id="products">
+    <div class="container">
+      <div class="section-label">Platform</div>
+      <h2 class="section-title">Everything you need to build on-chain finance</h2>
+      <p class="section-lead">From node infrastructure to consumer wallet — one stack, production-ready.</p>
+      <div class="product-grid">
+        <article class="product-card">
+          <div class="product-icon">⛓</div>
+          <h3>OneX Blockchain</h3>
+          <p>Production PoW chain with P2P sync, REST API, and JSON-RPC.</p>
+          <ul>
+            <li>Ed25519 accounts (64-char hex)</li>
+            <li>Mainnet <code>onex-mainnet-1</code> · ID 9001</li>
+            <li>Embedded explorer &amp; faucet (testnet)</li>
+          </ul>
+        </article>
+        <article class="product-card">
+          <div class="product-icon">👛</div>
+          <h3>OneX Wallet</h3>
+          <p>OKX-inspired DeFi UI with swap, bridge, stake, NFTs, loans, and AI assistant.</p>
+          <ul>
+            <li>Cross-chain bridge &amp; AMM swap</li>
+            <li>Real Ledger — bank + on-chain USD</li>
+            <li>Chrome extension &amp; mobile app</li>
+          </ul>
+        </article>
+        <article class="product-card">
+          <div class="product-icon">🏦</div>
+          <h3>Online Bank &amp; Cards</h3>
+          <p>NSB sovereign banking with IBAN accounts, SEPA/SWIFT, HYBX exchange middleware, and NSB + HYBX virtual Visa/Mastercard.</p>
+          <ul>
+            <li>M0 / M1 / NSB fund classes</li>
+            <li>Apple Pay · Google Pay · 3DS</li>
+            <li>Live deposits, send &amp; ledger</li>
+          </ul>
+        </article>
+        <article class="product-card">
+          <div class="product-icon">🚀</div>
+          <h3>Token Platform</h3>
+          <p>Deploy, wrap, and mirror tokens across 13+ chains from one control plane.</p>
+          <ul>
+            <li>Flash Coin cross-chain mirrors</li>
+            <li>Mission Control dashboard</li>
+            <li>CLI &amp; bridge API</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="container">
+      <div class="section-label">Capabilities</div>
+      <h2 class="section-title">Built for operators and end users</h2>
+      <div class="feature-grid">
+        <div class="feature"><h4>OneX Swap</h4><p>Uniswap-style AMM with liquidity pools and ~0.3% fee.</p></div>
+        <div class="feature"><h4>Cross-chain bridge</h4><p>ONEX hub pools connect Ethereum, BSC, Polygon, and more.</p></div>
+        <div class="feature"><h4>OneX AI</h4><p>Portfolio-aware assistant with local and cloud LLM modes.</p></div>
+        <div class="feature"><h4>Real Ledger</h4><p>Unified bank IBAN, EVM, and imported balances in live USD.</p></div>
+        <div class="feature"><h4>Market listings</h4><p>Production market providers active across bridge listings.</p></div>
+        <div class="feature"><h4>Enterprise deploy</h4><p>Docker, nginx TLS, and VPS-ready production stack.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="network">
+    <div class="container">
+      <div class="section-label">Network</div>
+      <h2 class="section-title">Connect to OneX</h2>
+      <div class="network-box">
+        <div>
+          <h3 style="margin-top:0;font-family:var(--font-display)">Mainnet</h3>
+          <div class="network-specs">
+            <div class="spec-row"><span>Chain ID</span><strong>9001 (0x2329)</strong></div>
+            <div class="spec-row"><span>Network</span><strong>onex-mainnet-1</strong></div>
+            <div class="spec-row"><span>Symbol</span><strong>ONEX · 8 decimals</strong></div>
+            <div class="spec-row"><span>Signing</span><strong>Ed25519 (OneX Wallet)</strong></div>
+          </div>
+        </div>
+        <div>
+          <h3 style="margin-top:0;font-family:var(--font-display)">Production URLs</h3>
+          <div class="network-specs">
+            <div class="spec-row"><span>Wallet</span><a data-wallet href="/wallet/">/wallet/</a></div>
+            <div class="spec-row"><span>Explorer</span><a data-explorer href="/explorer/">/explorer/</a></div>
+            <div class="spec-row"><span>Bridge API</span><a id="prod-status-api-link" data-status-api href="https://onexproduction.com/bridge/production/status">/bridge/production/status</a></div>
+            <div class="spec-row"><span>Domain</span><a href="https://onexproduction.com">onexproduction.com</a></div>
+          </div>
+          <div id="production-status" class="production-status orchestration-panel" aria-live="polite">
+            <div class="production-status-head">
+              <span class="status-dot loading" id="prod-status-dot"></span>
+              <strong id="prod-status-title">Connecting to production…</strong>
+            </div>
+            <div class="production-status-grid" id="prod-status-grid"></div>
+          </div>
+          <p style="font-size:0.85rem;color:var(--text-muted);margin:16px 0 0">
+            MetaMask can add the network for read-only info — use OneX Wallet to sign transactions.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <div class="cta-band">
+        <h2>Ready to go live?</h2>
+        <p>Open the wallet, deploy your node, or reach our business team for enterprise onboarding.</p>
+        <a class="btn btn-primary" data-wallet href="/wallet/">Open OneX Wallet</a>
+        <a class="btn btn-secondary" href="contact.html" style="margin-left:8px">hello@onexproduction.com</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <a class="brand" href="index.html" style="margin-bottom:12px">
+            <img src="assets/onex.svg" alt="" width="32" height="32"> OneX
+          </a>
+          <p style="color:var(--text-muted);font-size:0.9rem;max-width:280px;margin:12px 0 0">
+            Production proof-of-work blockchain and DeFi platform.
+          </p>
+        </div>
+        <div>
+          <h4>Product</h4>
+          <ul>
+            <li><a data-wallet href="/wallet/">Wallet</a></li>
+            <li><a data-explorer href="/explorer/">Explorer</a></li>
+            <li><a href="#products">Token Platform</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Developers</h4>
+          <ul>
+            <li><a href="https://github.com/zaragoza444/onex">GitHub</a></li>
+            <li><a href="https://git.anakatech.llc/zaragoza/onex">Anakatech Git</a></li>
+            <li><a href="#network">Network specs</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Contact</h4>
+          <ul>
+            <li><a href="mailto:hello@onexproduction.com">hello@onexproduction.com</a></li>
+            <li><a href="mailto:business@onexproduction.com">business@onexproduction.com</a></li>
+            <li><a href="mailto:support@onexproduction.com">support@onexproduction.com</a></li>
+            <li><a href="contact.html">All contacts →</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© OneX Blockchain · onexproduction.com</span>
+        <span>ONEX · Ed25519 PoW · Production platform</span>
+      </div>
+    </div>
+  </footer>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="js/main.js"></script>
+</body>
+</html>

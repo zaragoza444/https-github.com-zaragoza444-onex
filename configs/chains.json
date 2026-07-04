@@ -1,0 +1,16 @@
+[
+  {"id": "onex-mainnet-1", "name": "OneX", "networkId": 9001, "symbol": "ONEX", "native": true, "rpc": "http://127.0.0.1:8545", "explorer": "/explorer/", "color": "#00e5b0", "type": "onex"},
+  {"id": "onex-testnet-1", "name": "OneX Testnet", "networkId": 9002, "symbol": "ONEX", "native": true, "rpc": "http://127.0.0.1:8547", "explorer": "http://127.0.0.1:8547/explorer/", "color": "#7c5cff", "type": "onex"},
+  {"id": "ethereum", "name": "Ethereum", "networkId": 1, "symbol": "ETH", "native": false, "rpc": "https://eth.llamarpc.com", "explorer": "https://etherscan.io", "color": "#627eea", "type": "evm"},
+  {"id": "bsc", "name": "BNB Chain", "networkId": 56, "symbol": "BNB", "native": false, "rpc": "https://bsc-dataseed.binance.org", "explorer": "https://bscscan.com", "color": "#f3ba2f", "type": "evm"},
+  {"id": "polygon", "name": "Polygon", "networkId": 137, "symbol": "MATIC", "native": false, "rpc": "https://polygon-rpc.com", "explorer": "https://polygonscan.com", "color": "#8247e5", "type": "evm"},
+  {"id": "arbitrum", "name": "Arbitrum One", "networkId": 42161, "symbol": "ETH", "native": false, "rpc": "https://arb1.arbitrum.io/rpc", "explorer": "https://arbiscan.io", "color": "#28a0f0", "type": "evm"},
+  {"id": "optimism", "name": "Optimism", "networkId": 10, "symbol": "ETH", "native": false, "rpc": "https://mainnet.optimism.io", "explorer": "https://optimistic.etherscan.io", "color": "#ff0420", "type": "evm"},
+  {"id": "avalanche", "name": "Avalanche C-Chain", "networkId": 43114, "symbol": "AVAX", "native": false, "rpc": "https://api.avax.network/ext/bc/C/rpc", "explorer": "https://snowtrace.io", "color": "#e84142", "type": "evm"},
+  {"id": "base", "name": "Base", "networkId": 8453, "symbol": "ETH", "native": false, "rpc": "https://mainnet.base.org", "explorer": "https://basescan.org", "color": "#0052ff", "type": "evm"},
+  {"id": "solana", "name": "Solana", "networkId": 0, "symbol": "SOL", "native": false, "rpc": "https://api.mainnet-beta.solana.com", "explorer": "https://solscan.io", "color": "#14f195", "type": "solana"},
+  {"id": "bitcoin", "name": "Bitcoin", "networkId": 0, "symbol": "BTC", "native": false, "rpc": "", "explorer": "https://mempool.space", "color": "#f7931a", "type": "btc"},
+  {"id": "tron", "name": "TRON", "networkId": 0, "symbol": "TRX", "native": false, "rpc": "https://api.trongrid.io", "explorer": "https://tronscan.org", "color": "#ff0013", "type": "tron"},
+  {"id": "alltra", "name": "ALLTRA", "networkId": 651940, "symbol": "ALL", "native": false, "rpc": "", "explorer": "", "color": "#c0a062", "type": "evm"},
+  {"id": "dbis-138", "name": "IDBIS / DBIS Chain 138", "networkId": 138, "symbol": "ETH", "native": false, "rpc": "https://rpc-core.d-bis.org", "explorer": "https://explorer.d-bis.org", "color": "#4a9eff", "type": "evm"}
+]
