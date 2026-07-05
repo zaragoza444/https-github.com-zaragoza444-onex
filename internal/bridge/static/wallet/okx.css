@@ -943,6 +943,24 @@ html.onex-mobile .quick-action-icon {
 
 .settings-row span { font-weight: 500; }
 
+.pouchpay-plus-integrations {
+  align-items: flex-start;
+  border-color: rgba(0, 229, 176, 0.35);
+}
+
+.pouchpay-plus-stack {
+  display: grid;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-align: right;
+}
+
+.pouchpay-plus-stack strong {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
 /* OneX AI */
 .ai-header {
   display: flex;

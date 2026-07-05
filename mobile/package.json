@@ -1,5 +1,5 @@
 {
-  "name": "onex-wallet",
+  "name": "pouchpay-plus",
   "version": "1.0.0",
   "main": "index.ts",
   "private": true,
@@ -8,6 +8,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "test:plus-config": "node scripts/test-plus-config.cjs",
     "test:wallet-url": "node scripts/test-wallet-url.cjs",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit"

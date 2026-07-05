@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { POUCHPAY_PLUS_APP_NAME } from './plusConfig';
 export {
   normalizeWalletBaseUrl,
   shouldOpenWalletRequestExternally,
@@ -7,15 +8,17 @@ export {
 } from './walletUrl';
 import { normalizeWalletBaseUrl } from './walletUrl';
 
-const STORAGE_KEY = 'onex_wallet_url_override';
+const STORAGE_KEY = 'pouchpay_plus_wallet_url_override';
+const LEGACY_STORAGE_KEYS = ['pouchpay_wallet_url_override', 'onex_wallet_url_override', 'shiva_wallet_url_override'];
 
 export const DEFAULT_WALLET_URL =
   process.env.EXPO_PUBLIC_WALLET_URL?.trim() || 'http://127.0.0.1:9338/wallet/';
 
 export async function getWalletBaseUrl(): Promise<string> {
   let override = await AsyncStorage.getItem(STORAGE_KEY);
-  if (!override) {
-    override = await AsyncStorage.getItem('shiva_wallet_url_override');
+  for (const legacyKey of LEGACY_STORAGE_KEYS) {
+    if (override) break;
+    override = await AsyncStorage.getItem(legacyKey);
     if (override) await AsyncStorage.setItem(STORAGE_KEY, override);
   }
   return normalizeWalletBaseUrl(override || DEFAULT_WALLET_URL);
@@ -42,6 +45,8 @@ export function resolveDeepLink(path: string | null): string | null {
     discover: 'discover',
     web3: 'web3',
     wallet: '',
+    pouchpay: '',
+    plus: '',
     home: '',
   };
   if (p in map) return map[p];
@@ -50,4 +55,8 @@ export function resolveDeepLink(path: string | null): string | null {
 
 export function appVersion(): string {
   return Constants.expoConfig?.version ?? '1.0.0';
+}
+
+export function appName(): string {
+  return Constants.expoConfig?.name ?? POUCHPAY_PLUS_APP_NAME;
 }

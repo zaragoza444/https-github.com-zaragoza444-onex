@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "OneX Wallet",
-    "slug": "onex-wallet",
+    "name": "PouchPay Plus",
+    "slug": "pouchpay-plus",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "scheme": "onexwallet",
+    "scheme": "pouchpayplus",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.onex.wallet",
+      "bundleIdentifier": "com.pouchpay.plus",
       "buildNumber": "1",
       "infoPlist": {
         "NSAppTransportSecurity": {
@@ -27,7 +27,7 @@
       }
     },
     "android": {
-      "package": "com.onex.wallet",
+      "package": "com.pouchpay.plus",
       "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#000000",
@@ -39,7 +39,7 @@
         {
           "action": "VIEW",
           "autoVerify": false,
-          "data": [{ "scheme": "onexwallet" }],
+          "data": [{ "scheme": "pouchpayplus" }],
           "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
