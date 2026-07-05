@@ -3277,13 +3277,13 @@ async function refreshOnlineBank() {
     }
     meta.textContent = line;
   }
-  await loadProductionPlatform(prod);
   onlineBankAccounts = accts.accounts || [];
   renderOnlineBankAccounts(onlineBankAccounts);
   fillOnlineBankSelects(onlineBankAccounts);
   fillOnlineBankActivityFilters(onlineBankAccounts);
   fillHybrixSelect(onlineBankAccounts);
   renderOnlineBankRecent(txs.transactions || []);
+  await loadProductionPlatform(prod);
   if (onlineBankMainTab === 'ledger') {
     await loadOnlineBankLedger();
   } else if (onlineBankMainTab === 'cards') {
