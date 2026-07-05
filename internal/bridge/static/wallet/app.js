@@ -3540,7 +3540,7 @@ async function doCardWireTransfer() {
     return;
   }
   if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
-  connectGlobalProductionServer();
+  connectGlobalProductionServer().catch(() => {});
   const j = await api('/bridge/cards/101.1/wire', {
     method: 'POST',
     body: JSON.stringify({
