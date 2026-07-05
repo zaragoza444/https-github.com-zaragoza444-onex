@@ -3512,6 +3512,7 @@ async function cardWirePreview() {
   const cardId = document.getElementById('card-wire-pick')?.value;
   const amount = document.getElementById('card-wire-amount')?.value;
   const iban = document.getElementById('card-wire-iban')?.value?.trim();
+  const officerPin = document.getElementById('card-wire-officer-pin')?.value?.trim();
   if (!cardId || !amount || !iban) {
     if (preview) preview.textContent = 'Select card, amount, and IBAN';
     return;
@@ -3521,6 +3522,7 @@ async function cardWirePreview() {
     body: JSON.stringify({
       cardId, amount, beneficiaryIban: iban, preview: true,
       beneficiaryName: document.getElementById('card-wire-name')?.value?.trim(),
+      officerPin,
     }),
   });
   if (preview) preview.textContent = j.error ? j.error : `Preview wire ${amount} · Cards 101.1`;
@@ -3532,6 +3534,7 @@ async function doCardWireTransfer() {
   const cardId = document.getElementById('card-wire-pick')?.value;
   const amount = document.getElementById('card-wire-amount')?.value;
   const iban = document.getElementById('card-wire-iban')?.value?.trim();
+  const officerPin = document.getElementById('card-wire-officer-pin')?.value?.trim();
   if (!cardId || !amount || !iban) {
     if (msg) msg.textContent = 'Card, amount, and IBAN required';
     return;
@@ -3543,6 +3546,7 @@ async function doCardWireTransfer() {
     body: JSON.stringify({
       cardId, amount, beneficiaryIban: iban, preview: false,
       beneficiaryName: document.getElementById('card-wire-name')?.value?.trim(),
+      officerPin,
       reference: document.getElementById('card-wire-reference')?.value?.trim(),
     }),
   });
@@ -3552,6 +3556,8 @@ async function doCardWireTransfer() {
     return;
   }
   if (msg) msg.textContent = `✓ Wire ${j.status}: ${amount} · ${j.wireRef || ''}`;
+  const pin = document.getElementById('card-wire-officer-pin');
+  if (pin) pin.value = '';
   await refreshVirtualCards();
   await refreshOnlineBank();
 }

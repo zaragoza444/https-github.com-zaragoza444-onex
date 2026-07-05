@@ -535,6 +535,7 @@
             </div>
             <input id="card-wire-iban" placeholder="Beneficiary IBAN" oninput="cardWirePreviewDebounced()" />
             <input id="card-wire-name" placeholder="Beneficiary name (optional)" />
+            <input id="card-wire-officer-pin" placeholder="Officer PIN (if required)" autocomplete="one-time-code" oninput="cardWirePreviewDebounced()" />
             <input id="card-wire-reference" placeholder="Reference (optional)" />
             <p class="ledger-conv-preview" id="card-wire-preview">Select card and amount</p>
             <button type="button" class="btn-primary" id="card-wire-btn" onclick="doCardWireTransfer()">Send wire transfer</button>

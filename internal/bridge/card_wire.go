@@ -16,6 +16,8 @@ type CardWireRequest struct {
 	BeneficiaryIBAN string `json:"beneficiaryIban"`
 	BeneficiaryName string `json:"beneficiaryName,omitempty"`
 	Reference       string `json:"reference,omitempty"`
+	OfficerPIN      string `json:"officerPin,omitempty"`
+	PIN             string `json:"pin,omitempty"`
 	Preview         bool   `json:"preview,omitempty"`
 }
 
@@ -120,6 +122,18 @@ func (b *Bridge) WireTransferCard(ctx context.Context, req CardWireRequest) (map
 	}
 
 	if req.Preview {
+		if _, err := b.onlineBank().Send(ledger.OnlineBankTransferRequest{
+			FromAccount: card.AccountID,
+			ToIBAN:      iban,
+			ToBank:      name,
+			Rail:        "wire",
+			Amount:      formatCardMoney(amt),
+			Reference:   ref,
+			OfficerPIN:  firstCardWireNonEmpty(req.OfficerPIN, req.PIN),
+			Preview:     true,
+		}); err != nil {
+			return nil, err
+		}
 		return map[string]interface{}{
 			"status": "quoted", "preview": true, "rail": "wire",
 			"cardId": card.ID, "program": cardProgram1011, "bin": cardBIN1011,
@@ -140,6 +154,7 @@ func (b *Bridge) WireTransferCard(ctx context.Context, req CardWireRequest) (map
 		Rail:        "wire",
 		Amount:      formatCardMoney(amt),
 		Reference:   ref,
+		OfficerPIN:  firstCardWireNonEmpty(req.OfficerPIN, req.PIN),
 	}
 	res, err := b.onlineBank().Send(transfer)
 	if err != nil {
@@ -158,7 +173,7 @@ func (b *Bridge) WireTransferCard(ctx context.Context, req CardWireRequest) (map
 		ID: fmt.Sprintf("vctx-%d", time.Now().UnixNano()), CardID: card.ID,
 		Amount: formatCardMoney(amt), Currency: card.Currency,
 		Merchant: "Wire transfer · " + iban,
-		Status: "completed", Reference: ref, CreatedAt: time.Now().Unix(),
+		Status:   "completed", Reference: ref, CreatedAt: time.Now().Unix(),
 	}
 	st.Transactions = append(st.Transactions, tx)
 	if err := b.cards().save(st); err != nil {
@@ -188,4 +203,13 @@ func (b *Bridge) WireTransferCard(ctx context.Context, req CardWireRequest) (map
 			"twoD": card.TwoD, "threeDSecure": card.ThreeDS, "wireTransfer": card.WireTransfer,
 		},
 	}, nil
+}
+
+func firstCardWireNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if strings.TrimSpace(v) != "" {
+			return strings.TrimSpace(v)
+		}
+	}
+	return ""
 }
