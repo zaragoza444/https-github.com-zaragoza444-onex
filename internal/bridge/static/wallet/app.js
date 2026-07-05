@@ -3075,9 +3075,11 @@ function buildOnlineBankBody(preview) {
   const fromAccount = document.getElementById('online-bank-from')?.value;
   const amount = document.getElementById('online-bank-amount')?.value;
   const reference = document.getElementById('online-bank-ref')?.value?.trim();
+  const officerPin = document.getElementById('online-bank-officer-pin')?.value?.trim();
   if (!fromAccount || !amount) return null;
   const body = { fromAccount, amount, preview: !!preview };
   if (reference) body.reference = reference;
+  if (officerPin) body.officerPin = officerPin;
   if (onlineBankMode === 'internal') {
     const toAccount = document.getElementById('online-bank-to')?.value;
     if (!toAccount) return null;
@@ -3142,6 +3144,8 @@ async function doOnlineBankTransfer() {
   }
   if (!j.error) {
     document.getElementById('online-bank-amount').value = '';
+    const officerPin = document.getElementById('online-bank-officer-pin');
+    if (officerPin) officerPin.value = '';
     await refreshOnlineBank();
   }
 }

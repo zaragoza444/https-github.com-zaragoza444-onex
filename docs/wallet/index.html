@@ -326,6 +326,7 @@
             </select>
             <input id="online-bank-iban" placeholder="IBAN / account number" oninput="onlineBankPreviewDebounced()" />
           </div>
+          <input id="online-bank-officer-pin" placeholder="Officer PIN (if required)" autocomplete="one-time-code" oninput="onlineBankPreviewDebounced()" />
           <input id="online-bank-ref" placeholder="Reference (optional)" oninput="onlineBankPreviewDebounced()" />
           <p class="ledger-conv-preview" id="online-bank-preview">Select accounts and amount</p>
           <button type="button" class="btn-primary" id="online-bank-btn" onclick="doOnlineBankSend()">Send payment</button>

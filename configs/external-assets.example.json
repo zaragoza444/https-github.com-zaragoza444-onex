@@ -31,6 +31,15 @@
       "currency": "USD"
     },
     {
+      "id": "bank-omnl-central-usd",
+      "kind": "bank",
+      "label": "OMNL Central Bank USD — Wire",
+      "bankId": "omnl",
+      "rail": "wire",
+      "iban": "OMNL00US00000000000001",
+      "currency": "USD"
+    },
+    {
       "id": "bank-deutsche-eur",
       "kind": "bank",
       "label": "Deutsche Bank EUR — SEPA IBAN",

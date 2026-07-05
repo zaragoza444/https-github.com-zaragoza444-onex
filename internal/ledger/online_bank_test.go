@@ -47,6 +47,71 @@ func TestOnlineBankInternalTransfer(t *testing.T) {
 	}
 }
 
+func TestOnlineBankOfficerPINRequiredForOMNLTransfer(t *testing.T) {
+	dir := t.TempDir()
+	store := &OnlineBankStore{path: filepath.Join(dir, "online-bank.json")}
+	st := &OnlineBankState{
+		Name: defaultOnlineBankName, Online: true, SWIFT: defaultOnlineBankSWIFT,
+		Accounts: []OnlineBankAccount{
+			{ID: "operating", Name: "Operating", Currency: "USD", Balance: "1000.00", Status: "active"},
+			{
+				ID: "omnl", Name: "OMNL Central Bank", Currency: "USD", Balance: "500.00",
+				IBAN: "OMNL00US00000000000001", Bank: "omnl", Status: "active",
+				OfficerPINRequired: true, OfficerPINHash: hashOfficerPIN("246810"),
+			},
+		},
+	}
+	if err := store.save(st); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := store.Transfer(OnlineBankTransferRequest{
+		FromAccount: "operating", ToAccount: "omnl", Amount: "25.00",
+	}); err == nil || !strings.Contains(err.Error(), "officer PIN required") {
+		t.Fatalf("expected missing officer PIN error, got %v", err)
+	}
+	if _, err := store.Transfer(OnlineBankTransferRequest{
+		FromAccount: "operating", ToAccount: "omnl", Amount: "25.00", OfficerPIN: "000000",
+	}); err == nil || !strings.Contains(err.Error(), "invalid officer PIN") {
+		t.Fatalf("expected invalid officer PIN error, got %v", err)
+	}
+
+	accts, err := store.ListAccounts()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, acct := range accts {
+		if acct.ID == "omnl" {
+			if acct.OfficerPINHash != "" || !acct.OfficerPINConfigured || !acct.OfficerPINRequired {
+				t.Fatalf("officer PIN metadata leaked or missing: %+v", acct)
+			}
+		}
+	}
+
+	res, err := store.Transfer(OnlineBankTransferRequest{
+		FromAccount: "operating", ToAccount: "omnl", Amount: "25.00", OfficerPIN: "246810",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Status != "completed" || !res.Transaction.OfficerAuthorized {
+		t.Fatalf("expected authorized completed transfer, got %+v", res)
+	}
+	accts, _ = store.ListAccounts()
+	for _, acct := range accts {
+		switch acct.ID {
+		case "operating":
+			if acct.Balance != "975" && acct.Balance != "975.00" && acct.Balance != "975.0" {
+				t.Fatalf("operating balance %s", acct.Balance)
+			}
+		case "omnl":
+			if acct.Balance != "525" && acct.Balance != "525.00" && acct.Balance != "525.0" {
+				t.Fatalf("omnl balance %s", acct.Balance)
+			}
+		}
+	}
+}
+
 func TestOnlineBankDeposit(t *testing.T) {
 	dir := t.TempDir()
 	store := &OnlineBankStore{path: filepath.Join(dir, "online-bank.json")}

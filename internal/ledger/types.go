@@ -15,10 +15,10 @@ const (
 type Mode string
 
 const (
-	ModeReal       Mode = "real"
-	ModeSimulated  Mode = "simulated"
-	ModeBank       Mode = "bank"
-	ModeFiat       Mode = "fiat"
+	ModeReal      Mode = "real"
+	ModeSimulated Mode = "simulated"
+	ModeBank      Mode = "bank"
+	ModeFiat      Mode = "fiat"
 )
 
 // Entry is a normalized ledger line in canonical real units.
@@ -42,10 +42,10 @@ type Entry struct {
 
 // Snapshot is a point-in-time unified ledger across all sources.
 type Snapshot struct {
-	At        int64              `json:"at"`
-	Mode      string             `json:"mode"`
-	Entries   []Entry            `json:"entries"`
-	TotalUSD  float64            `json:"totalUsd"`
+	At          int64              `json:"at"`
+	Mode        string             `json:"mode"`
+	Entries     []Entry            `json:"entries"`
+	TotalUSD    float64            `json:"totalUsd"`
 	BySource    map[string]float64 `json:"bySourceUsd"`
 	ByFundClass map[string]float64 `json:"byFundUsd"`
 	ByFiat      map[string]float64 `json:"byFiat"`
@@ -138,15 +138,18 @@ type BankFile struct {
 }
 
 type BankAccount struct {
-	ID          string `json:"id,omitempty"`
-	IBAN        string `json:"iban,omitempty"`
-	Name        string `json:"name,omitempty"`
-	Currency    string `json:"currency"`
-	Balance     string `json:"balance"`
-	FundClass   string `json:"fundClass,omitempty"`   // m0 | m1 | nsb
-	MoneySupply string `json:"moneySupply,omitempty"` // alias for fundClass
-	Bank        string `json:"bank,omitempty"`        // e.g. nsb
-	Type        string `json:"type,omitempty"`
+	ID                 string `json:"id,omitempty"`
+	IBAN               string `json:"iban,omitempty"`
+	Name               string `json:"name,omitempty"`
+	Currency           string `json:"currency"`
+	Balance            string `json:"balance"`
+	FundClass          string `json:"fundClass,omitempty"`   // m0 | m1 | nsb
+	MoneySupply        string `json:"moneySupply,omitempty"` // alias for fundClass
+	Bank               string `json:"bank,omitempty"`        // e.g. nsb
+	Type               string `json:"type,omitempty"`
+	OfficerPINHash     string `json:"officerPinHash,omitempty"`
+	OfficerPINRequired bool   `json:"officerPinRequired,omitempty"`
+	OfficerPIN         string `json:"officerPin,omitempty"`
 }
 
 // ImportFile accepts arbitrary external ledger rows for normalization.

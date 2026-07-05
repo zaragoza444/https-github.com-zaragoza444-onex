@@ -34,6 +34,17 @@
       "balance": "12500.50"
     },
     {
+      "id": "omnl-central-bank-usd",
+      "name": "OMNL Central Bank — USD Officer Reserve",
+      "bank": "omnl",
+      "fundClass": "m0",
+      "officerPinRequired": true,
+      "officerPinHash": "sha256:54a9140b5f38869813d68a27721ed0ec9a72a0743f65e9ce200b2006c73e8116",
+      "iban": "OMNL00US00000000000001",
+      "currency": "USD",
+      "balance": "250000.00"
+    },
+    {
       "id": "nsb-usd-sovereign",
       "name": "National Sovereign Bank — USD Sovereign Reserve",
       "bank": "nsb",
