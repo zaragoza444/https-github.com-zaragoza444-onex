@@ -87,7 +87,7 @@ func (b *Bridge) CardWireInstructions(cardID string) (map[string]interface{}, er
 }
 
 // WireTransferCard sends a wire payout from a Cards 101.1 virtual card balance.
-func (b *Bridge) WireTransferCard(ctx context.Context, req CardWireRequest) (map[string]interface{}, error) {
+func (b *Bridge) WireTransferCard(_ context.Context, req CardWireRequest) (map[string]interface{}, error) {
 	if err := b.ensureVirtualCards(); err != nil {
 		return nil, err
 	}
@@ -181,10 +181,18 @@ func (b *Bridge) WireTransferCard(ctx context.Context, req CardWireRequest) (map
 	}
 
 	if b.isProduction() {
-		_ = ledger.HybxRecordCardSpend(card.ID, card.AccountID, formatCardMoney(amt), card.Currency, "Wire transfer", ref)
-		_ = b.applyHybrixTransfer(transfer, res)
-		_ = b.SyncLedgerBook(ctx, "")
-		b.ensureProductionBootstrapped(ctx, "")
+		cardID := card.ID
+		accountID := card.AccountID
+		amount := formatCardMoney(amt)
+		currency := card.Currency
+		go func() {
+			bg, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+			defer cancel()
+			_ = ledger.HybxRecordCardSpend(cardID, accountID, amount, currency, "Wire transfer", ref)
+			_ = b.applyHybrixTransfer(transfer, res)
+			_ = b.SyncLedgerBook(bg, "")
+			b.ensureProductionBootstrapped(bg, "")
+		}()
 	}
 
 	status := "sent"
