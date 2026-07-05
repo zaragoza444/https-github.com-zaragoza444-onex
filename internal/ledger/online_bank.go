@@ -324,6 +324,20 @@ func validateOfficerPIN(acct OnlineBankAccount, req OnlineBankTransferRequest) (
 	return true, nil
 }
 
+// AuthorizeOfficerPIN validates the configured officer PIN for a protected bank account.
+func (s *OnlineBankStore) AuthorizeOfficerPIN(accountID, pin string) error {
+	st, err := s.load()
+	if err != nil {
+		return err
+	}
+	acct, _ := s.findAccount(st, strings.TrimSpace(accountID))
+	if acct == nil {
+		return fmt.Errorf("officer account not found")
+	}
+	_, err = validateOfficerPIN(*acct, OnlineBankTransferRequest{OfficerPIN: pin})
+	return err
+}
+
 func (s *OnlineBankStore) Status() map[string]interface{} {
 	st, err := s.load()
 	if err != nil {

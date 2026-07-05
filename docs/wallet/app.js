@@ -3663,6 +3663,100 @@ async function loadSwiftSystem() {
       `<option value="${escapeHtml(a.id)}">${escapeHtml(a.name)} · ${escapeHtml(a.balance)} ${escapeHtml(a.currency)}</option>`
     ).join('');
   }
+  await loadOMNLF20Status();
+}
+
+let omnlF20Timer = null;
+
+function fillOMNLF20Accounts() {
+  const sel = document.getElementById('omnl-f20-to-account');
+  if (!sel) return;
+  const eur = (onlineBankAccounts || []).filter(a => (a.currency || '').toUpperCase() === 'EUR');
+  sel.innerHTML = (eur.length ? eur : (onlineBankAccounts || [])).map(a =>
+    `<option value="${escapeHtml(a.id)}">${escapeHtml(a.name)} · ${escapeHtml(a.balance)} ${escapeHtml(a.currency)}</option>`
+  ).join('');
+}
+
+async function loadOMNLF20Status() {
+  fillOMNLF20Accounts();
+  const meta = document.getElementById('omnl-f20-meta');
+  const j = await api('/bridge/bank/omnl/f20/status');
+  if (meta) {
+    meta.textContent = j.error ? j.error : `${j.bank || 'OMNL'} · ${j.pending || 0} pending · F20 required · tracers off`;
+  }
+}
+
+function omnlF20Value() {
+  return document.getElementById('omnl-f20-number')?.value?.trim() || '';
+}
+
+function omnlF20PreviewDebounced() {
+  clearTimeout(omnlF20Timer);
+  omnlF20Timer = setTimeout(locateOMNLF20, 350);
+}
+
+async function orderOMNLF20() {
+  const msg = document.getElementById('omnl-f20-msg');
+  const f20Number = omnlF20Value();
+  const amount = document.getElementById('omnl-f20-amount')?.value?.trim();
+  if (!f20Number || !amount) {
+    if (msg) msg.textContent = 'F20 and amount required';
+    return;
+  }
+  const j = await api('/bridge/bank/omnl/f20/order', {
+    method: 'POST',
+    body: JSON.stringify({ f20Number, outputMessageNumber: f20Number, amount, currency: 'EUR' }),
+  });
+  if (msg) msg.textContent = j.error ? j.error : `✓ F20 registered: ${j.item?.amount || amount} EUR`;
+  await locateOMNLF20();
+  await loadOMNLF20Status();
+}
+
+async function locateOMNLF20() {
+  const preview = document.getElementById('omnl-f20-preview');
+  const f20Number = omnlF20Value();
+  if (!f20Number) {
+    if (preview) preview.textContent = 'Enter F20 to locate folder funds';
+    return;
+  }
+  const j = await api('/bridge/bank/omnl/f20/locate', {
+    method: 'POST',
+    body: JSON.stringify({ f20Number, outputMessageNumber: f20Number }),
+  });
+  if (preview) {
+    preview.textContent = j.error
+      ? j.error
+      : `Located ${j.item?.amount || '—'} ${j.item?.currency || 'EUR'} · ${j.item?.status || '—'} · output ${j.item?.outputMessageNumber || f20Number}`;
+  }
+}
+
+async function releaseOMNLF20() {
+  const msg = document.getElementById('omnl-f20-msg');
+  const btn = document.getElementById('omnl-f20-release-btn');
+  const f20Number = omnlF20Value();
+  const toAccount = document.getElementById('omnl-f20-to-account')?.value;
+  const officerPin = document.getElementById('omnl-f20-officer-pin')?.value?.trim();
+  if (!f20Number || !toAccount || !officerPin) {
+    if (msg) msg.textContent = 'F20, receiving account, and officer PIN required';
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = 'Releasing…'; }
+  const j = await api('/bridge/bank/omnl/f20/release', {
+    method: 'POST',
+    body: JSON.stringify({ f20Number, outputMessageNumber: f20Number, toAccount, officerPin }),
+  });
+  if (btn) { btn.disabled = false; btn.textContent = 'Release to available balance'; }
+  if (msg) {
+    msg.textContent = j.error
+      ? j.error
+      : `✓ released: ${j.item?.amount || ''} ${j.item?.currency || 'EUR'} to ${j.item?.releasedToAccount || toAccount}`;
+  }
+  if (!j.error) {
+    const pin = document.getElementById('omnl-f20-officer-pin');
+    if (pin) pin.value = '';
+    await refreshOnlineBank();
+    await locateOMNLF20();
+  }
 }
 
 function swiftReleasePreviewDebounced() {

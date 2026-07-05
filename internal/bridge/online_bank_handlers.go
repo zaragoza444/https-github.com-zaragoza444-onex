@@ -20,6 +20,10 @@ func (s *Server) registerBankRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/bridge/bank/account", s.handleOnlineBankAccount)
 	mux.HandleFunc("/bridge/bank/wire", s.handleOnlineBankWire)
 	mux.HandleFunc("/bridge/bank/statement", s.handleOnlineBankStatement)
+	mux.HandleFunc("/bridge/bank/omnl/f20/status", s.handleOMNLF20Status)
+	mux.HandleFunc("/bridge/bank/omnl/f20/order", s.handleOMNLF20Order)
+	mux.HandleFunc("/bridge/bank/omnl/f20/locate", s.handleOMNLF20Locate)
+	mux.HandleFunc("/bridge/bank/omnl/f20/release", s.handleOMNLF20Release)
 	s.registerHybrixBankRoutes(mux)
 	s.registerFineractBankRoutes(mux)
 }

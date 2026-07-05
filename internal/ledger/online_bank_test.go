@@ -112,6 +112,65 @@ func TestOnlineBankOfficerPINRequiredForOMNLTransfer(t *testing.T) {
 	}
 }
 
+func TestOMNLF20FolderLocateAndRelease(t *testing.T) {
+	dir := t.TempDir()
+	bank := &OnlineBankStore{path: filepath.Join(dir, "online-bank.json")}
+	if err := bank.save(&OnlineBankState{
+		Name: defaultOnlineBankName, Online: true, SWIFT: defaultOnlineBankSWIFT,
+		Accounts: []OnlineBankAccount{
+			{
+				ID: "omnl-central-bank-eur", Name: "OMNL EUR Officer", Currency: "EUR",
+				Balance: "0.00", Status: "active", OfficerPINRequired: true,
+				OfficerPINHash: hashOfficerPIN("OMNL-2026"),
+			},
+			{ID: "receiver-eur", Name: "Receiver EUR", Currency: "EUR", Balance: "100.00", Status: "active"},
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	folder := &OMNLF20FolderStore{path: filepath.Join(dir, "omnl-f20.json")}
+	if _, err := folder.Order(OMNLF20FolderOrderRequest{
+		F20Number: "F20-ABC-001", OutputMessageNumber: "F20-OTHER", Amount: "50",
+	}); err == nil || !strings.Contains(err.Error(), "must match") {
+		t.Fatalf("expected output/F20 mismatch, got %v", err)
+	}
+	item, err := folder.Order(OMNLF20FolderOrderRequest{
+		F20Number: "F20-ABC-001", OutputMessageNumber: "F20 ABC 001", Amount: "50", Currency: "EUR",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if item.Status != OMNLF20StatusArrived || item.NoTracer != true {
+		t.Fatalf("unexpected item %+v", item)
+	}
+	located, err := folder.Locate(OMNLF20FolderLocateRequest{F20Number: "F20ABC001", OutputMessageNumber: "F20-ABC-001"})
+	if err != nil || located.ID != item.ID {
+		t.Fatalf("locate %+v err %v", located, err)
+	}
+	if _, err := folder.Release(bank, OMNLF20FolderReleaseRequest{
+		F20Number: "F20-ABC-001", OutputMessageNumber: "F20ABC001", ToAccount: "receiver-eur",
+	}); err == nil || !strings.Contains(err.Error(), "officer PIN required") {
+		t.Fatalf("expected officer PIN error, got %v", err)
+	}
+	res, err := folder.Release(bank, OMNLF20FolderReleaseRequest{
+		F20Number: "F20-ABC-001", OutputMessageNumber: "F20ABC001",
+		OfficerPIN: "OMNL-2026", ToAccount: "receiver-eur",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Status != OMNLF20StatusReleased || res.Item.ReleaseTxID == "" {
+		t.Fatalf("unexpected release %+v", res)
+	}
+	acct, err := bank.GetAccount("receiver-eur")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if acct.Balance != "150" && acct.Balance != "150.00" && acct.Balance != "150.0" {
+		t.Fatalf("receiver balance %s", acct.Balance)
+	}
+}
+
 func TestOnlineBankDeposit(t *testing.T) {
 	dir := t.TempDir()
 	store := &OnlineBankStore{path: filepath.Join(dir, "online-bank.json")}
