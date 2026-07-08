@@ -22,6 +22,23 @@ Customer Integration Specifications (CIS) for **Nova Bank Online** and **Nova 1 
 - `deploy/env.nova-1-22016.example` — Combined deploy environment
 - `deploy/DEPLOY-nova-1-22016.md` — Deployment guide
 
+## PDF exports
+
+| PDF | Source |
+|-----|--------|
+| [CIS-Nova-Bank-Online-v1.pdf](./CIS-Nova-Bank-Online-v1.pdf) | Nova Bank Online CIS |
+| [CIS-Nova-1-Chain-22016-v1.pdf](./CIS-Nova-1-Chain-22016-v1.pdf) | Nova 1 Chain 22016 CIS |
+| [CIS-Nova-Integration-Matrix-v1.pdf](./CIS-Nova-Integration-Matrix-v1.pdf) | Integration matrix |
+| [README.pdf](./README.pdf) | This index |
+
+Regenerate PDFs:
+
+```bash
+python3 scripts/generate-cis-pdf.py
+```
+
+Requires `wkhtmltopdf` and Python `markdown`.
+
 ## Verify after deploy
 
 ```bash
