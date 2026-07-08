@@ -16,7 +16,9 @@
     "hybx-bank",
     "hybx-platform",
     "hybx-ethereum",
-    "hybx-bsc"
+    "hybx-bsc",
+    "hybx-nova-1",
+    "nova-1-hybx"
   ],
   "api": {
     "status": "/bridge/bank/hybx/middleware/status",
