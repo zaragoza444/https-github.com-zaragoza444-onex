@@ -1,0 +1,55 @@
+{
+  "accounts": [
+    {
+      "id": "nova-usd-cash",
+      "name": "Nova Bank — M0 USD Cash & Reserves",
+      "bank": "nova",
+      "fundClass": "m0",
+      "iban": "NV00M0USD00000000000001",
+      "currency": "USD",
+      "balance": "150000.00"
+    },
+    {
+      "id": "nova-eur-vault",
+      "name": "Nova Bank — M0 EUR Vault",
+      "moneySupply": "m0",
+      "iban": "DE89370400440532013000",
+      "currency": "EUR",
+      "balance": "75000.00"
+    },
+    {
+      "id": "nova-usd-checking",
+      "name": "Nova Bank Online — USD Checking",
+      "fundClass": "m1",
+      "iban": "NV00M1USD00000000000001",
+      "currency": "USD",
+      "balance": "25000.00"
+    },
+    {
+      "id": "nova-eur-transactional",
+      "name": "Nova Bank Online — EUR Transactional",
+      "moneySupply": "m1",
+      "iban": "FR1420041010050500013M02606",
+      "currency": "EUR",
+      "balance": "12500.50"
+    },
+    {
+      "id": "nova-usd-sovereign",
+      "name": "Nova Bank — USD Sovereign Reserve",
+      "bank": "nova",
+      "fundClass": "nsb",
+      "iban": "NV00US00000000000001",
+      "currency": "USD",
+      "balance": "50000.00"
+    },
+    {
+      "id": "nova-gbp-sovereign",
+      "name": "Nova Bank — GBP Sovereign",
+      "bank": "nova",
+      "fundClass": "nsb",
+      "iban": "GB29BARC20001512345678",
+      "currency": "GBP",
+      "balance": "32000.00"
+    }
+  ]
+}

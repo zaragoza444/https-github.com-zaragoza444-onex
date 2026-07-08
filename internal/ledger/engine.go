@@ -61,6 +61,7 @@ func (c Config) Status() map[string]interface{} {
 		dc = "bsc"
 	}
 	dbisRPC := strings.TrimSpace(legacy.EnvOrLegacy("DBIS138_RPC_URL", "DBIS138_RPC_URL"))
+	nova1RPC := strings.TrimSpace(legacy.EnvOrLegacy("NOVA1_RPC_URL", "NOVA1_RPC_URL"))
 	return map[string]interface{}{
 		"service":      "onex-ledger-middleware",
 		"mode":         c.Mode,
@@ -83,6 +84,8 @@ func (c Config) Status() map[string]interface{} {
 		"defaultBridgeChain": dc,
 		"dbis138Rpc":         dbisRPC != "",
 		"dbis138Configured":  dbisRPC != "",
+		"nova1Rpc":           nova1RPC != "",
+		"nova1Configured":  nova1RPC != "",
 	}
 }
 
