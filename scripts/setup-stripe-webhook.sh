@@ -6,7 +6,7 @@
 #   bash scripts/setup-stripe-webhook.sh
 set -euo pipefail
 
-DOMAIN="${ONEX_PRODUCTION_DOMAIN:-blockchainsystem.com}"
+DOMAIN="${ONEX_PRODUCTION_DOMAIN:-zblockchainsystem.com}"
 SECRET_KEY="${ONEX_STRIPE_SECRET_KEY:-}"
 ALT_DOMAIN="${ONEX_ALT_DOMAIN:-novatrustee.digital}"
 

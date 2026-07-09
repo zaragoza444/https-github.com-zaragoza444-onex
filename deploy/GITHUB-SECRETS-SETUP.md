@@ -2,7 +2,7 @@
 
 | Item | Value |
 |------|-------|
-| Domain | **blockchainsystem.com** |
+| Domain | **zblockchainsystem.com** |
 | GitHub | **zaragoza444** |
 | Gitea | **Zaragoza** @ git.anakatech.llc |
 | VPS | **51.75.64.28** |
@@ -36,20 +36,20 @@ bash ~/onex/scripts/setup-stripe-webhook.sh
 
 Or manually in Stripe Dashboard:
 
-- URL: `https://blockchainsystem.com/bridge/payments/webhook`
+- URL: `https://zblockchainsystem.com/bridge/payments/webhook`
 - Events: `payment_intent.succeeded`, `payment_intent.payment_failed`
 
 Then add `whsec_...` as GitHub secret `ONEX_STRIPE_WEBHOOK_SECRET` and re-run the workflow.
 
 ## DNS (required for HTTPS)
 
-Point `onexproduction.com` A record → `51.75.64.28` (remove parking IPs).
+Point `zblockchainsystem.com` A record → `51.75.64.28` (currently may show `76.53.10.34`).
 
 ## Verify
 
 ```bash
 curl -s http://51.75.64.28:9338/bridge/payments/status
-curl -s https://onexproduction.com/payments/
+curl -s https://zblockchainsystem.com/payments/
 ```
 
 ## Immediate fix (no GitHub — VPS web console)
