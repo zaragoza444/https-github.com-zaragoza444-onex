@@ -34,6 +34,7 @@
 | 8 | Virtual card spend | Nova Bank debit | Card authorization | `/bridge/cards/*` | internal debit |
 | 9 | Token platform | Nova 1 ERC-20 | Deploy / wrap | `POST /bridge/platform/deploy` | on-chain |
 | 10 | Nova Bank M0/M1/NSB | Liquidity pool | Fund class routing | Fiat settlement middleware | `vault` / pool |
+| 11 | Card payer (Visa/MC/Amex) | Nominated bank account | Donation / payment / collection | `POST /bridge/payments/*` + `/payments/` portal | `internal` or `real_fiat` |
 
 ---
 

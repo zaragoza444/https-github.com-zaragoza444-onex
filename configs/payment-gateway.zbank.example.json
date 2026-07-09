@@ -1,0 +1,47 @@
+{
+  "framework": "zbank",
+  "displayName": "Z Bank Payment Gateway",
+  "provider": "mock",
+  "defaultSettlementDestination": "zbank-usd-main",
+  "processingFee": {
+    "enabled": false,
+    "percent": "1.25",
+    "fixed": "0.25",
+    "currency": "USD"
+  },
+  "acceptedCards": ["visa", "mastercard", "amex"],
+  "settlementDestinations": [
+    {
+      "id": "zbank-usd-main",
+      "label": "Z Bank — USD Main Account",
+      "type": "internal",
+      "accountId": "nova-usd-checking",
+      "currency": "USD",
+      "rail": "internal",
+      "active": true
+    },
+    {
+      "id": "lloyds-gbp",
+      "label": "Lloyds Bank — GBP Collections",
+      "type": "external",
+      "bankName": "Lloyds Bank",
+      "swift": "LOYDGB2L",
+      "currency": "GBP",
+      "rail": "fps",
+      "country": "GB",
+      "active": true
+    }
+  ],
+  "pages": [
+    {
+      "slug": "pay",
+      "flow": "payment",
+      "title": "Z Bank Secure Payment",
+      "description": "Pay securely with Visa, Mastercard, or Amex.",
+      "settlementDestination": "zbank-usd-main",
+      "currency": "USD",
+      "allowCustomAmount": true,
+      "active": true
+    }
+  ]
+}

@@ -356,6 +356,55 @@ See `CIS-Nova-Integration-Matrix-v1.md` for Nova 1 Chain 22016 settlement paths.
 }
 ```
 
+---
+
+## 12. Payment Gateway (card acquiring)
+
+Nova Bank Online includes an integrated **Payment Gateway** for Visa, Mastercard, and American Express via a certified acquirer/processor adapter (Stripe in production, mock in development).
+
+| Item | Value |
+|------|-------|
+| Portal URL | `/payments/` (hosted on `onex-bridge`) |
+| Framework | `nova` (default) or `zbank` |
+| Config file | `configs/payment-gateway.example.json` |
+| Flows | `donation`, `payment`, `collection` |
+| Settlement | Internal Nova Bank accounts or external nominated banks (Wells Fargo, ANZ, Citibank, Lloyds, etc.) |
+
+### 12.1 API routes
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/bridge/payments/status` | Gateway status |
+| GET | `/bridge/payments/config` | Public config (framework, fees, Stripe publishable key) |
+| GET | `/bridge/payments/pages` | Active hosted pages |
+| GET | `/bridge/payments/page?slug=` | Single page config |
+| POST | `/bridge/payments/session` | Create payment session |
+| POST | `/bridge/payments/confirm` | Confirm payment (mock / post-3DS) |
+| POST | `/bridge/payments/webhook` | Processor webhook (Stripe signature verified) |
+
+### 12.2 Settlement routing
+
+Each payment page references a `settlementDestination` ID. Destinations may be:
+
+- **internal** — credit a Nova Bank Online ledger account immediately
+- **external** — credit gateway clearing account; payout to nominated bank via acquiring settlement (subject to processor and regulatory rules)
+
+Optional **processing fees** are configurable globally or per-page (`percent` + `fixed`).
+
+### 12.3 Environment variables
+
+| Variable | Purpose |
+|----------|---------|
+| `ONEX_PAYMENT_GATEWAY` | Enable gateway (`1`) |
+| `ONEX_PAYMENT_GATEWAY_FILE` | Path to gateway config JSON |
+| `ONEX_PAYMENT_GATEWAY_FRAMEWORK` | `nova` or `zbank` |
+| `ONEX_PAYMENT_GATEWAY_PROVIDER` | `mock` or `stripe` |
+| `ONEX_STRIPE_SECRET_KEY` | Stripe secret key |
+| `ONEX_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key |
+| `ONEX_STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
+
+---
+
 ### B. Related documents
 
 | Document | Path |

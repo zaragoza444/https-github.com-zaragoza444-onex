@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Secure online payments — Visa, Mastercard, Amex">
+  <title>Payment Gateway</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="portal">
+    <header class="header">
+      <div class="brand">
+        <div class="brand-icon">◆</div>
+        <div>
+          <h1 id="gateway-name">Payment Gateway</h1>
+          <p class="subtitle" id="gateway-framework">Secure card payments</p>
+        </div>
+      </div>
+      <div class="card-badges">
+        <span class="badge visa">Visa</span>
+        <span class="badge mc">Mastercard</span>
+        <span class="badge amex">Amex</span>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <section id="page-list" class="panel hidden">
+        <h2>Available payment pages</h2>
+        <ul id="pages-list" class="pages-list"></ul>
+      </section>
+
+      <section id="payment-form" class="panel">
+        <div class="flow-tag" id="flow-tag">Payment</div>
+        <h2 id="page-title">Secure Payment</h2>
+        <p id="page-desc" class="desc"></p>
+
+        <form id="pay-form" autocomplete="off">
+          <div class="field" id="amount-section">
+            <label>Amount</label>
+            <div id="suggested-amounts" class="amount-chips"></div>
+            <div class="amount-input-wrap">
+              <span class="currency-symbol" id="currency-symbol">$</span>
+              <input type="number" id="amount" name="amount" min="1" step="0.01" placeholder="0.00" required>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="payer-name">Name on card</label>
+            <input type="text" id="payer-name" name="payerName" placeholder="Full name" required>
+          </div>
+
+          <div class="field">
+            <label for="payer-email">Email (receipt)</label>
+            <input type="email" id="payer-email" name="payerEmail" placeholder="you@example.com">
+          </div>
+
+          <div class="field">
+            <label for="reference">Reference / invoice #</label>
+            <input type="text" id="reference" name="reference" placeholder="Optional">
+          </div>
+
+          <div class="field">
+            <label for="card-brand">Card type</label>
+            <select id="card-brand" name="cardBrand">
+              <option value="visa">Visa</option>
+              <option value="mastercard">Mastercard</option>
+              <option value="amex">American Express</option>
+            </select>
+          </div>
+
+          <div id="mock-card-fields">
+            <div class="field">
+              <label for="card-number">Card number</label>
+              <input type="text" id="card-number" inputmode="numeric" maxlength="19" placeholder="4242 4242 4242 4242" autocomplete="cc-number">
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="card-exp">Expiry</label>
+                <input type="text" id="card-exp" placeholder="MM/YY" maxlength="5" autocomplete="cc-exp">
+              </div>
+              <div class="field">
+                <label for="card-cvc">CVC</label>
+                <input type="text" id="card-cvc" inputmode="numeric" maxlength="4" placeholder="123" autocomplete="cc-csc">
+              </div>
+            </div>
+          </div>
+
+          <div id="stripe-element" class="hidden"></div>
+
+          <div class="fee-summary" id="fee-summary">
+            <div class="fee-row"><span>Subtotal</span><span id="fee-subtotal">—</span></div>
+            <div class="fee-row fee-processing hidden" id="fee-processing-row"><span>Processing fee</span><span id="fee-processing">—</span></div>
+            <div class="fee-row total"><span>Total</span><span id="fee-total">—</span></div>
+          </div>
+
+          <div class="settlement-info" id="settlement-info"></div>
+
+          <button type="submit" class="btn-primary" id="submit-btn">
+            <span id="submit-label">Pay securely</span>
+          </button>
+          <p class="secure-note">🔒 TLS encrypted · PCI-DSS compliant processing via certified acquirer</p>
+        </form>
+      </section>
+
+      <section id="success-panel" class="panel hidden success">
+        <div class="success-icon">✓</div>
+        <h2>Payment successful</h2>
+        <p id="success-message">Thank you. Your payment has been processed.</p>
+        <dl class="receipt" id="receipt-details"></dl>
+        <button type="button" class="btn-secondary" onclick="location.reload()">Make another payment</button>
+      </section>
+
+      <section id="error-panel" class="panel hidden error">
+        <h2>Payment failed</h2>
+        <p id="error-message"></p>
+        <button type="button" class="btn-secondary" onclick="hideError()">Try again</button>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Powered by OneX Bridge · Nova Bank / Z Bank framework</p>
+    </footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
