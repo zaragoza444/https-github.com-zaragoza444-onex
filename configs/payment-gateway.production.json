@@ -1,0 +1,131 @@
+{
+  "framework": "nova",
+  "displayName": "Nova Bank Payment Gateway",
+  "provider": "stripe",
+  "defaultSettlementDestination": "nova-usd-checking",
+  "processingFee": {
+    "enabled": false,
+    "percent": "1.5",
+    "fixed": "0.30",
+    "currency": "USD"
+  },
+  "acceptedCards": ["visa", "mastercard", "amex"],
+  "settlementDestinations": [
+    {
+      "id": "nova-usd-checking",
+      "label": "Nova Bank Online — USD Checking",
+      "type": "internal",
+      "accountId": "nova-usd-checking",
+      "currency": "USD",
+      "rail": "internal",
+      "active": true
+    },
+    {
+      "id": "nova-eur-transactional",
+      "label": "Nova Bank Online — EUR Transactional",
+      "type": "internal",
+      "accountId": "nova-eur-transactional",
+      "currency": "EUR",
+      "rail": "internal",
+      "active": true
+    },
+    {
+      "id": "nova-gbp-sovereign",
+      "label": "Nova Bank — GBP Sovereign",
+      "type": "internal",
+      "accountId": "nova-gbp-sovereign",
+      "currency": "GBP",
+      "rail": "internal",
+      "active": true
+    },
+    {
+      "id": "wells-fargo-usd",
+      "label": "Wells Fargo — USD Operating",
+      "type": "external",
+      "bankName": "Wells Fargo",
+      "swift": "WFBIUS6S",
+      "currency": "USD",
+      "rail": "ach",
+      "country": "US",
+      "active": true
+    },
+    {
+      "id": "anz-aud",
+      "label": "ANZ — AUD Collections",
+      "type": "external",
+      "bankName": "ANZ Bank",
+      "swift": "ANZBAU3M",
+      "currency": "AUD",
+      "rail": "swift",
+      "country": "AU",
+      "active": true
+    },
+    {
+      "id": "citibank-usd",
+      "label": "Citibank — USD Treasury",
+      "type": "external",
+      "bankName": "Citibank",
+      "swift": "CITIUS33",
+      "currency": "USD",
+      "rail": "wire",
+      "country": "US",
+      "active": true
+    },
+    {
+      "id": "lloyds-gbp",
+      "label": "Lloyds Bank — GBP Collections",
+      "type": "external",
+      "bankName": "Lloyds Bank",
+      "swift": "LOYDGB2L",
+      "currency": "GBP",
+      "rail": "fps",
+      "country": "GB",
+      "active": true
+    }
+  ],
+  "pages": [
+    {
+      "slug": "donate",
+      "flow": "donation",
+      "title": "Support Our Mission",
+      "description": "Secure card donations. Visa, Mastercard, and American Express accepted.",
+      "settlementDestination": "nova-usd-checking",
+      "currency": "USD",
+      "suggestedAmounts": [25, 50, 100, 250, 500],
+      "allowCustomAmount": true,
+      "minAmount": "5.00",
+      "referencePrefix": "DON",
+      "active": true
+    },
+    {
+      "slug": "invoice",
+      "flow": "payment",
+      "title": "Pay Your Invoice",
+      "description": "Pay outstanding invoices securely online.",
+      "settlementDestination": "nova-usd-checking",
+      "currency": "USD",
+      "allowCustomAmount": true,
+      "minAmount": "1.00",
+      "processingFee": {
+        "enabled": true,
+        "percent": "1.5",
+        "fixed": "0.30",
+        "currency": "USD"
+      },
+      "referencePrefix": "INV",
+      "active": true
+    },
+    {
+      "slug": "collect",
+      "flow": "collection",
+      "title": "General Collections",
+      "description": "Make a payment to our general collections account.",
+      "settlementDestination": "wells-fargo-usd",
+      "currency": "USD",
+      "suggestedAmounts": [100, 500, 1000],
+      "allowCustomAmount": true,
+      "referencePrefix": "COL",
+      "active": true
+    }
+  ]
+}

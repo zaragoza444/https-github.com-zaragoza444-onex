@@ -6,6 +6,7 @@
 |-----------|-------|------------|
 | Marketing site | http://127.0.0.1:8080/ | https://onexproduction.com/ |
 | Wallet + DeFi | http://127.0.0.1:9338/wallet/ | https://onexproduction.com/wallet/ |
+| **Payment Gateway** | http://127.0.0.1:9338/payments/ | https://onexproduction.com/payments/ |
 | Online Bank + Virtual cards | Wallet → Bank tab | Same |
 | Real Ledger | Wallet → Ledger tab | Same |
 | GitHub Pages | — | https://zaragoza444.github.io/onex/ |
