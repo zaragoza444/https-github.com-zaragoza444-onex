@@ -1,4 +1,11 @@
-# GitHub Secrets — add these to go live remotely
+# GitHub Secrets — blockchainsystem.com production
+
+| Item | Value |
+|------|-------|
+| Domain | **blockchainsystem.com** |
+| GitHub | **zaragoza444** |
+| Gitea | **Zaragoza** @ git.anakatech.llc |
+| VPS | **51.75.64.28** |
 
 Repo: **https://github.com/zaragoza444/https-github.com-zaragoza444-onex**
 
@@ -29,7 +36,7 @@ bash ~/onex/scripts/setup-stripe-webhook.sh
 
 Or manually in Stripe Dashboard:
 
-- URL: `https://onexproduction.com/bridge/payments/webhook`
+- URL: `https://blockchainsystem.com/bridge/payments/webhook`
 - Events: `payment_intent.succeeded`, `payment_intent.payment_failed`
 
 Then add `whsec_...` as GitHub secret `ONEX_STRIPE_WEBHOOK_SECRET` and re-run the workflow.

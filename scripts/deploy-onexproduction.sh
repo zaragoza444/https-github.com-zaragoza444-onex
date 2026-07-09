@@ -2,7 +2,7 @@
 # Deploy OneX Production Platform (onexproduction.com or ONEX_PRODUCTION_DOMAIN).
 set -euo pipefail
 
-DOMAIN="${ONEX_PRODUCTION_DOMAIN:-onexproduction.com}"
+DOMAIN="${ONEX_PRODUCTION_DOMAIN:-blockchainsystem.com}"
 EMAIL="${CERTBOT_EMAIL:-}"
 
 echo "==> DNS check for $DOMAIN"

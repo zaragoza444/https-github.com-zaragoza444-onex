@@ -8,7 +8,7 @@
 set -euo pipefail
 
 REPO="${ONEX_REPO:-$HOME/onex}"
-ENV_SRC="${ENV_SRC:-$REPO/deploy/env.production.live.example}"
+ENV_SRC="${ENV_SRC:-$REPO/deploy/env.blockchainsystem.com.example}"
 ENV_DEST="${ENV_DEST:-/etc/onex/onex.env}"
 DOCKER_ENV="${DOCKER_ENV:-$REPO/.env}"
 

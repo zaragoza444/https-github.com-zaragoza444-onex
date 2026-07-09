@@ -18,6 +18,7 @@ REPO="${ONEX_REPO:-$HOME/onex}"
 GITHUB="${GITHUB_REPO:-https://github.com/zaragoza444/https-github.com-zaragoza444-onex.git}"
 BRANCH="main"
 HOST_IP="${ONEX_PUBLIC_HOST:-51.75.64.28}"
+DOMAIN="${ONEX_PRODUCTION_DOMAIN:-blockchainsystem.com}"
 
 echo "=============================================="
 echo " OneX Payment Gateway — Production Bootstrap"
@@ -52,7 +53,7 @@ bash "$REPO/scripts/apply-production-env.sh" 2>/dev/null || {
   ENV_FILE="/etc/onex/onex.env"
   sudo mkdir -p /etc/onex
   if [ ! -f "$ENV_FILE" ]; then
-    sudo cp "$REPO/deploy/env.production.live.example" "$ENV_FILE"
+    sudo cp "$REPO/deploy/env.blockchainsystem.com.example" "$ENV_FILE"
     KEY="$(openssl rand -base64 32 | tr -d '/+=' | head -c 32)"
     sudo sed -i "s/CHANGE_ME_LONG_RANDOM_SECRET/$KEY/" "$ENV_FILE"
   fi
@@ -151,5 +152,7 @@ if ! sudo grep -q 'sk_live_' /etc/onex/onex.env 2>/dev/null || sudo grep -q 'sk_
   echo "  bash scripts/setup-stripe-webhook.sh"
 fi
 echo "HTTPS (after DNS -> ${HOST_IP}):"
-echo "  https://onexproduction.com/payments/"
+echo "  https://${DOMAIN}/payments/"
+echo "  https://${DOMAIN}/payments/?page=donate"
+echo "GitHub: zaragoza444 | Gitea: git.anakatech.llc/Zaragoza/onex"
 echo "=============================================="
