@@ -1,73 +1,152 @@
-# Payment Gateway — Production Go-Live Checklist
+# Payment Gateway — Production Setup Walkthrough
 
-## Status (automated preflight)
+**Recommended primary domain:** `onexproduction.com`  
+**VPS IP:** `51.75.64.28`
 
-| Check | Expected | Notes |
-|-------|----------|-------|
-| Code on `main` | ✓ | Payment gateway merged |
-| VPS node `:8545` | ✓ | `51.75.64.28` responds |
-| VPS bridge `:9338` | **Restart required** | Connection reset — run go-live script |
-| DNS `onexproduction.com` | **Fix required** | Currently parking IPs, not VPS |
-| DNS `novatrustee.digital` | **Fix required** | Currently parking IPs, not VPS |
-| Stripe live keys | **Your action** | Add to server env for real cards |
+---
 
-## One-shot VPS deploy (web console)
+## Step 1 — Fix DNS (5–30 min propagation)
 
-Log into your VPS provider web console as `ubuntu`, then:
+At your domain registrar, **delete** parking A records and add:
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/zaragoza444/https-github.com-zaragoza444-onex/main/scripts/go-live-payment-gateway.sh | bash
-```
+| Host | Type | Value |
+|------|------|-------|
+| `@` (onexproduction.com) | A | `51.75.64.28` |
+| `www` | A | `51.75.64.28` |
+| `@` (novatrustee.digital) | A | `51.75.64.28` |
 
-Or if repo already cloned:
+Verify:
 
 ```bash
-cd ~/onex && git pull origin main && bash scripts/go-live-payment-gateway.sh
+dig +short onexproduction.com
+# Must show only: 51.75.64.28
 ```
 
-## DNS (required for HTTPS domains)
+---
 
-Point **one** A record per domain to your VPS IPv4 (`51.75.64.28`):
+## Step 2 — Stripe account (live mode)
 
-| Domain | Type | Value |
-|--------|------|-------|
-| `onexproduction.com` | A | `51.75.64.28` |
-| `www.onexproduction.com` | A | `51.75.64.28` |
-| `novatrustee.digital` | A | `51.75.64.28` |
+1. Log in to [Stripe Dashboard](https://dashboard.stripe.com)
+2. Toggle **Test mode OFF** (live mode)
+3. Go to **Developers → API keys**
+4. Copy:
+   - **Secret key** → `sk_live_...`
+   - **Publishable key** → `pk_live_...`
 
-Remove parking IPs (`107.161.23.204`, `198.251.81.30`, `209.141.38.71`).
+Ensure Visa, Mastercard, and American Express are enabled under **Settings → Payment methods**.
 
-Then TLS + nginx:
+---
+
+## Step 3 — VPS env file
+
+SSH or open **VPS web console** as `ubuntu`, then:
+
+```bash
+cd ~/onex || git clone https://github.com/zaragoza444/https-github.com-zaragoza444-onex.git ~/onex
+cd ~/onex && git pull origin main
+
+cp deploy/env.production.live.example /tmp/onex.env
+nano /tmp/onex.env   # paste your Stripe keys, save
+```
+
+**Values to replace in the file:**
+
+| Variable | Where to get it |
+|----------|-----------------|
+| `ONEX_API_KEY` | Auto-generated on deploy, or any long random string |
+| `ONEX_STRIPE_SECRET_KEY` | Stripe → Developers → API keys → Secret key |
+| `ONEX_STRIPE_PUBLISHABLE_KEY` | Stripe → Developers → API keys → Publishable key |
+| `ONEX_STRIPE_WEBHOOK_SECRET` | Step 4 below (`whsec_...`) |
+
+**One-command deploy** (after exporting Stripe keys in your shell):
+
+```bash
+export ONEX_STRIPE_SECRET_KEY=sk_live_YOUR_KEY
+export ONEX_STRIPE_PUBLISHABLE_KEY=pk_live_YOUR_KEY
+export ONEX_STRIPE_WEBHOOK_SECRET=whsec_YOUR_SECRET
+bash scripts/apply-production-env.sh
+```
+
+---
+
+## Step 4 — Stripe webhook
+
+### Option A — Script (recommended)
+
+After DNS points to your VPS and bridge is running:
+
+```bash
+export ONEX_STRIPE_SECRET_KEY=sk_live_YOUR_KEY
+export ONEX_PRODUCTION_DOMAIN=onexproduction.com
+bash scripts/setup-stripe-webhook.sh
+```
+
+Copy the printed `ONEX_STRIPE_WEBHOOK_SECRET=whsec_...` into your env file, then restart bridge.
+
+### Option B — Stripe Dashboard (manual)
+
+1. [Stripe → Webhooks](https://dashboard.stripe.com/webhooks) → **+ Add endpoint**
+2. **Endpoint URL:**
+
+   ```
+   https://onexproduction.com/bridge/payments/webhook
+   ```
+
+3. **Events:**
+   - `payment_intent.succeeded`
+   - `payment_intent.payment_failed`
+
+4. Save → open the endpoint → **Signing secret** → Reveal → copy `whsec_...`
+5. Add to env:
+
+   ```bash
+   ONEX_STRIPE_WEBHOOK_SECRET=whsec_...
+   ```
+
+6. Restart:
+
+   ```bash
+   sudo systemctl restart onex-bridge
+   # Docker: docker compose -f docker-compose.prod.yml restart onex-bridge
+   ```
+
+### Test webhook (Stripe Dashboard)
+
+Send a test `payment_intent.succeeded` event. Expect HTTP **200** from your endpoint.
+
+---
+
+## Step 5 — TLS / HTTPS (after DNS propagates)
 
 ```bash
 cd ~/onex
-ONEX_PRODUCTION_DOMAIN=onexproduction.com CERTBOT_EMAIL=hello@onexproduction.com ./scripts/deploy-onexproduction.sh
+ONEX_PRODUCTION_DOMAIN=onexproduction.com \
+CERTBOT_EMAIL=hello@onexproduction.com \
+./scripts/deploy-onexproduction.sh
 ```
 
-## Stripe (live Visa / Mastercard / Amex)
+---
 
-Add to `/etc/onex/onex.env` or `~/onex/.env`:
+## Step 6 — Verify live
 
 ```bash
-ONEX_STRIPE_SECRET_KEY=sk_live_...
-ONEX_STRIPE_PUBLISHABLE_KEY=pk_live_...
-ONEX_STRIPE_WEBHOOK_SECRET=whsec_...
+curl -s https://onexproduction.com/bridge/payments/status | python3 -m json.tool
 ```
 
-Stripe Dashboard → Webhooks → endpoint:
+Expected:
 
-`https://onexproduction.com/bridge/payments/webhook`
-
-Events: `payment_intent.succeeded`, `payment_intent.payment_failed`
-
-Restart bridge:
-
-```bash
-sudo systemctl restart onex-bridge
-# or: docker compose -f docker-compose.prod.yml restart onex-bridge
+```json
+{
+  "enabled": true,
+  "framework": "nova",
+  "provider": "stripe",
+  "stripeConfigured": true,
+  "stripeLiveReady": true,
+  "acceptedCards": ["visa", "mastercard", "amex"]
+}
 ```
 
-## Live URLs (after DNS + bridge restart)
+Open in browser:
 
 | Page | URL |
 |------|-----|
@@ -75,18 +154,35 @@ sudo systemctl restart onex-bridge
 | Donate | https://onexproduction.com/payments/?page=donate |
 | Invoice | https://onexproduction.com/payments/?page=invoice |
 | Collect | https://onexproduction.com/payments/?page=collect |
-| API | https://onexproduction.com/bridge/payments/status |
 
-IP-only (until DNS fixed): http://51.75.64.28:9338/payments/
+---
 
-## GitHub Actions deploy (optional)
+## GitHub Actions (optional — no manual SSH)
 
-1. Repo → Settings → Secrets → add `SSH_PASS` (ubuntu VPS password)
-2. Actions → **Deploy payment gateway (production VPS)** → Run workflow
+Add these **Repository secrets** (Settings → Secrets → Actions):
 
-## Verify
+| Secret | Value |
+|--------|-------|
+| `SSH_PASS` | Ubuntu VPS password |
+| `ONEX_STRIPE_SECRET_KEY` | `sk_live_...` |
+| `ONEX_STRIPE_PUBLISHABLE_KEY` | `pk_live_...` |
+| `ONEX_STRIPE_WEBHOOK_SECRET` | `whsec_...` |
 
-```bash
-curl -s http://51.75.64.28:9338/bridge/payments/status
-curl -s -o /dev/null -w "%{http_code}\n" http://51.75.64.28:9338/payments/
-```
+Then: **Actions → Deploy payment gateway (production VPS) → Run workflow**
+
+---
+
+## Settlement destinations
+
+Configured in `configs/payment-gateway.production.json`. To route to a specific bank, edit `settlementDestinations` and restart bridge — no code changes needed.
+
+---
+
+## Support checklist
+
+- [ ] DNS → `51.75.64.28`
+- [ ] Bridge running (`curl http://51.75.64.28:9338/health`)
+- [ ] Stripe live keys in env
+- [ ] Webhook registered + `whsec_` in env
+- [ ] `stripeLiveReady: true` in status API
+- [ ] Test donation on `/payments/?page=donate`
