@@ -22,6 +22,7 @@ func (s *Server) registerBankRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/bridge/bank/statement", s.handleOnlineBankStatement)
 	s.registerHybrixBankRoutes(mux)
 	s.registerFineractBankRoutes(mux)
+	s.registerPaymentGatewayRoutes(mux)
 }
 
 func (b *Bridge) onlineBank() *ledger.OnlineBankStore {
@@ -48,6 +49,7 @@ func (b *Bridge) OnlineBankStatus() map[string]interface{} {
 	st["virtualCards"] = b.VirtualCardsStatus()
 	st["cashCode"] = b.CashCodeStatus()
 	st["swift"] = b.SwiftSystemStatus()
+	st["paymentGateway"] = ledger.LoadPaymentGatewayConfig().Status()
 	return st
 }
 
