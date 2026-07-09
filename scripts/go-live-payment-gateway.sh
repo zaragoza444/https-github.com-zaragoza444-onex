@@ -59,10 +59,29 @@ EOF
   docker compose -f docker-compose.prod.yml --profile proxy up -d --build onex-bridge
   sleep 8
 else
-  echo "==> systemd onex-bridge restart"
+  echo "==> systemd onex-bridge (rebuild + restart)"
+  sudo tee /etc/systemd/system/onex-bridge.service >/dev/null <<UNIT
+[Unit]
+Description=OneX Wallet Bridge + Payment Gateway
+After=network-online.target onexd.service
+Wants=onexd.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=${REPO}
+EnvironmentFile=/etc/onex/onex.env
+ExecStart=${REPO}/bin/onex-bridge -node http://127.0.0.1:8545 -listen 0.0.0.0:9338 -config ${HOME}/.onex/bridge.json -wallet ${HOME}/.onex/wallets/default.json
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+UNIT
   sudo systemctl daemon-reload
+  sudo systemctl enable onex-bridge
   sudo systemctl restart onex-bridge || sudo systemctl start onex-bridge
-  sleep 5
+  sleep 6
 fi
 
 HOST="${ONEX_PUBLIC_HOST:-$(curl -sf --max-time 5 https://api.ipify.org || echo 127.0.0.1)}"
