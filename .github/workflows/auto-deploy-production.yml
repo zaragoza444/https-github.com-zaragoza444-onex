@@ -3,13 +3,6 @@ name: Auto-deploy production (zblockchainsystem.com)
 on:
   push:
     branches: [main]
-    paths:
-      - 'internal/**'
-      - 'cmd/**'
-      - 'configs/**'
-      - 'deploy/**'
-      - 'scripts/**'
-      - '.github/workflows/auto-deploy-production.yml'
   workflow_dispatch:
 
 jobs:
