@@ -1,0 +1,46 @@
+name: Deploy payment gateway (production VPS)
+
+on:
+  workflow_dispatch:
+    inputs:
+      host:
+        description: VPS IP or hostname
+        required: true
+        default: "51.75.64.28"
+      branch:
+        description: Git branch to deploy
+        required: true
+        default: "main"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ inputs.host }}
+          username: ubuntu
+          password: ${{ secrets.SSH_PASS }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            REPO="$HOME/onex"
+            if [ ! -d "$REPO/.git" ]; then
+              git clone https://github.com/zaragoza444/https-github.com-zaragoza444-onex.git "$REPO"
+            fi
+            cd "$REPO"
+            git fetch origin ${{ inputs.branch }}
+            git checkout ${{ inputs.branch }}
+            git reset --hard "origin/${{ inputs.branch }}"
+            bash scripts/go-live-payment-gateway.sh
+            curl -sf http://127.0.0.1:9338/bridge/payments/status
+            curl -sf -o /dev/null -w "payments portal: %{http_code}\n" http://127.0.0.1:9338/payments/
+
+      - name: Verify public bridge
+        run: |
+          sleep 5
+          curl -sf --max-time 20 "http://${{ inputs.host }}:9338/bridge/payments/status" || echo "WARN: public bridge check failed — open port 9338 on firewall"
