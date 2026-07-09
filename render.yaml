@@ -44,7 +44,23 @@ services:
         value: /bridge-data
       - key: ONEX_LEDGER_MODE
         value: production
+      - key: ONEX_ONLINE_BANK
+        value: "1"
+      - key: ONEX_PAYMENT_GATEWAY
+        value: "1"
+      - key: ONEX_PAYMENT_GATEWAY_FILE
+        value: configs/payment-gateway.production.json
+      - key: ONEX_PAYMENT_GATEWAY_FRAMEWORK
+        value: nova
+      - key: ONEX_PAYMENT_GATEWAY_PROVIDER
+        value: stripe
+      - key: ONEX_BANK_LEDGER_FILE
+        value: configs/bank-ledger.nova.example.json
       - key: ONEX_API_KEY
         sync: false
-      - key: ONEX_CORS_ORIGINS
-        value: https://git.anakatech.llc,https://zaragoza444.github.io,https://onexproduction.com
+      - key: ONEX_STRIPE_SECRET_KEY
+        sync: false
+      - key: ONEX_STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: ONEX_STRIPE_WEBHOOK_SECRET
+        sync: false

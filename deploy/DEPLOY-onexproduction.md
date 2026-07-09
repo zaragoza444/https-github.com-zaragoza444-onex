@@ -31,6 +31,10 @@ Or: `CERTBOT_EMAIL=you@example.com ./scripts/deploy-onexproduction.sh`
 | Service | URL |
 |---------|-----|
 | Wallet | https://onexproduction.com/wallet/ |
+| **Payment Gateway** | https://onexproduction.com/payments/ |
+| Donations | https://onexproduction.com/payments/?page=donate |
+| Invoice payments | https://onexproduction.com/payments/?page=invoice |
+| Collections | https://onexproduction.com/payments/?page=collect |
 | Marketing site | https://onexproduction.com/ |
 | Contact | https://onexproduction.com/contact.html |
 | Business email | hello@onexproduction.com · business@onexproduction.com |
@@ -50,6 +54,6 @@ Set GitHub variable `ONEX_BRIDGE_PUBLIC_URL=https://onexproduction.com` so Pages
 
 ```bash
 curl -s https://onexproduction.com/bridge/production/status
-curl -s https://onexproduction.com/bridge/ledger/status
-curl -s https://onexproduction.com/bridge/platform/status
+curl -s https://onexproduction.com/bridge/payments/status
+curl -s -o /dev/null -w "%{http_code}\n" https://onexproduction.com/payments/
 ```

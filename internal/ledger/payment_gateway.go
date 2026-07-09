@@ -204,6 +204,9 @@ func LoadPaymentGatewayConfig() PaymentGatewayConfig {
 	if cfg.StripeSecretKey != "" && cfg.Provider == "mock" {
 		cfg.Provider = "stripe"
 	}
+	if strings.EqualFold(cfg.Provider, "stripe") && cfg.StripeSecretKey == "" {
+		cfg.Provider = "mock"
+	}
 	cfg.applyFrameworkDefaults()
 	return cfg
 }
@@ -245,6 +248,7 @@ func (c PaymentGatewayConfig) Status() map[string]interface{} {
 		"displayName":          c.DisplayName,
 		"provider":             c.Provider,
 		"stripeConfigured":     c.StripeSecretKey != "",
+		"stripeLiveReady":      c.StripeSecretKey != "" && c.StripePublishableKey != "" && c.StripeWebhookSecret != "",
 		"acceptedCards":        c.AcceptedCards,
 		"processingFee":        c.ProcessingFee,
 		"settlementDestinations": dests,

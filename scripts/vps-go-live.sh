@@ -81,10 +81,12 @@ if [ "$USE_DOCKER" = "1" ] && [ -f docker-compose.prod.yml ]; then
   docker compose -f docker-compose.prod.yml --profile proxy up -d --build
   sleep 10
   curl -sf http://127.0.0.1:9338/health && echo " bridge OK" || echo " bridge FAIL"
+  curl -sf http://127.0.0.1:9338/bridge/payments/status | head -c 200 && echo " ... payments OK" || echo " payments FAIL"
   curl -sf http://127.0.0.1:9338/bridge/bridge7/status | head -c 200 && echo " ... bridge7 OK" || echo " bridge7 FAIL"
   if [ -n "$DOMAIN" ] && [ -f deploy/certs/fullchain.pem ]; then
     echo "Site:   https://$DOMAIN/"
     echo "Wallet: https://$DOMAIN/wallet/"
+    echo "Payments: https://$DOMAIN/payments/"
   else
     echo "Wallet: http://${HOST_IP}:9338/wallet/"
     echo "Site:   http://${HOST_IP}:9338/wallet/  (or configure DOMAIN=onexproduction.com)"
@@ -110,6 +112,10 @@ server {
   location / { try_files \$uri \$uri/ /index.html; }
   location /wallet/ {
     proxy_pass http://127.0.0.1:9338/wallet/;
+    proxy_set_header Host \$host;
+  }
+  location /payments/ {
+    proxy_pass http://127.0.0.1:9338/payments/;
     proxy_set_header Host \$host;
   }
   location /bridge/ {

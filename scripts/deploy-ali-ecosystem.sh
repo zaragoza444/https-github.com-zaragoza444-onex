@@ -42,7 +42,12 @@ sudo tee /etc/onex/onex.env >/dev/null <<EOF
 ONEX_API_KEY=${API_KEY}
 ONEX_CORS_ORIGINS=http://${HOST_IP}:9338,http://${HOST_IP}:8545,https://zaragoza444.github.io,https://zaragoza444.github.io/onex,https://git.anakatech.llc,https://explorer.d-bis.org
 ONEX_LEDGER_MODE=production
-ONEX_BANK_LEDGER_FILE=${REPO}/configs/bank-ledger.example.json
+ONEX_BANK_LEDGER_FILE=${REPO}/configs/bank-ledger.nova.example.json
+ONEX_ONLINE_BANK=1
+ONEX_PAYMENT_GATEWAY=1
+ONEX_PAYMENT_GATEWAY_FILE=${REPO}/configs/payment-gateway.production.json
+ONEX_PAYMENT_GATEWAY_FRAMEWORK=nova
+ONEX_PAYMENT_GATEWAY_PROVIDER=stripe
 ONEX_PROJECT_ROOT=${REPO}
 ONEX_HOME_DIR=${HOME}/.onex
 ONEX_NODE_URL=http://127.0.0.1:8545
