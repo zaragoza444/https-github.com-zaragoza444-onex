@@ -1,0 +1,54 @@
+name: Auto-deploy production (zblockchainsystem.com)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'internal/**'
+      - 'cmd/**'
+      - 'configs/**'
+      - 'deploy/**'
+      - 'scripts/**'
+      - '.github/workflows/auto-deploy-production.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          ONEX_STRIPE_SECRET_KEY: ${{ secrets.ONEX_STRIPE_SECRET_KEY }}
+          ONEX_STRIPE_PUBLISHABLE_KEY: ${{ secrets.ONEX_STRIPE_PUBLISHABLE_KEY }}
+          ONEX_STRIPE_WEBHOOK_SECRET: ${{ secrets.ONEX_STRIPE_WEBHOOK_SECRET }}
+        with:
+          host: 51.75.64.28
+          username: ubuntu
+          password: ${{ secrets.SSH_PASS }}
+          envs: ONEX_STRIPE_SECRET_KEY,ONEX_STRIPE_PUBLISHABLE_KEY,ONEX_STRIPE_WEBHOOK_SECRET
+          command_timeout: 15m
+          script_stop: true
+          script: |
+            set -euo pipefail
+            REPO="$HOME/onex"
+            GITHUB="https://github.com/zaragoza444/https-github.com-zaragoza444-onex.git"
+            if [ ! -d "$REPO/.git" ]; then git clone "$GITHUB" "$REPO"; fi
+            cd "$REPO"
+            git fetch origin main && git reset --hard origin/main
+            export ONEX_PRODUCTION_DOMAIN=zblockchainsystem.com
+            export ONEX_STRIPE_SECRET_KEY="${ONEX_STRIPE_SECRET_KEY:-}"
+            export ONEX_STRIPE_PUBLISHABLE_KEY="${ONEX_STRIPE_PUBLISHABLE_KEY:-}"
+            export ONEX_STRIPE_WEBHOOK_SECRET="${ONEX_STRIPE_WEBHOOK_SECRET:-}"
+            bash scripts/fix-bridge-9338.sh
+            echo "==> External verify"
+            curl -sf http://127.0.0.1/bridge/payments/status || curl -sf http://127.0.0.1:9338/bridge/payments/status
+            curl -sf -o /dev/null -w "portal:%{http_code}\n" http://127.0.0.1/payments/ || true
+
+      - name: Verify public endpoint
+        run: |
+          sleep 10
+          curl -sf --max-time 30 http://zblockchainsystem.com/bridge/payments/status | head -c 300 || \
+            echo "WARN: public verify pending — DNS/nginx may need a minute"

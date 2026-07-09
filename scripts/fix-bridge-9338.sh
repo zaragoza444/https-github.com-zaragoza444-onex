@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+sudo journalctl -u onex-bridge -n 25 --no-pager
+~/onex/bin/onex-bridge -node http://127.0.0.1:8545 -listen 127.0.0.1:9339 -config ~/.onex/bridge.json -wallet ~/.onex/wallets/default.json#!/usr/bin/env bash
 # Emergency fix for broken onex-bridge. Tries :9338 then :9339.
 #   curl -fsSL .../fix-bridge-9338.sh | ONEX_PRODUCTION_DOMAIN=zblockchainsystem.com bash
 set -euo pipefail
