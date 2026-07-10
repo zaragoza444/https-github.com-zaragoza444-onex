@@ -20,6 +20,7 @@ func (s *Server) registerPaymentGatewayRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/bridge/payments/session/get", s.handlePaymentGatewaySessionGet)
 	mux.HandleFunc("/bridge/payments/confirm", s.handlePaymentGatewayConfirm)
 	mux.HandleFunc("/bridge/payments/sessions", s.handlePaymentGatewaySessionsList)
+	mux.HandleFunc("/bridge/payments/dashboard", s.handlePaymentGatewayDashboard)
 	mux.HandleFunc("/bridge/payments/webhook", s.handlePaymentGatewayWebhook)
 }
 
@@ -170,6 +171,25 @@ func (s *Server) handlePaymentGatewayConfirm(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	writeJSON(w, sess)
+}
+
+func (s *Server) handlePaymentGatewayDashboard(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "GET only", http.StatusMethodNotAllowed)
+		return
+	}
+	cfg := ledger.LoadPaymentGatewayConfig()
+	stats, err := s.paymentGatewayStore().DashboardStats(25)
+	if err != nil {
+		writeJSON(w, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, map[string]interface{}{
+		"status":       cfg.Status(),
+		"stats":        stats,
+		"pages":        cfg.PublicPages(),
+		"destinations": cfg.PublicDestinations(),
+	})
 }
 
 func (s *Server) handlePaymentGatewaySessionsList(w http.ResponseWriter, r *http.Request) {

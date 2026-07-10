@@ -403,6 +403,7 @@ func writeJSON(w http.ResponseWriter, v interface{}) {
 func (s *Server) Start(addr string) error {
 	log.Printf("onex-bridge: wallet UI http://127.0.0.1%s/wallet/", addr)
 	log.Printf("onex-bridge: payment portal http://127.0.0.1%s/payments/", addr)
+	log.Printf("onex-bridge: payment dashboard http://127.0.0.1%s/payments/dashboard/", addr)
 	log.Printf("onex-bridge: JSON-RPC http://127.0.0.1%s/rpc -> %s", addr, s.b.Config().NodeURL)
 	return http.ListenAndServe(addr, s.Handler())
 }

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Payment gateway admin dashboard">
+  <title>Payment Gateway Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="dash">
+    <header class="dash-header">
+      <div class="brand">
+        <div class="brand-icon">◆</div>
+        <div>
+          <h1 id="gateway-name">Payment Gateway</h1>
+          <p class="subtitle" id="gateway-subtitle">Admin dashboard</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <span class="status-pill" id="gateway-status">—</span>
+        <button type="button" class="btn-icon" id="refresh-btn" title="Refresh">↻</button>
+        <a href="../" class="btn-secondary">Payment portal</a>
+      </div>
+    </header>
+
+    <section class="stats-grid" id="stats-grid">
+      <article class="stat-card">
+        <div class="stat-label">Total sessions</div>
+        <div class="stat-value" id="stat-total">—</div>
+      </article>
+      <article class="stat-card">
+        <div class="stat-label">Succeeded</div>
+        <div class="stat-value success" id="stat-succeeded">—</div>
+      </article>
+      <article class="stat-card">
+        <div class="stat-label">Pending / processing</div>
+        <div class="stat-value" id="stat-pending">—</div>
+      </article>
+      <article class="stat-card">
+        <div class="stat-label">Failed</div>
+        <div class="stat-value error" id="stat-failed">—</div>
+      </article>
+    </section>
+
+    <section class="panel-grid">
+      <article class="panel">
+        <h2>Gateway status</h2>
+        <dl class="meta-list" id="status-meta"></dl>
+      </article>
+
+      <article class="panel">
+        <h2>Volume &amp; fees</h2>
+        <div id="volume-summary" class="summary-list"></div>
+      </article>
+
+      <article class="panel">
+        <h2>By flow</h2>
+        <div id="flow-summary" class="chip-row"></div>
+      </article>
+
+      <article class="panel">
+        <h2>Settlement destinations</h2>
+        <div id="settlement-summary" class="summary-list"></div>
+      </article>
+
+      <article class="panel">
+        <h2>Hosted pages</h2>
+        <ul class="link-list" id="pages-list"></ul>
+      </article>
+
+      <article class="panel">
+        <h2>Quick links</h2>
+        <ul class="link-list" id="quick-links">
+          <li><a href="../?page=donate">Donate page</a></li>
+          <li><a href="../?page=invoice">Invoice page</a></li>
+          <li><a href="../?page=collect">Collections page</a></li>
+          <li><a href="/bridge/payments/status" target="_blank" rel="noopener">API status (JSON)</a></li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="panel panel-wide">
+      <div class="panel-head">
+        <h2>Recent sessions</h2>
+        <div class="filters">
+          <select id="filter-flow">
+            <option value="">All flows</option>
+            <option value="donation">Donation</option>
+            <option value="payment">Payment</option>
+            <option value="collection">Collection</option>
+          </select>
+          <select id="filter-status">
+            <option value="">All statuses</option>
+            <option value="succeeded">Succeeded</option>
+            <option value="processing">Processing</option>
+            <option value="pending">Pending</option>
+            <option value="failed">Failed</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="sessions-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Reference</th>
+              <th>Flow</th>
+              <th>Amount</th>
+              <th>Fee</th>
+              <th>Settlement</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="sessions-body">
+            <tr><td colspan="7" class="empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>OneX Bridge · Payment Gateway Dashboard · <span id="last-updated">—</span></p>
+    </footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

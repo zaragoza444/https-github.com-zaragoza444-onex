@@ -394,6 +394,95 @@ func (s *PaymentGatewayStore) ListSessions(limit int, flow, status string) ([]Pa
 	return out, nil
 }
 
+// PaymentDashboardStats aggregates gateway session metrics for the admin dashboard.
+type PaymentDashboardStats struct {
+	TotalSessions      int                       `json:"totalSessions"`
+	ByStatus           map[string]int            `json:"byStatus"`
+	ByFlow             map[string]int            `json:"byFlow"`
+	VolumeByCurrency   map[string]string         `json:"volumeByCurrency"`
+	FeesByCurrency     map[string]string         `json:"feesByCurrency"`
+	BySettlement       map[string]SettlementStat `json:"bySettlement"`
+	RecentSessions     []PaymentSession          `json:"recentSessions"`
+	LastUpdated        int64                     `json:"lastUpdated"`
+}
+
+// SettlementStat summarizes settled volume for a destination.
+type SettlementStat struct {
+	Label   string `json:"label"`
+	Count   int    `json:"count"`
+	Volume  string `json:"volume"`
+	Currency string `json:"currency"`
+}
+
+func (s *PaymentGatewayStore) DashboardStats(recentLimit int) (*PaymentDashboardStats, error) {
+	st, err := s.load()
+	if err != nil {
+		return nil, err
+	}
+	if recentLimit <= 0 {
+		recentLimit = 25
+	}
+	stats := &PaymentDashboardStats{
+		TotalSessions:    len(st.Sessions),
+		ByStatus:         map[string]int{},
+		ByFlow:           map[string]int{},
+		VolumeByCurrency: map[string]string{},
+		FeesByCurrency:   map[string]string{},
+		BySettlement:     map[string]SettlementStat{},
+		LastUpdated:      st.UpdatedAt,
+	}
+	volTotals := map[string]float64{}
+	feeTotals := map[string]float64{}
+	settleVol := map[string]float64{}
+	settleCount := map[string]int{}
+	settleLabel := map[string]string{}
+	settleCur := map[string]string{}
+
+	for _, sess := range st.Sessions {
+		stats.ByStatus[sess.Status]++
+		if sess.Flow != "" {
+			stats.ByFlow[sess.Flow]++
+		}
+		if sess.Status == PaymentStatusSucceeded {
+			cur := strings.ToUpper(firstNonEmpty(sess.Currency, "USD"))
+			amt, _ := parseMoney(sess.Amount)
+			volTotals[cur] += amt
+			fee, _ := parseMoney(sess.ProcessingFee)
+			feeTotals[cur] += fee
+			dest := sess.SettlementDestination
+			if dest == "" {
+				dest = "unknown"
+			}
+			settleVol[dest] += amt
+			settleCount[dest]++
+			settleLabel[dest] = firstNonEmpty(sess.SettlementLabel, dest)
+			settleCur[dest] = cur
+		}
+	}
+	for cur, v := range volTotals {
+		stats.VolumeByCurrency[cur] = formatMoney(v)
+	}
+	for cur, v := range feeTotals {
+		stats.FeesByCurrency[cur] = formatMoney(v)
+	}
+	for dest, v := range settleVol {
+		stats.BySettlement[dest] = SettlementStat{
+			Label:    settleLabel[dest],
+			Count:    settleCount[dest],
+			Volume:   formatMoney(v),
+			Currency: settleCur[dest],
+		}
+	}
+	recent := make([]PaymentSession, 0, recentLimit)
+	for i := len(st.Sessions) - 1; i >= 0 && len(recent) < recentLimit; i-- {
+		sess := st.Sessions[i]
+		sess.ClientSecret = ""
+		recent = append(recent, sess)
+	}
+	stats.RecentSessions = recent
+	return stats, nil
+}
+
 func (s *PaymentGatewayStore) CreateSession(req CreatePaymentSessionRequest, bank *OnlineBankStore) (*PaymentSession, error) {
 	cfg := LoadPaymentGatewayConfig()
 	var page *PaymentPage
