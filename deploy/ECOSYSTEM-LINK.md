@@ -25,6 +25,18 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOhaLewYwzS4+21uaywhHRjqFb0EWiCR7vtv8JkHTiiv
 
 Fingerprint: `SHA256:bI9OnFS3hiSjFrv3HCdRGjZHjfWsefgZCeJtkpNrj2s`
 
+Also authorize Astra’s reverse-tunnel key (file: [`keys/astra-reverse-tunnel-to-nova.pub`](keys/astra-reverse-tunnel-to-nova.pub)):
+
+```bash
+# on ubuntu@51.75.64.28
+mkdir -p ~/.ssh && chmod 700 ~/.ssh
+echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP42HqdXKjX8sb6H34EoQ4CfqQ/pts9aPvV3qe0uDnU7 astra-reverse-tunnel-to-nova' >> ~/.ssh/authorized_keys
+echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOhaLewYwzS4+21uaywhHRjqFb0EWiCR7vtv8JkHTiiv cursor-agent-ecosystem-link@onex' >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+```
+
+Agent still cannot install these remotely (`Permission denied` as of last probe).
+
 **Handoff download (for Telegram / drop on Astra):**
 
 - PR file: https://github.com/zaragoza444/https-github.com-zaragoza444-onex/blob/cursor/ecosystem-access-link-545e/deploy/astra-ecosystem-handoff.local.asc
@@ -440,7 +452,9 @@ Marked **NOT FOUND IN THIS REPO** until separate access paths are provided:
 - [x] `.astra-ecosystem-handoff.local` created + PGP-encrypted (`astra-ecosystem-handoff.local.asc`)
 - [x] Nginx re-test: `anakabank-api` + `novabank-connector` 502 → 401
 - [x] Option C agreed; out-of-repo items marked NOT FOUND IN THIS REPO
-- [ ] Proxmox host firewall opens `:8443` for agent egress
+- [ ] Proxmox host firewall opens `:8443` to CT `192.168.1.100` (Nathan)
 - [ ] Agent SSH to Astra verified; CT59 hop tested
-- [ ] Agent pubkey on `ubuntu@51.75.64.28`; pull `/etc/onex/onex.env`
+- [ ] Agent pubkey actually accepted on `ubuntu@51.75.64.28` (re-test still Permission denied)
+- [x] Astra reverse-tunnel pubkey documented (`keys/astra-reverse-tunnel-to-nova.pub`) — needs install on OneX VPS
+- [ ] Pull `/etc/onex/onex.env`; encrypt updated secrets for Nathan
 - [ ] Re-probe local ports (`:4003`, `:8554`, CT59 `:5432`) after SSH works
