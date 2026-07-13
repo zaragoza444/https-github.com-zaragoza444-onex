@@ -2,9 +2,27 @@
 
 Linked-systems inventory for Cursor / Astra agents. **No passwords, PINs, or API keys in this file.**
 
-Live secrets (local only): copy [`ECOSYSTEM-SECRETS.env.example`](ECOSYSTEM-SECRETS.env.example) → `ECOSYSTEM-SECRETS.env` (gitignored).
-
 Probed from Cursor cloud agent: **2026-07-13**.
+
+### Encrypted secrets (Nathan Anema)
+
+| Item | Value |
+|------|-------|
+| Ciphertext | [`ECOSYSTEM-SECRETS.env.asc`](ECOSYSTEM-SECRETS.env.asc) |
+| Recipient | `Nathan Anema <nathan@anakatech.llc>` |
+| Fingerprint | `4992 5545 115E A499 9CCA 3B2A 1413 0750 589F 4CBC` |
+| Public key | [`keys/nathan-anakatech.asc`](keys/nathan-anakatech.asc) |
+| Template (no secrets) | [`ECOSYSTEM-SECRETS.env.example`](ECOSYSTEM-SECRETS.env.example) |
+| Plaintext | `ECOSYSTEM-SECRETS.env` (**gitignored** — never commit) |
+
+Decrypt locally (requires Nathan’s private key):
+
+```bash
+gpg --decrypt deploy/ECOSYSTEM-SECRETS.env.asc > deploy/ECOSYSTEM-SECRETS.env
+chmod 600 deploy/ECOSYSTEM-SECRETS.env
+```
+
+Payload includes AnakaBank admin, NovaBank Railway/VPS logins+PINs, htpasswd, Iroha gateway key + treasury, Astra/CT59 SSH host metadata. `NEED_FROM_Z` OneX fields (VPS SSH password, `ONEX_API_KEY`, Stripe, Fineract, EVM sender, bridge URLs) remain blank until Z fills them.
 
 ---
 
@@ -356,6 +374,7 @@ Access today without VPS SSH: public health on `:8545`; NovaBank UI on `:3100`; 
 - [x] Secrets template committed (`ECOSYSTEM-SECRETS.env.example`)
 - [x] Local secrets file written (gitignored `ECOSYSTEM-SECRETS.env`)
 - [x] Agent SSH pubkey published
+- [x] Secrets encrypted for Nathan (`ECOSYSTEM-SECRETS.env.asc` + `keys/nathan-anakatech.asc`)
 - [ ] Astra installs pubkey + fixes `:8443` KEX reset
 - [ ] CT59 pubkey installed via Astra hop
 - [ ] Z fills `NEED_FROM_Z` secrets in local env
