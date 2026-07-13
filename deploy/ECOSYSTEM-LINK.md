@@ -8,21 +8,31 @@ Probed from Cursor cloud agent: **2026-07-13**.
 
 | Item | Value |
 |------|-------|
-| Ciphertext | [`ECOSYSTEM-SECRETS.env.asc`](ECOSYSTEM-SECRETS.env.asc) |
+| Ciphertext (env) | [`ECOSYSTEM-SECRETS.env.asc`](ECOSYSTEM-SECRETS.env.asc) |
+| Ciphertext (handoff) | [`astra-ecosystem-handoff.local.asc`](astra-ecosystem-handoff.local.asc) |
 | Recipient | `Nathan Anema <nathan@anakatech.llc>` |
 | Fingerprint | `4992 5545 115E A499 9CCA 3B2A 1413 0750 589F 4CBC` |
 | Public key | [`keys/nathan-anakatech.asc`](keys/nathan-anakatech.asc) |
 | Template (no secrets) | [`ECOSYSTEM-SECRETS.env.example`](ECOSYSTEM-SECRETS.env.example) |
-| Plaintext | `ECOSYSTEM-SECRETS.env` (**gitignored** — never commit) |
+| Plaintext | `ECOSYSTEM-SECRETS.env` / `.astra-ecosystem-handoff.local` (**gitignored**) |
 
 Decrypt locally (requires Nathan’s private key):
 
 ```bash
 gpg --decrypt deploy/ECOSYSTEM-SECRETS.env.asc > deploy/ECOSYSTEM-SECRETS.env
-chmod 600 deploy/ECOSYSTEM-SECRETS.env
+gpg --decrypt deploy/astra-ecosystem-handoff.local.asc > .astra-ecosystem-handoff.local
+chmod 600 deploy/ECOSYSTEM-SECRETS.env .astra-ecosystem-handoff.local
 ```
 
-Payload includes AnakaBank admin, NovaBank Railway/VPS logins+PINs, htpasswd, Iroha gateway key + treasury, Astra/CT59 SSH host metadata. `NEED_FROM_Z` OneX fields (VPS SSH password, `ONEX_API_KEY`, Stripe, Fineract, EVM sender, bridge URLs) remain blank until Z fills them.
+Payload includes AnakaBank admin, NovaBank Railway/VPS logins+PINs, htpasswd, Iroha gateway key + treasury, Astra/CT59 SSH host metadata. `NEED_FROM_Z` OneX fields (VPS SSH password, `ONEX_API_KEY`, Stripe, Fineract, EVM sender, bridge URLs) remain blank until pulled via Option C SSH (see below).
+
+### Live secret source — Option C (agreed)
+
+| Host | Status (2026-07-13 re-test) |
+|------|------------------------------|
+| Astra `root@65.181.23.219:8443` | Cursor agent SSH key **added on Astra CT**; still blocked by **Proxmox host firewall** (KEX reset). Nathan opening from Proxmox dashboard. |
+| OneX `ubuntu@51.75.64.28` | Key **not yet** in `authorized_keys` (`Permission denied (publickey,password)`). Add same agent pubkey, then read `/etc/onex/onex.env`. |
+| Out-of-repo systems | **NOT FOUND IN THIS REPO** for now — Railway NovaBank host paths, ZBank, NRW, Proxmox/Pandora cluster, FusionAGI/BigBrain. Separate access paths later. |
 
 ---
 
@@ -58,15 +68,31 @@ ssh -p 8443 root@65.181.23.219
 ssh root@192.168.1.59
 ```
 
-### Auth blocker (2026-07-13)
+### Auth blocker (2026-07-13) — Proxmox host firewall
 
-This agent **could not** append `authorized_keys` remotely:
+Cursor agent key is installed on the Astra CT, but SSH still fails from this cloud agent:
 
 - TCP `65.181.23.219:8443` is **OPEN**
-- OpenSSH client connects, then **`kex_exchange_identification: Connection reset by peer`** (no SSH banner)
-- No root SSH password was provided; BatchMode key auth fails until the server accepts this handshake **and** the pubkey is installed
+- OpenSSH connects, then **`kex_exchange_identification: Connection reset by peer`** (no SSH banner)
+- **Root cause (Nathan):** Proxmox **host** firewall on `:8443`, not the CT. Opening from Proxmox dashboard; will update when done.
 
-**Action needed from Astra side:** allowlist this agent’s egress IP for SSH on `:8443` (or fix whatever is resetting the KEX), then install the pubkey above. Optionally provide a one-time root password/key so the agent can install itself.
+Once firewall allows this agent’s egress IP, re-test:
+
+```bash
+ssh -p 8443 root@65.181.23.219 'hostname; pm2 list'
+```
+
+### OneX VPS key install (needed for Option C)
+
+On `ubuntu@51.75.64.28` (console / existing `SSH_PASS`):
+
+```bash
+mkdir -p ~/.ssh && chmod 700 ~/.ssh
+echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOhaLewYwzS4+21uaywhHRjqFb0EWiCR7vtv8JkHTiiv cursor-agent-ecosystem-link@onex' >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+```
+
+Then the agent can: `ssh ubuntu@51.75.64.28 'sudo cat /etc/onex/onex.env'` (or read without sudo if readable).
 
 ---
 
@@ -285,14 +311,14 @@ OneX repo CIS still lists placeholder `https://rpc.nova1.chain` — update `conf
 
 ## 5. Connectivity matrix (Cursor cloud agent → services)
 
-Probed **2026-07-13**.
+Initial probe **2026-07-13 ~08:38 UTC**; nginx re-test **~09:03 UTC**.
 
 ### TCP
 
 | Target | Result |
 |--------|--------|
-| `65.181.23.219:8443` | OPEN (TCP accept), SSH KEX **reset by peer** |
-| `51.75.64.28:22` | OPEN |
+| `65.181.23.219:8443` | OPEN (TCP accept), SSH KEX **reset by peer** (Proxmox host firewall) |
+| `51.75.64.28:22` | OPEN; agent key not authorized yet |
 | `51.75.64.28:80` | OPEN |
 | `51.75.64.28:443` | OPEN |
 | `51.75.64.28:3100` | OPEN |
@@ -301,41 +327,43 @@ Probed **2026-07-13**.
 
 ### HTTP(S)
 
-| URL | HTTP |
-|-----|------|
-| `https://api.anakachain.com/` | 200 |
-| `https://api.anakachain.com/api/v1/` | 401 (auth required — expected) |
-| `https://anakabank-api.anakatech.llc/api-docs` | **502** |
-| `https://anakabank.anakatech.llc/` | 200 |
-| `https://anakatech.llc/` | 200 |
-| `https://novaone.anakatech.llc/` | **404** |
-| `https://novabank-connector.anakatech.llc/` | **502** |
-| `https://signetwallet.com/` | 200 |
-| `https://anakaswap.anakatech.llc/` | 200 |
-| `https://citadel.anakatech.llc/` | 401 |
-| `https://anakachain.com/` | 200 |
-| `https://rpc.anakachain.com/` | 201 |
-| `https://bridge.anakachain.com/` | 201 |
-| `https://bank.anakachain.com/` | 200 |
-| `https://explorer.anakachain.com/` | 200 |
-| `http://51.75.64.28:9338/health` | **ERR** (connection reset after TCP connect) |
-| `http://51.75.64.28:8545/health` | 200 `{"status":"ok"}` |
-| `http://51.75.64.28:3100/` | 200 (HTML) |
-| `https://onexproduction.com/` | ERR / unreachable from agent |
-| `https://novatrustee.digital/` | ERR / unreachable from agent |
-| `https://zblockchainsystem.com/` | ERR / unreachable from agent |
-| `https://blockchainsystem.com/` | 200 |
-| `https://zaragoza444.github.io/onex/` | 404 |
-| `https://rpc-core.d-bis.org/` | 405 (RPC alive; method not allowed on GET) |
-| `https://git.anakatech.llc/` | 200 |
+| URL | First probe | Re-test |
+|-----|-------------|---------|
+| `https://api.anakachain.com/` | 200 | 200 |
+| `https://api.anakachain.com/api/v1/` | 401 | 401 |
+| `https://anakabank-api.anakatech.llc/api-docs` | **502** | **401** (nginx fixed; htpasswd) |
+| `https://anakabank.anakatech.llc/` | 200 | 200 |
+| `https://anakatech.llc/` | 200 | — |
+| `https://novaone.anakatech.llc/` | **404** | **404** |
+| `https://novabank-connector.anakatech.llc/` | **502** | **401** (nginx fixed; htpasswd) |
+| `https://signetwallet.com/` | 200 | — |
+| `https://anakaswap.anakatech.llc/` | 200 | — |
+| `https://citadel.anakatech.llc/` | 401 | — |
+| `https://anakachain.com/` | 200 | — |
+| `https://rpc.anakachain.com/` | 201 | — |
+| `https://bridge.anakachain.com/` | 201 | — |
+| `https://bank.anakachain.com/` | 200 | — |
+| `https://explorer.anakachain.com/` | 200 | — |
+| `http://51.75.64.28:9338/health` | **ERR** (reset) | **ERR** (reset) |
+| `http://51.75.64.28:8545/health` | 200 `{"status":"ok"}` | 200 |
+| `http://51.75.64.28:3100/` | 200 (HTML) | — |
+| `https://onexproduction.com/` | ERR | — |
+| `https://novatrustee.digital/` | ERR | — |
+| `https://zblockchainsystem.com/` | ERR | — |
+| `https://blockchainsystem.com/` | 200 | — |
+| `https://zaragoza444.github.io/onex/` | 404 | — |
+| `https://rpc-core.d-bis.org/` | 405 | — |
+| `https://git.anakatech.llc/` | 200 | — |
 
 ### Issues to fix
 
-1. **Astra SSH `:8443`** — TCP open but KEX reset; cloud agent cannot log in or install keys until this is fixed/allowlisted.
-2. **OneX bridge `:9338`** — TCP open but HTTP reset; node `:8545` is healthy — bridge process/firewall may need attention.
-3. **502s** — `anakabank-api.anakatech.llc/api-docs`, `novabank-connector.anakatech.llc`.
-4. **`novaone.anakatech.llc`** — 404; no external NovaOne RPC published yet.
+1. **Astra SSH `:8443`** — Proxmox host firewall KEX reset (Nathan opening). Agent key already on CT.
+2. **OneX VPS SSH** — add agent pubkey to `ubuntu@51.75.64.28` for Option C `/etc/onex/onex.env` pull.
+3. **OneX bridge `:9338`** — TCP open but HTTP reset; node `:8545` healthy.
+4. **`novaone.anakatech.llc`** — still 404; no external NovaOne RPC published yet.
 5. Several OneX marketing domains unreachable from this agent (DNS or edge).
+
+**Resolved:** `anakabank-api` + `novabank-connector` nginx sites re-enabled (502 → 401 auth).
 
 CT59 (`192.168.1.59`) is **not** reachable from the public internet; tests require Astra hop after SSH works.
 
@@ -357,14 +385,16 @@ Access today without VPS SSH: public health on `:8545`; NovaBank UI on `:3100`; 
 
 ## 7. Not in this handoff / out of scope gaps
 
+Marked **NOT FOUND IN THIS REPO** until separate access paths are provided:
+
 | Item | Status |
 |------|--------|
-| NRW Bank UI / ERC contracts | Only Iroha asset name `NRW` listed; no contract addresses |
-| Proxmox / Pandora full cluster | Only Astra CT + CT59 described; no Proxmox API endpoint here |
-| FusionAGI / BigBrain | Not provided |
-| NovaOne genesis / WS / bridge adapters | Need SSH to Astra Docker |
-| Railway NovaBank login URL | Email/PIN in secrets; URL blank — fill when known |
-| ZBank standalone | OneX has `zbank` payment-framework example only |
+| Railway NovaBank (host/URL paths) | NOT FOUND IN THIS REPO (login/PIN in encrypted secrets only) |
+| ZBank standalone infra | NOT FOUND IN THIS REPO (`zbank` payment-framework example only) |
+| NRW Bank UI / token contracts | NOT FOUND IN THIS REPO (Iroha asset name `NRW` only) |
+| Proxmox / Pandora full cluster | NOT FOUND IN THIS REPO (Astra CT + CT59 only) |
+| FusionAGI / BigBrain | NOT FOUND IN THIS REPO |
+| NovaOne genesis / WS / bridge adapters | Need SSH to Astra Docker after firewall open |
 
 ---
 
@@ -375,7 +405,10 @@ Access today without VPS SSH: public health on `:8545`; NovaBank UI on `:3100`; 
 - [x] Local secrets file written (gitignored `ECOSYSTEM-SECRETS.env`)
 - [x] Agent SSH pubkey published
 - [x] Secrets encrypted for Nathan (`ECOSYSTEM-SECRETS.env.asc` + `keys/nathan-anakatech.asc`)
-- [ ] Astra installs pubkey + fixes `:8443` KEX reset
-- [ ] CT59 pubkey installed via Astra hop
-- [ ] Z fills `NEED_FROM_Z` secrets in local env
-- [ ] Re-probe SSH + local ports (`:4003`, `:8554`, CT59 `:5432`) after allowlist
+- [x] `.astra-ecosystem-handoff.local` created + PGP-encrypted (`astra-ecosystem-handoff.local.asc`)
+- [x] Nginx re-test: `anakabank-api` + `novabank-connector` 502 → 401
+- [x] Option C agreed; out-of-repo items marked NOT FOUND IN THIS REPO
+- [ ] Proxmox host firewall opens `:8443` for agent egress
+- [ ] Agent SSH to Astra verified; CT59 hop tested
+- [ ] Agent pubkey on `ubuntu@51.75.64.28`; pull `/etc/onex/onex.env`
+- [ ] Re-probe local ports (`:4003`, `:8554`, CT59 `:5432`) after SSH works
