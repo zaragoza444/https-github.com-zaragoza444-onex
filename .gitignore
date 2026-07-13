@@ -20,6 +20,7 @@ go-sdk.zip
 remotes.env
 configs/faucet-testnet.env
 configs/quiknode.env
+deploy/ECOSYSTEM-SECRETS.env
 **/wallets/*.json
 !**/wallets/.gitkeep
 
