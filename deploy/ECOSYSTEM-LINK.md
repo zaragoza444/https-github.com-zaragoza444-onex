@@ -4,6 +4,38 @@ Linked-systems inventory for Cursor / Astra agents. **No passwords, PINs, or API
 
 Probed from Cursor cloud agent: **2026-07-13**.
 
+### Status board (Nathan ↔ Z)
+
+| Item | Claimed | Verified by this agent (2026-07-13 ~09:11 UTC) |
+|------|---------|-----------------------------------------------|
+| Z SSH keys on Astra CT | Installed | Cannot verify yet — Proxmox host firewall still resets KEX on `:8443` |
+| Nginx connector + API | Live | **Confirmed** — `anakabank-api` + `novabank-connector` 502 → 401 |
+| GPG key + encrypted handoff | Done | **Confirmed** — see ciphertext files below |
+| OneX VPS SSH (`ubuntu@51.75.64.28`) | Key installed | **Not yet** — agent offers pubkey, server returns `Permission denied (publickey,password)` |
+| Astra `:8443` for Z | Waiting Proxmox firewall | **Still blocked** — TCP open, KEX reset by peer |
+| Encrypted handoff delivery | On Z’s side | **In repo** — [`astra-ecosystem-handoff.local.asc`](astra-ecosystem-handoff.local.asc) |
+
+**Nathan next:** Proxmox Dashboard → Datacenter → Firewall → allow TCP **8443** to CT `192.168.1.100`.
+
+**OneX VPS next:** confirm this exact line is in `ubuntu`’s `~/.ssh/authorized_keys` (permissions `600`, dir `700`):
+
+```
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOhaLewYwzS4+21uaywhHRjqFb0EWiCR7vtv8JkHTiiv cursor-agent-ecosystem-link@onex
+```
+
+Fingerprint: `SHA256:bI9OnFS3hiSjFrv3HCdRGjZHjfWsefgZCeJtkpNrj2s`
+
+**Handoff download (for Telegram / drop on Astra):**
+
+- PR file: https://github.com/zaragoza444/https-github.com-zaragoza444-onex/blob/cursor/ecosystem-access-link-545e/deploy/astra-ecosystem-handoff.local.asc
+- Raw: https://raw.githubusercontent.com/zaragoza444/https-github.com-zaragoza444-onex/cursor/ecosystem-access-link-545e/deploy/astra-ecosystem-handoff.local.asc
+
+Decrypt on Astra with Nathan’s key (`4992 5545 115E A499 9CCA 3B2A 1413 0750 589F 4CBC`):
+
+```bash
+gpg --decrypt astra-ecosystem-handoff.local.asc > .astra-ecosystem-handoff.local
+```
+
 ### Encrypted secrets (Nathan Anema)
 
 | Item | Value |
