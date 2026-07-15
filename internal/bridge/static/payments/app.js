@@ -74,9 +74,45 @@
   async function loadConfig() {
     config = await api('/bridge/payments/config');
     $('gateway-name').textContent = config.displayName || 'Payment Gateway';
-    $('gateway-framework').textContent =
-      (config.framework === 'zbank' ? 'Z Bank' : config.framework === 'nova' ? 'Nova Bank' : 'NSB') +
-      ' · Visa · Mastercard · Amex';
+    const frameworkLabel =
+      config.framework === 'zbank' ? 'Z Bank' : config.framework === 'nova' ? 'Nova Bank' : 'NSB';
+    $('gateway-framework').textContent = frameworkLabel + ' · Visa · Mastercard · Amex';
+    applyBrand(config);
+  }
+
+  function applyBrand(cfg) {
+    const logo = $('brand-logo');
+    const icon = $('brand-icon');
+    const brand = document.querySelector('.brand');
+    const footer = $('footer-brand');
+    const isZBank = cfg.framework === 'zbank';
+    document.body.classList.toggle('framework-zbank', isZBank);
+    if (footer) {
+      footer.textContent = 'Powered by OneX Bridge · ' + (isZBank ? 'Z Bank' : frameworkLabel(cfg.framework));
+    }
+    const url = (cfg.logoUrl || (isZBank ? '/payments/assets/zbank-logo.png' : '')).trim();
+    if (url && logo) {
+      logo.hidden = false;
+      logo.src = url;
+      logo.alt = (cfg.displayName || 'Z Bank') + ' logo';
+      logo.onerror = function () {
+        logo.hidden = true;
+        if (icon) icon.style.display = '';
+        if (brand) brand.classList.remove('zbank');
+      };
+      if (icon) icon.style.display = 'none';
+      if (brand) brand.classList.add('zbank');
+    } else if (logo) {
+      logo.hidden = true;
+      if (icon) icon.style.display = '';
+      if (brand) brand.classList.remove('zbank');
+    }
+  }
+
+  function frameworkLabel(fw) {
+    if (fw === 'zbank') return 'Z Bank';
+    if (fw === 'nova') return 'Nova Bank';
+    return 'NSB';
   }
 
   async function loadPage(slug) {

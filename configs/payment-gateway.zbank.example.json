@@ -1,6 +1,7 @@
 {
   "framework": "zbank",
   "displayName": "Z Bank Payment Gateway",
+  "logoUrl": "/payments/assets/zbank-logo.png",
   "provider": "mock",
   "defaultSettlementDestination": "zbank-usd-main",
   "processingFee": {
