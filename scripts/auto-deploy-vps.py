@@ -45,7 +45,11 @@ export ONEX_PRODUCTION_DOMAIN={DOMAIN}
 export ONEX_STRIPE_SECRET_KEY="${{ONEX_STRIPE_SECRET_KEY:-}}"
 export ONEX_STRIPE_PUBLISHABLE_KEY="${{ONEX_STRIPE_PUBLISHABLE_KEY:-}}"
 export ONEX_STRIPE_WEBHOOK_SECRET="${{ONEX_STRIPE_WEBHOOK_SECRET:-}}"
-bash scripts/fix-bridge-9338.sh
+if [ -f scripts/fix-all-system.sh ]; then
+  bash scripts/fix-all-system.sh
+else
+  bash scripts/fix-bridge-9338.sh
+fi
 curl -sf http://127.0.0.1/bridge/payments/status || curl -sf http://127.0.0.1:9338/bridge/payments/status
 """
 
