@@ -1,0 +1,15 @@
+Z ECOSYSTEM ICONS — WINDOWS PC
+================================
+
+1. Unzip Z-Ecosystem-Icons-PC.zip
+2. Open folder pc\
+3. For each product (zbank, zblockchain, zpayments, zwallet, zecosystem):
+   - Use the .ico file for desktop shortcuts
+   - Right-click shortcut → Properties → Change Icon → Browse to the .ico
+
+Recommended shortcut mapping:
+  Z Bank              -> pc\zbank\zbank.ico
+  Z Blockchain System -> pc\zblockchain\zblockchain.ico
+  Z Payments          -> pc\zpayments\zpayments.ico
+  Z Wallet            -> pc\zwallet\zwallet.ico
+  Z Ecosystem folder  -> pc\zecosystem\zecosystem.ico

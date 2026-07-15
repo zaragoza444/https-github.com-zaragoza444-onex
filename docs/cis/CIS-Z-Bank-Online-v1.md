@@ -24,6 +24,7 @@ This CIS defines how **Z Bank** uses the OneX production platform with an **inte
 - Payment gateway framework `zbank` with settlement into Z Bank accounts
 - Fund-class aliases shared with the ledger middleware
 - REST API contract on the OneX bridge (`:9338`) when Z Bank env is active
+- Corporate officer signatory auth (PIN + signature) — see `CIS-Z-Bank-DSSBOAT-Officer-v1.md`
 
 **Out of scope**
 
@@ -123,14 +124,18 @@ Template: `deploy/env.zbank.example`
 ```env
 ONEX_LEDGER_MODE=production
 ONEX_ONLINE_BANK=1
-ONEX_BANK_LEDGER_FILE=configs/bank-ledger.zbank.example.json
+ONEX_BANK_LEDGER_FILE=configs/bank-ledger.zbank.production.json
 ONEX_PAYMENT_GATEWAY=1
-ONEX_PAYMENT_GATEWAY_FILE=configs/payment-gateway.zbank.example.json
+ONEX_PAYMENT_GATEWAY_FILE=configs/payment-gateway.zbank.production.json
 ONEX_PAYMENT_GATEWAY_FRAMEWORK=zbank
-ONEX_PAYMENT_GATEWAY_PROVIDER=mock
+ONEX_PAYMENT_GATEWAY_PROVIDER=stripe
+ONEX_ZBANK_OFFICERS_FILE=configs/zbank-officers.dssboat.example.json
+ONEX_ZBANK_OFFICER_PIN=<4-8-digit-pin>
+ONEX_ZBANK_OFFICER_SIGNATURE=<min-8-char-signature>
 ONEX_API_KEY=<long-random-secret>
 ```
 
+Full production template: `deploy/env.zbank.production.example`
 | Environment | Host | Notes |
 |-------------|------|-------|
 | Local dev | `127.0.0.1:9338` | Use zbank ledger + PG files above |
@@ -149,8 +154,13 @@ When Z Bank env is loaded, the same online-bank and ledger routes apply:
 | GET | `/bridge/bank/status` | Bank health |
 | GET | `/bridge/bank/accounts` | List accounts (expect M1–M4 Z Bank IDs) |
 | GET | `/bridge/ledger/status` | Middleware status including fund class labels |
+| GET | `/bridge/bank/officer/status` | DSSBOaT / corporate officer store |
+| POST | `/bridge/bank/officer/verify` | Verify officer PIN + signature |
+| POST | `/bridge/bank/officer/transfer` | Officer-authorized transfer (PIN + signature) |
 | POST | `/bridge/payments/*` | Card flows via Z Bank gateway |
 | POST | `/bridge/ledger/middleware/fiat-settle` | Batch M1–M4 → mint aggregation |
+
+Corporate officer CIS: `CIS-Z-Bank-DSSBOAT-Officer-v1.md`
 
 Authentication: `X-API-Key: <ONEX_API_KEY>` on mutating endpoints where enforced.
 

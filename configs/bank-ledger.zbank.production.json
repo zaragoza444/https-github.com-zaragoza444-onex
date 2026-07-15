@@ -1,0 +1,67 @@
+{
+  "accounts": [
+    {
+      "id": "zbank-usd-cash",
+      "name": "Z Bank \u2014 M0 USD Cash & Reserves",
+      "bank": "zbank",
+      "fundClass": "m0",
+      "iban": "ZB00M0USD00000000000001",
+      "currency": "USD",
+      "balance": "100000.00"
+    },
+    {
+      "id": "zbank-usd-checking",
+      "name": "Z Bank \u2014 USD Spendable Wallet",
+      "bank": "zbank",
+      "fundClass": "m1",
+      "iban": "ZB00M1USD00000000000001",
+      "currency": "USD",
+      "balance": "25000.00"
+    },
+    {
+      "id": "zbank-eur-checking",
+      "name": "Z Bank \u2014 EUR Spendable Wallet",
+      "bank": "zbank",
+      "fundClass": "m1",
+      "iban": "DE89370400440532013001",
+      "currency": "EUR",
+      "balance": "12500.50"
+    },
+    {
+      "id": "zbank-usd-safeguarded",
+      "name": "Z Bank \u2014 USD Safeguarded Settlement",
+      "bank": "zbank",
+      "fundClass": "m2",
+      "iban": "ZB00M2USD00000000000001",
+      "currency": "USD",
+      "balance": "40000.00"
+    },
+    {
+      "id": "zbank-usd-treasury",
+      "name": "Z Bank \u2014 USD Treasury Liquidity",
+      "bank": "zbank",
+      "fundClass": "m3",
+      "iban": "ZB00M3USD00000000000001",
+      "currency": "USD",
+      "balance": "75000.00"
+    },
+    {
+      "id": "zbank-usd-wholesale",
+      "name": "Z Bank \u2014 USD Wholesale / Tokenized Fiat",
+      "bank": "zbank",
+      "fundClass": "m4",
+      "iban": "ZB00M4USD00000000000001",
+      "currency": "USD",
+      "balance": "50000.00"
+    },
+    {
+      "id": "zbank-gbp-wholesale",
+      "name": "Z Bank \u2014 GBP Cross-Border Liquidity",
+      "bank": "zbank",
+      "moneySupply": "m4",
+      "iban": "GB29NWBK60161331926820",
+      "currency": "GBP",
+      "balance": "20000.00"
+    }
+  ]
+}

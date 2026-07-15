@@ -111,6 +111,9 @@ func TestPaymentGatewayZBankFramework(t *testing.T) {
 	if cfg.DisplayName != "Z Bank Payment Gateway" {
 		t.Fatalf("display name %s", cfg.DisplayName)
 	}
+	if cfg.LogoURL != "/payments/assets/zbank-logo.png" {
+		t.Fatalf("logo url %s", cfg.LogoURL)
+	}
 }
 
 func TestPaymentGatewayZBankExampleSettlesToZBankAccounts(t *testing.T) {

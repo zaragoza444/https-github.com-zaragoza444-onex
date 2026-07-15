@@ -1,0 +1,37 @@
+{
+  "client": {
+    "companyName": "DSSBOaT Ltd Trading as DS Group",
+    "countryOfIncorporation": "Ireland",
+    "corporateRegistration": "725265",
+    "dateOfRegistration": "2022-09-02",
+    "companyAddress": "92 George's Street Lower, Dún Laoghaire, Dublin, Ireland, A96 VR66",
+    "cisDocument": "docs/cis/DSSBOAT_CIS_2026.pdf",
+    "cisDocumentId": "CIS-Z-BANK-DSSBOAT-OFFICER-v1"
+  },
+  "officers": [
+    {
+      "id": "dssboat-officer-bneihaus",
+      "name": "Bernard Greeff Niehaus",
+      "position": "CEO",
+      "title": "Founder",
+      "nationality": "New Zealander",
+      "passportNumber": "LK986067",
+      "passportIssued": "2017-04-28",
+      "passportExpires": "2027-04-28",
+      "dateOfBirth": "1982-05-29",
+      "residentialAddress": "340 Whitford Road, Howick, Auckland NZ",
+      "email": "bniehaus@dssalus.com",
+      "phone": "+447425940224",
+      "bank": "zbank",
+      "status": "active",
+      "linkedAccounts": [
+        "zbank-usd-checking",
+        "zbank-eur-checking",
+        "zbank-usd-safeguarded",
+        "zbank-usd-treasury",
+        "zbank-usd-wholesale",
+        "zbank-gbp-wholesale"
+      ]
+    }
+  ]
+}
