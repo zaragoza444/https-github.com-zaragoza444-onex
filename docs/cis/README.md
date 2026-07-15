@@ -6,6 +6,7 @@ Customer Integration Specifications (CIS) for **Nova Bank Online**, **Z Bank**, 
 |----------|-------------|
 | [CIS-Nova-Bank-Online-v1.md](./CIS-Nova-Bank-Online-v1.md) | Sovereign online banking — accounts, rails, API, deployment (M0/M1/NSB) |
 | [CIS-Z-Bank-Online-v1.md](./CIS-Z-Bank-Online-v1.md) | Z Bank online banking — M1–M4 operational liquidity layers + payment gateway |
+| [CIS-Z-Bank-DSSBOAT-Officer-v1.md](./CIS-Z-Bank-DSSBOAT-Officer-v1.md) | DSSBOaT Ltd corporate CIS for Z Bank — officer signatory, PIN + signature |
 | [CIS-Nova-1-Chain-22016-v1.md](./CIS-Nova-1-Chain-22016-v1.md) | EVM chain 22016 — registry, settlement, token platform |
 | [CIS-Nova-Integration-Matrix-v1.md](./CIS-Nova-Integration-Matrix-v1.md) | Cross-system flows between Nova bank and chain |
 
@@ -15,12 +16,15 @@ Customer Integration Specifications (CIS) for **Nova Bank Online**, **Z Bank**, 
 |-----------|-----|-----------|
 | Nova Bank Online | `nsb` / `nova` | SWIFT `NSBKLAL2X` |
 | Z Bank | `zbank` | Framework `zbank`; fund classes M1–M4 |
+| DSSBOaT officer (Z Bank) | `dssboat-officer-bneihaus` | Corporate CIS + PIN/signature auth |
 | Nova 1 Chain | `nova-1` | Chain ID **22016** (`0x5600`) |
 
 ## Supporting files
 
 - `configs/bank-ledger.nova.example.json` — Nova Bank account seed data
 - `configs/bank-ledger.zbank.example.json` — Z Bank M0 + M1–M4 account seed data
+- `configs/zbank-officers.dssboat.example.json` — DSSBOaT corporate officer seed
+- `docs/cis/DSSBOAT_CIS_2026.pdf` — Source Company Information Sheet (passport attached)
 - `configs/payment-gateway.zbank.example.json` — Z Bank payment gateway
 - `configs/chains.json` — Nova 1 chain registry entry
 - `deploy/env.nova-1-22016.example` — Combined Nova deploy environment

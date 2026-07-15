@@ -201,10 +201,18 @@ func (s *OnlineBankStore) EnsureSeeded(bankFile string) error {
 		}
 		seen[id] = true
 		iban := extractIBAN(e.Account)
+		bankID := "nsb"
+		lowerID := strings.ToLower(id)
+		switch {
+		case strings.HasPrefix(lowerID, "zbank-"):
+			bankID = "zbank"
+		case strings.HasPrefix(lowerID, "nova-"):
+			bankID = "nova"
+		}
 		st.Accounts = append(st.Accounts, OnlineBankAccount{
 			ID: id, Name: accountNameOnly(e.Account), IBAN: iban,
 			Currency: e.Asset, Balance: e.Human, FundClass: e.FundClass,
-			Bank: "nsb", Status: "active",
+			Bank: bankID, Status: "active",
 		})
 	}
 	st.Online = true

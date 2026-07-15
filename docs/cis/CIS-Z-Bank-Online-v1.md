@@ -24,6 +24,7 @@ This CIS defines how **Z Bank** uses the OneX production platform with an **inte
 - Payment gateway framework `zbank` with settlement into Z Bank accounts
 - Fund-class aliases shared with the ledger middleware
 - REST API contract on the OneX bridge (`:9338`) when Z Bank env is active
+- Corporate officer signatory auth (PIN + signature) — see `CIS-Z-Bank-DSSBOAT-Officer-v1.md`
 
 **Out of scope**
 
@@ -149,8 +150,13 @@ When Z Bank env is loaded, the same online-bank and ledger routes apply:
 | GET | `/bridge/bank/status` | Bank health |
 | GET | `/bridge/bank/accounts` | List accounts (expect M1–M4 Z Bank IDs) |
 | GET | `/bridge/ledger/status` | Middleware status including fund class labels |
+| GET | `/bridge/bank/officer/status` | DSSBOaT / corporate officer store |
+| POST | `/bridge/bank/officer/verify` | Verify officer PIN + signature |
+| POST | `/bridge/bank/officer/transfer` | Officer-authorized transfer (PIN + signature) |
 | POST | `/bridge/payments/*` | Card flows via Z Bank gateway |
 | POST | `/bridge/ledger/middleware/fiat-settle` | Batch M1–M4 → mint aggregation |
+
+Corporate officer CIS: `CIS-Z-Bank-DSSBOAT-Officer-v1.md`
 
 Authentication: `X-API-Key: <ONEX_API_KEY>` on mutating endpoints where enforced.
 
