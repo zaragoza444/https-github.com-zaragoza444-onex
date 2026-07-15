@@ -36,25 +36,25 @@ upsert() {
 
 upsert ONEX_ONLINE_BANK 1
 upsert ONEX_PAYMENT_GATEWAY 1
-upsert ONEX_PAYMENT_GATEWAY_FILE "${REPO}/configs/payment-gateway.production.json"
-upsert ONEX_PAYMENT_GATEWAY_FRAMEWORK nova
+upsert ONEX_PAYMENT_GATEWAY_FILE "${REPO}/configs/payment-gateway.zbank.production.json"
+upsert ONEX_PAYMENT_GATEWAY_FRAMEWORK zbank
 upsert ONEX_PAYMENT_GATEWAY_PROVIDER stripe
-upsert ONEX_BANK_LEDGER_FILE "${REPO}/configs/bank-ledger.nova.example.json"
+upsert ONEX_BANK_LEDGER_FILE "${REPO}/configs/bank-ledger.zbank.example.json"
 upsert ONEX_LEDGER_MODE production
 upsert ONEX_PROJECT_ROOT "$REPO"
 
 if command -v docker >/dev/null 2>&1 && [ -f docker-compose.prod.yml ]; then
   echo "==> Docker production stack"
   if [ ! -f .env ]; then
-    cp deploy/env.onexproduction.example .env
+    cp deploy/env.zblockchainsystem.com.example .env 2>/dev/null || cp deploy/env.onexproduction.example .env
   fi
   grep -q ONEX_PAYMENT_GATEWAY .env || cat >> .env <<EOF
 ONEX_ONLINE_BANK=1
 ONEX_PAYMENT_GATEWAY=1
-ONEX_PAYMENT_GATEWAY_FILE=configs/payment-gateway.production.json
-ONEX_PAYMENT_GATEWAY_FRAMEWORK=nova
+ONEX_PAYMENT_GATEWAY_FILE=configs/payment-gateway.zbank.production.json
+ONEX_PAYMENT_GATEWAY_FRAMEWORK=zbank
 ONEX_PAYMENT_GATEWAY_PROVIDER=stripe
-ONEX_BANK_LEDGER_FILE=configs/bank-ledger.nova.example.json
+ONEX_BANK_LEDGER_FILE=configs/bank-ledger.zbank.example.json
 EOF
   docker compose -f docker-compose.prod.yml --profile proxy up -d --build onex-bridge
   sleep 8

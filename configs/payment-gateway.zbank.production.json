@@ -1,0 +1,126 @@
+{
+  "framework": "zbank",
+  "displayName": "Z Bank Payment Gateway",
+  "provider": "stripe",
+  "defaultSettlementDestination": "zbank-usd-main",
+  "processingFee": {
+    "enabled": false,
+    "percent": "1.5",
+    "fixed": "0.30",
+    "currency": "USD"
+  },
+  "acceptedCards": ["visa", "mastercard", "amex"],
+  "settlementDestinations": [
+    {
+      "id": "zbank-usd-main",
+      "label": "Z Bank — USD Spendable Wallet (M1)",
+      "type": "internal",
+      "accountId": "zbank-usd-checking",
+      "currency": "USD",
+      "rail": "internal",
+      "active": true
+    },
+    {
+      "id": "zbank-usd-safeguarded",
+      "label": "Z Bank — USD Safeguarded Settlement (M2)",
+      "type": "internal",
+      "accountId": "zbank-usd-safeguarded",
+      "currency": "USD",
+      "rail": "internal",
+      "active": true
+    },
+    {
+      "id": "zbank-usd-treasury",
+      "label": "Z Bank — USD Treasury Liquidity (M3)",
+      "type": "internal",
+      "accountId": "zbank-usd-treasury",
+      "currency": "USD",
+      "rail": "internal",
+      "active": true
+    },
+    {
+      "id": "zbank-eur-checking",
+      "label": "Z Bank — EUR Spendable Wallet (M1)",
+      "type": "internal",
+      "accountId": "zbank-eur-checking",
+      "currency": "EUR",
+      "rail": "internal",
+      "active": true
+    },
+    {
+      "id": "wells-fargo-usd",
+      "label": "Wells Fargo — USD Operating",
+      "type": "external",
+      "bankName": "Wells Fargo",
+      "swift": "WFBIUS6S",
+      "currency": "USD",
+      "rail": "ach",
+      "country": "US",
+      "active": true
+    },
+    {
+      "id": "citibank-usd",
+      "label": "Citibank — USD Treasury",
+      "type": "external",
+      "bankName": "Citibank",
+      "swift": "CITIUS33",
+      "currency": "USD",
+      "rail": "wire",
+      "country": "US",
+      "active": true
+    },
+    {
+      "id": "lloyds-gbp",
+      "label": "Lloyds Bank — GBP Collections",
+      "type": "external",
+      "bankName": "Lloyds Bank",
+      "swift": "LOYDGB2L",
+      "currency": "GBP",
+      "rail": "fps",
+      "country": "GB",
+      "active": true
+    }
+  ],
+  "pages": [
+    {
+      "slug": "pay",
+      "flow": "payment",
+      "title": "Z Bank Secure Payment",
+      "description": "Pay securely with Visa, Mastercard, or Amex. Settles to Z Bank M1 spendable wallet.",
+      "settlementDestination": "zbank-usd-main",
+      "currency": "USD",
+      "allowCustomAmount": true,
+      "active": true
+    },
+    {
+      "slug": "collect",
+      "flow": "collection",
+      "title": "Z Bank Collections",
+      "description": "Card collections land in safeguarded settlement (M2) before treasury release.",
+      "settlementDestination": "zbank-usd-safeguarded",
+      "currency": "USD",
+      "allowCustomAmount": true,
+      "active": true
+    },
+    {
+      "slug": "donate",
+      "flow": "donation",
+      "title": "Support Our Mission",
+      "description": "Donate securely via Visa, Mastercard, or Amex.",
+      "settlementDestination": "zbank-usd-main",
+      "currency": "USD",
+      "allowCustomAmount": true,
+      "active": true
+    },
+    {
+      "slug": "invoice",
+      "flow": "invoice",
+      "title": "Pay Invoice",
+      "description": "Settle your invoice with card. Funds credit Z Bank M1.",
+      "settlementDestination": "zbank-usd-main",
+      "currency": "USD",
+      "allowCustomAmount": true,
+      "active": true
+    }
+  ]
+}
