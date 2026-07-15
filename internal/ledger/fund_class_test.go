@@ -1,6 +1,10 @@
 package ledger
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestNormalizeNationalSovereignBank(t *testing.T) {
 	for _, raw := range []string{"national_sovereign_bank", "National Sovereign Bank", "sovereign_bank"} {
@@ -77,5 +81,57 @@ func TestBookConvertFromM1(t *testing.T) {
 	}
 	if conv.FundClass != FundM1 {
 		t.Fatalf("expected m1 fund class got %s", conv.FundClass)
+	}
+}
+
+func TestParseZBankLedgerSeedM1toM4(t *testing.T) {
+	root := filepath.Clean(filepath.Join("..", ".."))
+	path := filepath.Join(root, "configs", "bank-ledger.zbank.example.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read zbank seed: %v", err)
+	}
+	entries, err := parseBankJSON(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	byID := map[string]string{}
+	for _, e := range entries {
+		byID[e.ID] = e.FundClass
+	}
+	want := map[string]string{
+		"zbank-usd-cash":        FundM0,
+		"zbank-usd-checking":    FundM1,
+		"zbank-eur-checking":    FundM1,
+		"zbank-usd-safeguarded": FundM2,
+		"zbank-usd-treasury":    FundM3,
+		"zbank-usd-wholesale":   FundM4,
+		"zbank-gbp-wholesale":   FundM4,
+	}
+	for id, fc := range want {
+		if byID[id] != fc {
+			t.Fatalf("%s fundClass=%q want %q (got map %+v)", id, byID[id], fc, byID)
+		}
+	}
+	for id := range byID {
+		if len(id) >= 5 && id[:5] == "nova-" {
+			t.Fatalf("zbank seed must not include nova account %s", id)
+		}
+	}
+}
+
+func TestLedgerStatusExposesM2M3M4(t *testing.T) {
+	st := Config{Mode: "demo"}.Status()
+	classes, _ := st["fundClasses"].([]string)
+	want := map[string]bool{FundM0: true, FundM1: true, FundM2: true, FundM3: true, FundM4: true, FundNSB: true}
+	for _, c := range classes {
+		delete(want, c)
+	}
+	if len(want) != 0 {
+		t.Fatalf("missing fund classes in status: %v (got %v)", want, classes)
+	}
+	labels, _ := st["fundClassLabels"].(map[string]string)
+	if labels[FundM2] == "" || labels[FundM3] == "" || labels[FundM4] == "" {
+		t.Fatalf("missing M2–M4 labels: %+v", labels)
 	}
 }
