@@ -31,6 +31,8 @@ Customer Integration Specifications (CIS) for **Nova Bank Online**, **Z Bank**, 
 - `configs/chains.json` — Nova 1 chain registry entry
 - `deploy/env.nova-1-22016.example` — Combined Nova deploy environment
 - `deploy/env.zbank.example` — Z Bank deploy environment
+- `docs/certificates/Z-Bank-Proof-of-Funds-Certificate.pdf` — Z Bank POF template
+- `docs/certificates/Z-Bank-Proof-of-Funds-DSSBOAT-Sample.pdf` — DSSBOaT sample POF
 - `deploy/DEPLOY-nova-1-22016.md` — Nova deployment guide
 
 ## PDF exports
