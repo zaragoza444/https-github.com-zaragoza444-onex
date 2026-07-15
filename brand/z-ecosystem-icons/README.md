@@ -1,36 +1,21 @@
-# Z Ecosystem — Production Icons (PC)
+# Z Ecosystem — Production Icons for PC
 
-Production icon set for the **Z ecosystem** on Windows / desktop.
+## Quick start (Windows)
 
-## Products
+Use the **`Desktop-Icons/`** folder:
 
-| Folder | Brand | Use |
-|--------|-------|-----|
-| `pc/zbank/` | **Z Bank** | Online banking, officer portal |
-| `pc/zblockchain/` | **Z Blockchain System** | zblockchainsystem.com / chain node |
-| `pc/zpayments/` | **Z Payments** | Card payment gateway `/payments/` |
-| `pc/zwallet/` | **Z Wallet** | Bridge wallet UI |
-| `pc/zecosystem/` | **Z Ecosystem** | Umbrella / master brand |
+| File | Product |
+|------|---------|
+| `Z-Bank.ico` | Z Bank |
+| `Z-Blockchain.ico` | Z Blockchain System |
+| `Z-Payments.ico` | Z Payments gateway |
+| `Z-Wallet.ico` | Z Wallet |
+| `Z-Ecosystem.ico` | Master Z Ecosystem brand |
 
-## Files per product (Windows)
+Right-click shortcut → **Properties** → **Change Icon** → pick the `.ico`.
 
-- `{name}.ico` — multi-resolution Windows icon (16–256)
-- `{name}.png` — 256×256 shortcut PNG
-- `{name}-{size}.png` — 16, 24, 32, 48, 64, 128, 256, 512, 1024
+## Also included
 
-Also included: `web/` favicons + `source-1024/` masters.
-
-## Set as desktop / shortcut icon on Windows
-
-1. Extract `Z-Ecosystem-Icons-PC.zip`
-2. Right-click a desktop shortcut → **Properties** → **Change Icon…**
-3. Browse to `pc/<product>/<product>.ico` → OK → Apply
-
-## Browser favicon
-
-Use `web/<product>/favicon.png` or the 32/192 PNGs.
-
-## Brand colors
-
-- Navy: `#0B1F33`
-- Teal: `#1FA7A0`
+- `pc/<product>/` — full PNG size ladder + `.ico`
+- `web/<product>/` — favicons
+- `source-1024/` — 1024px masters
