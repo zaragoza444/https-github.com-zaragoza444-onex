@@ -1,8 +1,6 @@
 # One-time setup — then every push to `main` deploys automatically
 
-## 1. Add GitHub secret (one time, ~30 seconds)
-
-On your PC (with [GitHub CLI](https://cli.github.com/) logged in):
+## 1. Add GitHub secret (required for auto-deploy)
 
 ```bash
 gh secret set SSH_PASS --repo zaragoza444/https-github.com-zaragoza444-onex --body "YOUR_UBUNTU_VPS_PASSWORD"
@@ -16,28 +14,43 @@ gh secret set ONEX_STRIPE_PUBLISHABLE_KEY --body "pk_live_..."
 gh secret set ONEX_STRIPE_WEBHOOK_SECRET --body "whsec_..."
 ```
 
+Officer PIN/signature can live only on the VPS in `/etc/onex/onex.env` (`ONEX_ZBANK_OFFICER_PIN`, `ONEX_ZBANK_OFFICER_SIGNATURE`).
+
 ## 2. Automatic deploy
 
-After step 1, **every push to `main`** runs `.github/workflows/auto-deploy-production.yml` which:
+Every push to `main` runs `.github/workflows/auto-deploy-production.yml` which SSHs to `51.75.64.28` and runs:
 
-- SSHs to `51.75.64.28`
-- Pulls latest code
-- Runs `scripts/fix-bridge-9338.sh`
-- Configures nginx for `zblockchainsystem.com/payments/`
+```bash
+bash scripts/fix-all-system.sh
+```
 
-Manual trigger: **Actions → Auto-deploy production → Run workflow**
+That script:
 
-## 3. Or deploy from your PC now
+- Pulls `main`, builds `onex-bridge`
+- Ensures Z Bank ledger + Stripe PG + officer paths
+- Preserves existing Stripe/officer secrets in `/etc/onex/onex.env`
+- Restarts systemd `onex-bridge`
+- Installs nginx Z Bank routes (`/payments/`, `/bridge/`, `/wallet/`) and redirects `/` → `/payments/`
+
+## 3. Deploy / fix from your PC now
 
 ```bash
 cd onex
 SSH_PASS='YOUR_VPS_PASSWORD' python3 scripts/auto-deploy-vps.py
 ```
 
+Or SSH then:
+
+```bash
+cd ~/onex && git pull origin main && bash scripts/fix-all-system.sh
+```
+
 ## Verify
 
 ```bash
 curl -s http://zblockchainsystem.com/bridge/payments/status
+curl -s http://zblockchainsystem.com/bridge/bank/officer/status
+curl -sI http://zblockchainsystem.com/payments/assets/zbank-logo.png
 ```
 
-Expect JSON with `"enabled": true`.
+Expect JSON with `"framework":"zbank"` / `"enabled": true`, not the Nova HTML SPA.
