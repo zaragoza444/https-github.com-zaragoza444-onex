@@ -54,3 +54,7 @@ curl -sI http://zblockchainsystem.com/payments/assets/zbank-logo.png
 ```
 
 Expect JSON with `"framework":"zbank"` / `"enabled": true`, not the Nova HTML SPA.
+
+## Canonical domain
+
+All public URLs use **zblockchainsystem.com**. Legacy domains 301 redirect. See `deploy/CANONICAL-DOMAIN.md`.

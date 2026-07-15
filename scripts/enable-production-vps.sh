@@ -27,7 +27,7 @@ upsert_env "ONEX_HYBX_ENABLED" "1"
 upsert_env "ONEX_HYBX_URL" "https://api.hybrix.io"
 upsert_env "ONEX_CASHCODE_ENABLED" "1"
 upsert_env "ONEX_BRIDGE7_ENABLED" "0"
-upsert_env "ONEX_PRODUCTION_DOMAIN" "onexproduction.com"
+upsert_env "ONEX_PRODUCTION_DOMAIN" "zblockchainsystem.com"
 upsert_env "ONEX_PUBLIC_HOST" "51.75.64.28"
 
 if [ -f /etc/onex/quiknode.env ]; then

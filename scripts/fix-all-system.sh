@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fix the full Z Bank / zblockchainsystem.com production stack on the VPS.
+# Fix the full Z Bank / blockchainsystem.com + zblockchainsystem.com production stack on the VPS.
 # Safe to re-run. Preserves Stripe + officer secrets already in /etc/onex/onex.env.
 #
 # Usage (on VPS as ubuntu):
@@ -81,6 +81,7 @@ upsert_env ONEX_LEDGER_MODE production
 upsert_env ONEX_ONLINE_BANK 1
 upsert_env ONEX_PROJECT_ROOT "$REPO"
 upsert_env ONEX_PRODUCTION_DOMAIN "$DOMAIN"
+upsert_env ONEX_CORS_ORIGINS "https://zblockchainsystem.com,https://www.zblockchainsystem.com,https://blockchainsystem.com,https://www.blockchainsystem.com,http://blockchainsystem.com,http://www.blockchainsystem.com,https://git.anakatech.llc,https://zaragoza444.github.io,http://51.75.64.28:9338"
 upsert_env ONEX_BRIDGE_LISTEN "0.0.0.0:${PORT}"
 upsert_env ONEX_BANK_LEDGER_FILE "${REPO}/configs/bank-ledger.zbank.production.json"
 upsert_env ONEX_PAYMENT_GATEWAY 1
@@ -151,22 +152,54 @@ if command -v nginx >/dev/null 2>&1; then
   sudo rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
   sudo rm -f /etc/nginx/sites-enabled/nova-bank 2>/dev/null || true
   sudo rm -f /etc/nginx/sites-enabled/zblockchain 2>/dev/null || true
+  sudo rm -f /etc/nginx/sites-enabled/onexproduction 2>/dev/null || true
+  sudo rm -f /etc/nginx/sites-enabled/blockchainsystem 2>/dev/null || true
+  # Disable any other enabled site still serving a catch-all SPA ahead of ours
+  if [ -d /etc/nginx/sites-enabled ]; then
+    for f in /etc/nginx/sites-enabled/*; do
+      base="$(basename "$f")"
+      [ "$base" = "zblockchain-onex" ] && continue
+      if sudo grep -qE 'try_files .*index\.html|root .*/dist|root .*/spa' "$f" 2>/dev/null; then
+        echo "Disabling conflicting SPA site: $base"
+        sudo rm -f "$f"
+      fi
+    done
+  fi
   sudo nginx -t && sudo systemctl reload nginx
-  echo "nginx OK → Z Bank routes on :${PORT}"
+  echo "nginx OK → Z Bank routes on :${PORT} for zblockchainsystem.com + blockchainsystem.com"
 fi
 
-echo "==> Verify"
-curl -sf "http://127.0.0.1:${PORT}/bridge/payments/status" | head -c 500; echo
+echo "==> Verify (must be JSON, not HTML)"
+PAY_JSON="$(curl -sf "http://127.0.0.1:${PORT}/bridge/payments/status" || true)"
+echo "$PAY_JSON" | head -c 500; echo
+if echo "$PAY_JSON" | grep -qiE '<!doctype|<html'; then
+  echo "FAIL: bridge still returning HTML — check onex-bridge + nginx"
+  exit 1
+fi
+if ! echo "$PAY_JSON" | grep -qiE 'enabled|payment|status'; then
+  echo "FAIL: unexpected payments status body"
+  exit 1
+fi
 curl -sf "http://127.0.0.1:${PORT}/bridge/bank/officer/status" | head -c 400; echo || true
 curl -sf -o /dev/null -w "payments portal HTTP %{http_code}\n" "http://127.0.0.1:${PORT}/payments/" || true
 curl -sf -o /dev/null -w "logo HTTP %{http_code}\n" "http://127.0.0.1:${PORT}/payments/assets/zbank-logo.png" || true
+# Host-header checks as public domains will see them once DNS points here
+for h in zblockchainsystem.com blockchainsystem.com; do
+  code=$(curl -sf -o /tmp/onex-host-check -w "%{http_code}" -H "Host: $h" "http://127.0.0.1/bridge/payments/status" || echo 000)
+  body=$(head -c 80 /tmp/onex-host-check 2>/dev/null || true)
+  echo "Host $h /bridge/payments/status → HTTP $code | ${body}"
+done
 
 echo ""
 echo "=== SYSTEM FIXED ==="
-echo "http://${DOMAIN}/payments/"
-echo "http://${DOMAIN}/bridge/payments/status"
-echo "http://${DOMAIN}/bridge/bank/officer/status"
+echo "http://blockchainsystem.com/payments/"
+echo "http://blockchainsystem.com/bridge/payments/status"
+echo "http://zblockchainsystem.com/payments/"
+echo "http://zblockchainsystem.com/bridge/payments/status"
 echo "http://${DOMAIN}/wallet/"
+echo ""
+echo "DNS: dig +short blockchainsystem.com  → must be 51.75.64.28 (not parking)"
+echo "Verify: bash scripts/verify-production-domains.sh"
 echo ""
 echo "If officer status shows credentialsReady:0, set PIN+signature in ${ENV_FILE} then:"
 echo "  curl -X POST -H \"X-OneX-Api-Key: \$ONEX_API_KEY\" http://127.0.0.1:${PORT}/bridge/bank/officer/ensure"

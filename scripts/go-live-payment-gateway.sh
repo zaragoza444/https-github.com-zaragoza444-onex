@@ -20,7 +20,7 @@ go build -o "$REPO/bin/onex-bridge" ./cmd/onex-bridge
 ENV_FILE="/etc/onex/onex.env"
 if [ ! -f "$ENV_FILE" ]; then
   sudo mkdir -p /etc/onex
-  sudo cp deploy/env.onexproduction.example "$ENV_FILE"
+  sudo cp deploy/env.zbank.production.example "$ENV_FILE" 2>/dev/null || sudo cp deploy/env.zblockchainsystem.com.example "$ENV_FILE"
   KEY="$(openssl rand -base64 32 | tr -d '/+=' | head -c 32)"
   sudo sed -i "s/CHANGE_ME_LONG_RANDOM_SECRET/$KEY/" "$ENV_FILE"
 fi

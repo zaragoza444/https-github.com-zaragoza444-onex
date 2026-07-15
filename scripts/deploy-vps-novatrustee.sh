@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Production deploy for novatrustee.digital (run on Ubuntu VPS with Docker).
+# Production deploy (canonical: zblockchainsystem.com). Legacy hostnames redirect.
 set -euo pipefail
 
-DOMAIN="${ONEX_DEPLOY_DOMAIN:-novatrustee.digital}"
-EMAIL="${CERTBOT_EMAIL:-admin@digital}"
+DOMAIN="${ONEX_DEPLOY_DOMAIN:-zblockchainsystem.com}"
+EMAIL="${CERTBOT_EMAIL:-hello@zblockchainsystem.com}"
 COMPOSE="docker compose -f docker-compose.prod.yml"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -15,7 +15,7 @@ else
   mapfile -t IPS < <(getent ahosts "$DOMAIN" 2>/dev/null | awk '{print $1}' | sort -u)
 fi
 if [[ ${#IPS[@]} -eq 0 ]]; then
-  echo "ERROR: No A record for $DOMAIN (use novatrustee.digital, not .digitall)."
+  echo "ERROR: No A record for $DOMAIN."
   exit 1
 fi
 if [[ ${#IPS[@]} -gt 1 ]]; then
@@ -24,7 +24,7 @@ fi
 echo "    $DOMAIN -> ${IPS[0]}${IPS[1]:+, ${IPS[1]}...}"
 
 if [[ ! -f .env ]]; then
-  cp deploy/env.novatrustee.digital.example .env
+  cp deploy/env.zblockchainsystem.com.example .env
   echo "Created .env — set ONEX_API_KEY, then re-run."
   exit 1
 fi

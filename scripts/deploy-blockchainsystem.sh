@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Deploy OneX + Payment Gateway on blockchainsystem.com
+# Deploy OneX + Payment Gateway on zblockchainsystem.com (canonical)
 set -euo pipefail
 
-DOMAIN="${ONEX_PRODUCTION_DOMAIN:-blockchainsystem.com}"
-EMAIL="${CERTBOT_EMAIL:-hello@blockchainsystem.com}"
+DOMAIN="${ONEX_PRODUCTION_DOMAIN:-zblockchainsystem.com}"
+EMAIL="${CERTBOT_EMAIL:-hello@zblockchainsystem.com}"
 REPO="${ONEX_REPO:-$(cd "$(dirname "$0")/.." && pwd)}"
 
 echo "==> Deploy OneX for $DOMAIN"
@@ -11,7 +11,7 @@ cd "$REPO"
 git pull origin main 2>/dev/null || true
 
 if [ ! -f .env ]; then
-  cp deploy/env.blockchainsystem.com.example .env
+  cp deploy/env.zblockchainsystem.com.example .env
   KEY="$(openssl rand -base64 32 | tr -d '/+=' | head -c 32)"
   sed -i "s/CHANGE_ME_LONG_RANDOM_SECRET/$KEY/" .env
   echo "Created .env with random ONEX_API_KEY"
@@ -20,7 +20,7 @@ fi
 export ONEX_PRODUCTION_DOMAIN="$DOMAIN"
 
 # Ensure nginx knows this domain
-grep -q blockchainsystem.com deploy/nginx.prod.conf || echo "WARN: update deploy/nginx.prod.conf server_name"
+grep -q zblockchainsystem.com deploy/nginx.prod.conf || echo "WARN: update deploy/nginx.prod.conf server_name"
 
 if [ ! -f deploy/certs/fullchain.pem ]; then
   echo "==> TLS via certbot for $DOMAIN"

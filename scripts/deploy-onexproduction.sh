@@ -1,8 +1,8 @@
 #!/bin/bash
-# Deploy OneX Production Platform (onexproduction.com or ONEX_PRODUCTION_DOMAIN).
+# Deploy OneX Production Platform (canonical: zblockchainsystem.com).
 set -euo pipefail
 
-DOMAIN="${ONEX_PRODUCTION_DOMAIN:-blockchainsystem.com}"
+DOMAIN="${ONEX_PRODUCTION_DOMAIN:-zblockchainsystem.com}"
 EMAIL="${CERTBOT_EMAIL:-}"
 
 echo "==> DNS check for $DOMAIN"
@@ -12,7 +12,7 @@ if [ -z "$IPS" ]; then
 fi
 
 if [ ! -f .env ]; then
-  cp deploy/env.onexproduction.example .env
+  cp deploy/env.zblockchainsystem.com.example .env
   echo "Created .env — set ONEX_API_KEY before going live"
 fi
 

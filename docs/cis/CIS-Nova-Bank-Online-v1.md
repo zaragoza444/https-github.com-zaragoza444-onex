@@ -43,8 +43,8 @@ This CIS defines how **Nova Bank Online** integrates with the OneX production pl
 | SWIFT/BIC (default) | `NSBKLAL2X` |
 | Bank ID (routing) | `nsb` |
 | Fund class | `nsb` |
-| Production domain (primary) | `onexproduction.com` |
-| Trustee / alternate domain | `novatrustee.digital` |
+| Production domain (primary) | `zblockchainsystem.com` |
+| Trustee / alternate domain | Redirects to `zblockchainsystem.com` |
 | Bridge listen port | `9338` |
 | Wallet UI path | `/wallet/#onlinebank` |
 
@@ -104,8 +104,8 @@ flowchart TB
 | Environment | Host | Ledger mode | Online bank |
 |-------------|------|-------------|-------------|
 | Local dev | `127.0.0.1:9338` | `demo` | `ONEX_ONLINE_BANK=1` |
-| Production | `onexproduction.com` | `production` | `ONEX_ONLINE_BANK=1` |
-| Trustee | `novatrustee.digital` | `production` | `ONEX_ONLINE_BANK=1` |
+| Production | `zblockchainsystem.com` | `production` | `ONEX_ONLINE_BANK=1` |
+| Trustee (legacy host) | redirects → `zblockchainsystem.com` | `production` | `ONEX_ONLINE_BANK=1` |
 
 ### 4.1 Required environment variables
 
@@ -114,8 +114,8 @@ ONEX_LEDGER_MODE=production
 ONEX_ONLINE_BANK=1
 ONEX_BANK_LEDGER_FILE=configs/bank-ledger.nova.example.json
 ONEX_API_KEY=<long-random-secret>
-ONEX_PRODUCTION_DOMAIN=onexproduction.com
-ONEX_CORS_ORIGINS=https://onexproduction.com,https://novatrustee.digital
+ONEX_PRODUCTION_DOMAIN=zblockchainsystem.com
+ONEX_CORS_ORIGINS=https://zblockchainsystem.com,https://www.zblockchainsystem.com
 ```
 
 ### 4.2 Optional integrations
@@ -145,8 +145,8 @@ ONEX_BANK_PROVIDER=file
 # ONEX_TRUELAYER_ACCESS_TOKEN=...
 ```
 
-Full production template: `deploy/env.onexproduction.example`  
-Nova trustee template: `deploy/env.novatrustee.digital.example`
+Full production template: `deploy/env.zblockchainsystem.com.example`  
+Legacy hosts redirect — see `deploy/CANONICAL-DOMAIN.md`
 
 ---
 
@@ -285,7 +285,7 @@ Authentication: `X-API-Key: <ONEX_API_KEY>` on mutating endpoints where enforced
 
 | Control | Requirement |
 |---------|-------------|
-| TLS | Required in production (`novatrustee.digital`, `onexproduction.com`) |
+| TLS | Required in production (`zblockchainsystem.com`) |
 | API key | `ONEX_API_KEY` — rotate on compromise |
 | CORS | Restrict to approved origins via `ONEX_CORS_ORIGINS` |
 | Bank ledger file | `0600` permissions; never commit live balances |
@@ -300,12 +300,12 @@ Authentication: `X-API-Key: <ONEX_API_KEY>` on mutating endpoints where enforced
 ```bash
 cd /opt/onex
 git pull
-cp deploy/env.onexproduction.example .env
+cp deploy/env.zblockchainsystem.com.example .env
 # Edit ONEX_API_KEY, Fineract creds, bank ledger path
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-Trustee deploy: `deploy/DEPLOY-novatrustee.digital.md`
+Canonical domain: `deploy/CANONICAL-DOMAIN.md`
 
 ### 8.2 Verification checklist
 
@@ -413,7 +413,7 @@ Optional **processing fees** are configurable globally or per-page (`percent` + 
 | Nova 1 Chain CIS | `docs/cis/CIS-Nova-1-Chain-22016-v1.md` |
 | Integration matrix | `docs/cis/CIS-Nova-Integration-Matrix-v1.md` |
 | Bridge7 handoff | `deploy/BRIDGE7-SHARE.md` |
-| Production env | `deploy/env.onexproduction.example` |
+| Production env | `deploy/env.zblockchainsystem.com.example` |
 | Bank ledger seed | `configs/bank-ledger.nova.example.json` |
 
 ### C. Error handling

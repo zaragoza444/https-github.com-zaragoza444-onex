@@ -1,5 +1,8 @@
-# DNS — blockchainsystem.com → OneX VPS
+# DNS — blockchainsystem.com → OneX VPS (REQUIRED FOR HTTP 200)
 
+> **LIVE STATUS:** If `dig +short blockchainsystem.com` shows `76.223.54.146` or `13.248.169.48`, the domain is still on a **parking lander**. Replace those A records with `51.75.64.28` only, then run `bash scripts/fix-all-system.sh`.
+
+**Production domain:** `blockchainsystem.com`  
 **Production domain:** `blockchainsystem.com`  
 **VPS IPv4:** `51.75.64.28`  
 **GitHub:** [zaragoza444](https://github.com/zaragoza444)  
