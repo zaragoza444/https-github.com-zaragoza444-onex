@@ -26,11 +26,14 @@ func NormalizeFundClass(s string) string {
 		return FundM0
 	case "m1", "broad", "demand", "checking", "transactional":
 		return FundM1
-	case "m2", "near_money", "nearmoney", "savings", "retail_savings":
+	case "m2", "near_money", "nearmoney", "savings", "retail_savings",
+		"safeguarded", "settlement_reserve", "settlementreserve", "reserved":
 		return FundM2
-	case "m3", "institutional", "wholesale", "time_deposits":
+	case "m3", "institutional", "wholesale", "time_deposits",
+		"treasury", "liquidity_pool", "liquiditypool":
 		return FundM3
-	case "m4", "market", "repo", "commercial_paper", "money_market":
+	case "m4", "market", "repo", "commercial_paper", "money_market",
+		"cross_border", "crossborder", "wholesale_liquidity", "wholesaleliquidity", "tokenized_fiat", "tokenizedfiat":
 		return FundM4
 	case "mint", "stablecoin", "stable", "mainnet_mint", "mainnet":
 		return FundMINT

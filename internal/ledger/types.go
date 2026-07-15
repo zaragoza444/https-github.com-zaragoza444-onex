@@ -35,7 +35,7 @@ type Entry struct {
 	FiatValue    float64    `json:"fiatValue"`
 	FiatUSD      float64    `json:"fiatUsd"`
 	Account      string     `json:"account,omitempty"`
-	FundClass    string     `json:"fundClass,omitempty"` // m0, m1, nsb
+	FundClass    string     `json:"fundClass,omitempty"` // m0–m4, mint, nsb
 	Timestamp    int64      `json:"timestamp,omitempty"`
 	Reference    string     `json:"reference,omitempty"`
 }

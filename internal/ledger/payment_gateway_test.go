@@ -112,3 +112,39 @@ func TestPaymentGatewayZBankFramework(t *testing.T) {
 		t.Fatalf("display name %s", cfg.DisplayName)
 	}
 }
+
+func TestPaymentGatewayZBankExampleSettlesToZBankAccounts(t *testing.T) {
+	root := filepath.Clean(filepath.Join("..", ".."))
+	path := filepath.Join(root, "configs", "payment-gateway.zbank.example.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read zbank pg: %v", err)
+	}
+	var cfg PaymentGatewayConfig
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Framework != FrameworkZBank {
+		t.Fatalf("framework %q", cfg.Framework)
+	}
+	if cfg.DefaultSettlementDestination != "zbank-usd-main" {
+		t.Fatalf("default dest %q", cfg.DefaultSettlementDestination)
+	}
+	byID := map[string]SettlementDestination{}
+	for _, d := range cfg.SettlementDestinations {
+		byID[d.ID] = d
+	}
+	main := byID["zbank-usd-main"]
+	if main.AccountID != "zbank-usd-checking" {
+		t.Fatalf("zbank-usd-main accountId=%q want zbank-usd-checking", main.AccountID)
+	}
+	if main.AccountID == "nova-usd-checking" {
+		t.Fatal("zbank gateway must not settle into nova-usd-checking")
+	}
+	if byID["zbank-usd-safeguarded"].AccountID != "zbank-usd-safeguarded" {
+		t.Fatalf("safeguarded dest %+v", byID["zbank-usd-safeguarded"])
+	}
+	if byID["zbank-usd-treasury"].AccountID != "zbank-usd-treasury" {
+		t.Fatalf("treasury dest %+v", byID["zbank-usd-treasury"])
+	}
+}

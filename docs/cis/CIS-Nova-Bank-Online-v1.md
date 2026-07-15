@@ -28,6 +28,7 @@ This CIS defines how **Nova Bank Online** integrates with the OneX production pl
 **Out of scope**
 
 - Nova 1 Chain settlement (see `CIS-Nova-1-Chain-22016-v1.md`)
+- Z Bank M1–M4 operational liquidity model (see `CIS-Z-Bank-Online-v1.md`)
 - Mobile app store distribution
 - Third-party KYC/AML vendor selection
 
