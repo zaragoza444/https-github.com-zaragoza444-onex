@@ -69,24 +69,44 @@ Affirmation (per source CIS): the officer affirms under penalty of perjury that 
 
 ## 4. Officer bank authentication (PIN & signature)
 
-Z Bank officer operations require **both**:
+Z Bank officer operations require **both** factors. There are **no demo defaults** in production.
 
 | Factor | Rule | Storage |
 |--------|------|---------|
 | **PIN** | 4–8 digits | SHA-256 hash (`onex-zbank-officer-pin:` + pin + `:` + officer salt) — never stored in plaintext |
 | **Signature** | Typed signature passphrase / signature code (≥ 8 chars) | SHA-256 hash (`onex-zbank-officer-sig:` + normalized signature + `:` + officer salt) |
 
-Authorized transfers (`POST /bridge/bank/officer/transfer`) must include `officerId`, `pin`, and `signature`. Verification fails closed if either factor is missing or mismatched.
+Authorized transfers (`POST /bridge/bank/officer/transfer`) must include `officerId`, `pin`, and `signature`. Mutating officer endpoints require `X-OneX-Api-Key` when the bridge API key is configured.
 
-Seed config: `configs/zbank-officers.dssboat.example.json`  
-Env override for demo PIN/signature at first seed (rotate in production):
+### 4.1 Production bootstrap
+
+1. Copy `deploy/env.zbank.production.example` → `/etc/onex/onex.env`
+2. Set real values (operator only; never commit):
 
 ```env
+ONEX_LEDGER_MODE=production
+ONEX_PAYMENT_GATEWAY_PROVIDER=stripe
 ONEX_ZBANK_OFFICERS_FILE=configs/zbank-officers.dssboat.example.json
-ONEX_ZBANK_OFFICER_PIN=724265
-ONEX_ZBANK_OFFICER_SIGNATURE=BernardGreeffNiehaus-DSSBOAT
+ONEX_ZBANK_OFFICER_PIN=<4-8-digit-pin>
+ONEX_ZBANK_OFFICER_SIGNATURE=<min-8-char-signature>
+ONEX_STRIPE_SECRET_KEY=sk_live_...
+ONEX_STRIPE_PUBLISHABLE_KEY=pk_live_...
+ONEX_STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
+3. Seed officer credentials:
+
+```bash
+curl -s -X POST -H "X-OneX-Api-Key: $ONEX_API_KEY" https://HOST/bridge/bank/officer/ensure
+```
+
+4. Confirm `productionReady: true`:
+
+```bash
+curl -s https://HOST/bridge/bank/officer/status | jq .
+```
+
+Rotate later via `POST /bridge/bank/officer/credentials` (requires current PIN + signature).
 ---
 
 ## 5. Linked Z Bank accounts
@@ -118,8 +138,8 @@ Default linked accounts (M1–M4 operational layers):
 ```json
 {
   "officerId": "dssboat-officer-bneihaus",
-  "pin": "724265",
-  "signature": "BernardGreeffNiehaus-DSSBOAT"
+  "pin": "<production-pin>",
+  "signature": "<production-signature>"
 }
 ```
 
@@ -128,15 +148,14 @@ Default linked accounts (M1–M4 operational layers):
 ```json
 {
   "officerId": "dssboat-officer-bneihaus",
-  "pin": "724265",
-  "signature": "BernardGreeffNiehaus-DSSBOAT",
+  "pin": "<production-pin>",
+  "signature": "<production-signature>",
   "fromAccount": "zbank-usd-checking",
   "toAccount": "zbank-usd-safeguarded",
   "amount": "1000.00",
   "reference": "DSSBOAT-ops-001"
 }
 ```
-
 ---
 
 ## 7. Attachments

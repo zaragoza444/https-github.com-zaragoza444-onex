@@ -23,7 +23,9 @@ Customer Integration Specifications (CIS) for **Nova Bank Online**, **Z Bank**, 
 
 - `configs/bank-ledger.nova.example.json` — Nova Bank account seed data
 - `configs/bank-ledger.zbank.example.json` — Z Bank M0 + M1–M4 account seed data
+- `configs/bank-ledger.zbank.production.json` — Z Bank production ledger
 - `configs/zbank-officers.dssboat.example.json` — DSSBOaT corporate officer seed
+- `deploy/env.zbank.production.example` — Full production env (Stripe + officer secrets)
 - `docs/cis/DSSBOAT_CIS_2026.pdf` — Source Company Information Sheet (passport attached)
 - `configs/payment-gateway.zbank.example.json` — Z Bank payment gateway
 - `configs/chains.json` — Nova 1 chain registry entry

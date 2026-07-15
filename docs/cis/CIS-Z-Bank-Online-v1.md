@@ -124,14 +124,18 @@ Template: `deploy/env.zbank.example`
 ```env
 ONEX_LEDGER_MODE=production
 ONEX_ONLINE_BANK=1
-ONEX_BANK_LEDGER_FILE=configs/bank-ledger.zbank.example.json
+ONEX_BANK_LEDGER_FILE=configs/bank-ledger.zbank.production.json
 ONEX_PAYMENT_GATEWAY=1
-ONEX_PAYMENT_GATEWAY_FILE=configs/payment-gateway.zbank.example.json
+ONEX_PAYMENT_GATEWAY_FILE=configs/payment-gateway.zbank.production.json
 ONEX_PAYMENT_GATEWAY_FRAMEWORK=zbank
-ONEX_PAYMENT_GATEWAY_PROVIDER=mock
+ONEX_PAYMENT_GATEWAY_PROVIDER=stripe
+ONEX_ZBANK_OFFICERS_FILE=configs/zbank-officers.dssboat.example.json
+ONEX_ZBANK_OFFICER_PIN=<4-8-digit-pin>
+ONEX_ZBANK_OFFICER_SIGNATURE=<min-8-char-signature>
 ONEX_API_KEY=<long-random-secret>
 ```
 
+Full production template: `deploy/env.zbank.production.example`
 | Environment | Host | Notes |
 |-------------|------|-------|
 | Local dev | `127.0.0.1:9338` | Use zbank ledger + PG files above |

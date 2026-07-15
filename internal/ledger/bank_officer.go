@@ -208,29 +208,39 @@ func (s *BankOfficerStore) Status() map[string]interface{} {
 		return map[string]interface{}{"ready": false, "error": err.Error()}
 	}
 	active := 0
+	credReady := 0
 	for _, o := range f.Officers {
 		if strings.EqualFold(o.Status, "active") {
 			active++
+		}
+		if o.HasPIN && o.HasSignature {
+			credReady++
 		}
 	}
 	clientName := ""
 	if f.Client != nil {
 		clientName = f.Client.CompanyName
 	}
+	prod := LoadConfig().Production()
 	return map[string]interface{}{
-		"ready":       true,
-		"count":       len(f.Officers),
-		"active":      active,
-		"client":      clientName,
-		"seedFile":    BankOfficerSeedFile(),
-		"authFactors": []string{"pin", "signature"},
+		"ready":                 true,
+		"production":            prod,
+		"count":                 len(f.Officers),
+		"active":                active,
+		"credentialsReady":      credReady,
+		"productionReady":       prod && credReady > 0 && active > 0,
+		"client":                clientName,
+		"seedFile":              BankOfficerSeedFile(),
+		"authFactors":           []string{"pin", "signature"},
+		"requiresEnvSecrets":    []string{"ONEX_ZBANK_OFFICER_PIN", "ONEX_ZBANK_OFFICER_SIGNATURE"},
 		"endpoints": map[string]string{
-			"status":   "/bridge/bank/officer/status",
-			"list":     "/bridge/bank/officer/list",
-			"get":      "/bridge/bank/officer",
-			"verify":   "/bridge/bank/officer/verify",
-			"transfer": "/bridge/bank/officer/transfer",
-			"ensure":   "/bridge/bank/officer/ensure",
+			"status":      "/bridge/bank/officer/status",
+			"list":        "/bridge/bank/officer/list",
+			"get":         "/bridge/bank/officer",
+			"verify":      "/bridge/bank/officer/verify",
+			"transfer":    "/bridge/bank/officer/transfer",
+			"ensure":      "/bridge/bank/officer/ensure",
+			"credentials": "/bridge/bank/officer/credentials",
 		},
 	}
 }
@@ -300,13 +310,10 @@ func (s *BankOfficerStore) EnsureSeeded(seedPath string) error {
 	if err := json.Unmarshal(data, &seed); err != nil {
 		return err
 	}
-	pin := strings.TrimSpace(legacy.EnvOrLegacy("ONEX_ZBANK_OFFICER_PIN", "ONEX_ZBANK_OFFICER_PIN"))
-	if pin == "" {
-		pin = "724265" // demo only — CIS registration suffix; rotate in production
-	}
-	sig := strings.TrimSpace(legacy.EnvOrLegacy("ONEX_ZBANK_OFFICER_SIGNATURE", "ONEX_ZBANK_OFFICER_SIGNATURE"))
-	if sig == "" {
-		sig = "BernardGreeffNiehaus-DSSBOAT"
+	pin, sig, ok := OfficerSecretsFromEnv()
+	if !ok {
+		// Never embed demo credentials. Seed only when production secrets are present.
+		return nil
 	}
 	now := time.Now().Unix()
 	f.Client = seed.Client
@@ -518,4 +525,84 @@ func officerApprovalID(officerID, pin, signature string) string {
 	mac := hmac.New(sha256.New, []byte("onex-zbank-officer-approval"))
 	_, _ = mac.Write([]byte(officerID + "|" + pin + "|" + normalizeOfficerSignature(signature) + "|" + fmt.Sprintf("%d", time.Now().Unix()/60)))
 	return "oa-" + hex.EncodeToString(mac.Sum(nil)[:10])
+}
+
+// OfficerCredentialsRequest sets or rotates PIN + signature for an officer (production).
+type OfficerCredentialsRequest struct {
+	OfficerID       string `json:"officerId"`
+	PIN             string `json:"pin"`
+	Signature       string `json:"signature"`
+	CurrentPIN      string `json:"currentPin,omitempty"`
+	CurrentSignature string `json:"currentSignature,omitempty"`
+}
+
+func OfficerSecretsFromEnv() (pin, signature string, ok bool) {
+	pin = strings.TrimSpace(legacy.EnvOrLegacy("ONEX_ZBANK_OFFICER_PIN", "ONEX_ZBANK_OFFICER_PIN"))
+	signature = strings.TrimSpace(legacy.EnvOrLegacy("ONEX_ZBANK_OFFICER_SIGNATURE", "ONEX_ZBANK_OFFICER_SIGNATURE"))
+	if strings.HasPrefix(strings.ToUpper(pin), "CHANGE_ME") {
+		pin = ""
+	}
+	if strings.HasPrefix(strings.ToUpper(signature), "CHANGE_ME") {
+		signature = ""
+	}
+	ok = pin != "" && signature != ""
+	return pin, signature, ok
+}
+
+func RequireProductionOfficerSecrets() error {
+	if !LoadConfig().Production() {
+		return nil
+	}
+	if _, _, ok := OfficerSecretsFromEnv(); !ok {
+		return fmt.Errorf("production requires ONEX_ZBANK_OFFICER_PIN and ONEX_ZBANK_OFFICER_SIGNATURE — no demo defaults")
+	}
+	return nil
+}
+
+// SetCredentials sets PIN + signature. First-time setup needs no current factors;
+// rotation requires valid current PIN + signature.
+func (s *BankOfficerStore) SetCredentials(req OfficerCredentialsRequest) (*BankOfficerPublic, error) {
+	f, err := s.load()
+	if err != nil {
+		return nil, err
+	}
+	idx := -1
+	for i := range f.Officers {
+		if f.Officers[i].ID == strings.TrimSpace(req.OfficerID) {
+			idx = i
+			break
+		}
+	}
+	if idx < 0 {
+		return nil, fmt.Errorf("officer not found")
+	}
+	o := &f.Officers[idx]
+	if o.HasPIN && o.HasSignature {
+		if err := verifyOfficerFactors(*o, req.CurrentPIN, req.CurrentSignature); err != nil {
+			return nil, fmt.Errorf("current credentials invalid")
+		}
+	}
+	if err := setOfficerCredentials(o, req.PIN, req.Signature); err != nil {
+		return nil, err
+	}
+	if err := s.save(f); err != nil {
+		return nil, err
+	}
+	p := o.Public()
+	return &p, nil
+}
+
+// SeedFromEnv forces officer seed using required env secrets (production bootstrap).
+func (s *BankOfficerStore) SeedFromEnv(seedPath string) error {
+	if _, _, ok := OfficerSecretsFromEnv(); !ok {
+		return fmt.Errorf("ONEX_ZBANK_OFFICER_PIN and ONEX_ZBANK_OFFICER_SIGNATURE required")
+	}
+	f, err := s.load()
+	if err != nil {
+		return err
+	}
+	if len(f.Officers) > 0 {
+		return s.EnsureSeeded(seedPath) // already seeded
+	}
+	return s.EnsureSeeded(seedPath)
 }

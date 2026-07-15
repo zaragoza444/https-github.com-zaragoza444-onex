@@ -8,7 +8,7 @@
 set -euo pipefail
 
 REPO="${ONEX_REPO:-$HOME/onex}"
-ENV_SRC="${ENV_SRC:-$REPO/deploy/env.zblockchainsystem.com.example}"
+ENV_SRC="${ENV_SRC:-$REPO/deploy/env.zbank.production.example}"
 ENV_DEST="${ENV_DEST:-/etc/onex/onex.env}"
 DOCKER_ENV="${DOCKER_ENV:-$REPO/.env}"
 
@@ -16,7 +16,10 @@ cd "$REPO"
 git pull origin main 2>/dev/null || true
 
 if [ ! -f "$ENV_SRC" ]; then
-  echo "Missing $ENV_SRC" >&2
+  ENV_SRC="$REPO/deploy/env.zblockchainsystem.com.example"
+fi
+if [ ! -f "$ENV_SRC" ]; then
+  echo "Missing production env template" >&2
   exit 1
 fi
 

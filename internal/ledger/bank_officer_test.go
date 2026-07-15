@@ -11,8 +11,8 @@ func TestBankOfficerDSSBOATSeedAndAuth(t *testing.T) {
 	store := &BankOfficerStore{path: filepath.Join(dir, "zbank-officers.json")}
 	root := filepath.Clean(filepath.Join("..", ".."))
 	seed := filepath.Join(root, "configs", "zbank-officers.dssboat.example.json")
-	t.Setenv("ONEX_ZBANK_OFFICER_PIN", "724265")
-	t.Setenv("ONEX_ZBANK_OFFICER_SIGNATURE", "BernardGreeffNiehaus-DSSBOAT")
+	t.Setenv("ONEX_ZBANK_OFFICER_PIN", "918273")
+	t.Setenv("ONEX_ZBANK_OFFICER_SIGNATURE", "ProdSignature-DSSBOAT-01")
 	if err := store.EnsureSeeded(seed); err != nil {
 		t.Fatal(err)
 	}
@@ -43,7 +43,7 @@ func TestBankOfficerDSSBOATSeedAndAuth(t *testing.T) {
 	}
 
 	ok, err := store.Verify(OfficerAuthRequest{
-		OfficerID: o.ID, PIN: "724265", Signature: "BernardGreeffNiehaus-DSSBOAT",
+		OfficerID: o.ID, PIN: "918273", Signature: "ProdSignature-DSSBOAT-01",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -52,7 +52,7 @@ func TestBankOfficerDSSBOATSeedAndAuth(t *testing.T) {
 		t.Fatalf("expected valid auth %+v", ok)
 	}
 	bad, err := store.Verify(OfficerAuthRequest{
-		OfficerID: o.ID, PIN: "0000", Signature: "BernardGreeffNiehaus-DSSBOAT",
+		OfficerID: o.ID, PIN: "0000", Signature: "ProdSignature-DSSBOAT-01",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -61,7 +61,7 @@ func TestBankOfficerDSSBOATSeedAndAuth(t *testing.T) {
 		t.Fatal("wrong pin should fail")
 	}
 	badSig, err := store.Verify(OfficerAuthRequest{
-		OfficerID: o.ID, PIN: "724265", Signature: "WrongSignatureXX",
+		OfficerID: o.ID, PIN: "918273", Signature: "WrongSignatureXX",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -71,23 +71,73 @@ func TestBankOfficerDSSBOATSeedAndAuth(t *testing.T) {
 	}
 }
 
+func TestBankOfficerNoDemoDefaultsWithoutEnv(t *testing.T) {
+	dir := t.TempDir()
+	store := &BankOfficerStore{path: filepath.Join(dir, "zbank-officers.json")}
+	root := filepath.Clean(filepath.Join("..", ".."))
+	t.Setenv("ONEX_ZBANK_OFFICER_PIN", "")
+	t.Setenv("ONEX_ZBANK_OFFICER_SIGNATURE", "")
+	t.Setenv("ONEX_LEDGER_MODE", "production")
+	if err := store.EnsureSeeded(filepath.Join(root, "configs", "zbank-officers.dssboat.example.json")); err != nil {
+		t.Fatal(err)
+	}
+	list, err := store.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list) != 0 {
+		t.Fatalf("expected no officers without env secrets, got %d", len(list))
+	}
+	if err := RequireProductionOfficerSecrets(); err == nil {
+		t.Fatal("expected production secrets requirement error")
+	}
+}
+
+func TestBankOfficerSetCredentialsRotation(t *testing.T) {
+	dir := t.TempDir()
+	store := &BankOfficerStore{path: filepath.Join(dir, "zbank-officers.json")}
+	root := filepath.Clean(filepath.Join("..", ".."))
+	t.Setenv("ONEX_ZBANK_OFFICER_PIN", "918273")
+	t.Setenv("ONEX_ZBANK_OFFICER_SIGNATURE", "ProdSignature-DSSBOAT-01")
+	if err := store.EnsureSeeded(filepath.Join(root, "configs", "zbank-officers.dssboat.example.json")); err != nil {
+		t.Fatal(err)
+	}
+	pub, err := store.SetCredentials(OfficerCredentialsRequest{
+		OfficerID: "dssboat-officer-bneihaus",
+		PIN: "556677", Signature: "ProdSignature-DSSBOAT-02",
+		CurrentPIN: "918273", CurrentSignature: "ProdSignature-DSSBOAT-01",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !pub.HasPIN {
+		t.Fatal("expected pin after rotation")
+	}
+	ok, err := store.Verify(OfficerAuthRequest{
+		OfficerID: pub.ID, PIN: "556677", Signature: "ProdSignature-DSSBOAT-02",
+	})
+	if err != nil || !ok.Valid {
+		t.Fatalf("rotated credentials should verify: %+v %v", ok, err)
+	}
+}
+
 func TestBankOfficerAuthorizedTransfer(t *testing.T) {
 	dir := t.TempDir()
 	officers := &BankOfficerStore{path: filepath.Join(dir, "zbank-officers.json")}
 	bank := &OnlineBankStore{path: filepath.Join(dir, "online-bank.json")}
 	root := filepath.Clean(filepath.Join("..", ".."))
-	t.Setenv("ONEX_ZBANK_OFFICER_PIN", "724265")
-	t.Setenv("ONEX_ZBANK_OFFICER_SIGNATURE", "BernardGreeffNiehaus-DSSBOAT")
+	t.Setenv("ONEX_ZBANK_OFFICER_PIN", "91827364")
+	t.Setenv("ONEX_ZBANK_OFFICER_SIGNATURE", "ProdSignature-DSSBOAT-XFER")
 	if err := officers.EnsureSeeded(filepath.Join(root, "configs", "zbank-officers.dssboat.example.json")); err != nil {
 		t.Fatal(err)
 	}
-	if err := bank.EnsureSeeded(filepath.Join(root, "configs", "bank-ledger.zbank.example.json")); err != nil {
+	if err := bank.EnsureSeeded(filepath.Join(root, "configs", "bank-ledger.zbank.production.json")); err != nil {
 		t.Fatal(err)
 	}
 	res, err := officers.AuthorizeTransfer(OfficerTransferRequest{
 		OfficerID: "dssboat-officer-bneihaus",
-		PIN:       "724265",
-		Signature: "BernardGreeffNiehaus-DSSBOAT",
+		PIN:       "91827364",
+		Signature: "ProdSignature-DSSBOAT-XFER",
 		FromAccount: "zbank-usd-checking",
 		ToAccount:   "zbank-usd-safeguarded",
 		Amount:      "100.00",
@@ -101,8 +151,8 @@ func TestBankOfficerAuthorizedTransfer(t *testing.T) {
 	}
 	denied, err := officers.AuthorizeTransfer(OfficerTransferRequest{
 		OfficerID: "dssboat-officer-bneihaus",
-		PIN:       "724265",
-		Signature: "BernardGreeffNiehaus-DSSBOAT",
+		PIN:       "91827364",
+		Signature: "ProdSignature-DSSBOAT-XFER",
 		FromAccount: "nova-usd-checking",
 		ToAccount:   "zbank-usd-safeguarded",
 		Amount:      "10.00",

@@ -15,18 +15,23 @@ func (s *Server) registerBankOfficerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/bridge/bank/officer/verify", s.handleBankOfficerVerify)
 	mux.HandleFunc("/bridge/bank/officer/transfer", s.handleBankOfficerTransfer)
 	mux.HandleFunc("/bridge/bank/officer/ensure", s.handleBankOfficerEnsure)
+	mux.HandleFunc("/bridge/bank/officer/credentials", s.handleBankOfficerCredentials)
 }
 
 func (b *Bridge) bankOfficers() *ledger.BankOfficerStore {
 	return ledger.DefaultBankOfficerStore()
 }
 
-func (b *Bridge) ensureBankOfficers() error {
+func (b *Bridge) officerSeedPath() string {
 	seed := ledger.BankOfficerSeedFile()
 	if !filepath.IsAbs(seed) {
 		seed = filepath.Join(b.projectRoot(), seed)
 	}
-	return b.bankOfficers().EnsureSeeded(seed)
+	return seed
+}
+
+func (b *Bridge) ensureBankOfficers() error {
+	return b.bankOfficers().EnsureSeeded(b.officerSeedPath())
 }
 
 func (s *Server) handleBankOfficerStatus(w http.ResponseWriter, r *http.Request) {
@@ -142,10 +147,45 @@ func (s *Server) handleBankOfficerEnsure(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "POST only", http.StatusMethodNotAllowed)
 		return
 	}
-	if err := s.b.ensureBankOfficers(); err != nil {
+	if err := ledger.RequireProductionOfficerSecrets(); err != nil {
+		writeJSON(w, map[string]string{"error": err.Error()})
+		return
+	}
+	if err := s.b.bankOfficers().SeedFromEnv(s.b.officerSeedPath()); err != nil {
 		writeJSON(w, map[string]string{"error": err.Error()})
 		return
 	}
 	list, _ := s.b.bankOfficers().List()
-	writeJSON(w, map[string]interface{}{"status": "ok", "officers": list, "count": len(list)})
+	writeJSON(w, map[string]interface{}{
+		"status": "ok", "production": ledger.LoadConfig().Production(),
+		"officers": list, "count": len(list),
+	})
+}
+
+func (s *Server) handleBankOfficerCredentials(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "POST only", http.StatusMethodNotAllowed)
+		return
+	}
+	if err := s.b.ensureBankOfficers(); err != nil {
+		writeJSON(w, map[string]string{"error": err.Error()})
+		return
+	}
+	var req ledger.OfficerCredentialsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if list, _ := s.b.bankOfficers().List(); len(list) == 0 {
+		if err := s.b.bankOfficers().SeedFromEnv(s.b.officerSeedPath()); err != nil {
+			writeJSON(w, map[string]string{"error": err.Error()})
+			return
+		}
+	}
+	pub, err := s.b.bankOfficers().SetCredentials(req)
+	if err != nil {
+		writeJSON(w, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, map[string]interface{}{"status": "updated", "officer": pub})
 }

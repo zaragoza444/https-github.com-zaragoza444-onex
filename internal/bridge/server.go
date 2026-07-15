@@ -200,7 +200,14 @@ func needsAPIKey(r *http.Request) bool {
 		"/bridge/onex-swap/bridge",
 		"/bridge/ethereum/transfer",
 		"/bridge/ethereum/fund-sender",
-		"/bridge/quiknode/transfer":
+		"/bridge/quiknode/transfer",
+		"/bridge/bank/send",
+		"/bridge/bank/transfer",
+		"/bridge/bank/deposit",
+		"/bridge/bank/officer/verify",
+		"/bridge/bank/officer/transfer",
+		"/bridge/bank/officer/ensure",
+		"/bridge/bank/officer/credentials":
 		return true
 	default:
 		return false
