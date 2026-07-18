@@ -214,6 +214,18 @@ h2 { font-size: 1.35rem; margin-bottom: 8px; }
   text-align: center; margin-top: 32px;
   font-size: 0.75rem; color: var(--muted);
 }
+.dashboard-status {
+  margin: 10px 0 4px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.dashboard-status.live { color: var(--success, #22c55e); }
+.dashboard-status.down { color: var(--danger, #ef4444); }
+.dashboard-links a {
+  color: var(--muted);
+  text-decoration: none;
+}
+.dashboard-links a:hover { text-decoration: underline; }
 
 @media (max-width: 480px) {
   .header { flex-direction: column; }

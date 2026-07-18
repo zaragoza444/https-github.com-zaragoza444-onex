@@ -12,10 +12,41 @@
 
   async function api(path, opts) {
     const res = await fetch(API + path, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       ...opts,
     });
-    return res.json();
+    const text = await res.text();
+    if (text.trimStart().startsWith('<!') || text.trimStart().startsWith('<html')) {
+      throw new Error('Bridge returned HTML instead of JSON — nginx/domain routing is broken on ' + location.hostname);
+    }
+    try {
+      return JSON.parse(text);
+    } catch (_) {
+      throw new Error('Invalid JSON from ' + path + ' (HTTP ' + res.status + ')');
+    }
+  }
+
+  async function refreshDashboardStatus() {
+    const el = $('dashboard-status');
+    if (!el) return;
+    try {
+      const st = await api('/bridge/payments/status');
+      const fw = st.framework || config.framework || 'zbank';
+      const on = st.enabled === true || st.enabled === 1 || st.enabled === '1';
+      el.textContent =
+        location.hostname +
+        ' · ' +
+        (fw === 'zbank' ? 'Z Bank' : fw) +
+        ' · payments ' +
+        (on ? 'LIVE' : 'OFF') +
+        (st.provider ? ' · ' + st.provider : '');
+      el.classList.toggle('live', !!on);
+      el.classList.toggle('down', !on);
+    } catch (err) {
+      el.textContent = location.hostname + ' · dashboard offline — ' + (err.message || 'bridge down');
+      el.classList.add('down');
+      el.classList.remove('live');
+    }
   }
 
   function qs(name) {
@@ -260,16 +291,22 @@
   }
 
   async function init() {
-    await loadConfig();
-    const slug = qs('page');
-    if (slug) {
-      await loadPage(slug);
-    } else {
-      await loadPageList();
-      $('payment-form').classList.add('hidden');
+    try {
+      await loadConfig();
+      await refreshDashboardStatus();
+      const slug = qs('page');
+      if (slug) {
+        await loadPage(slug);
+      } else {
+        await loadPageList();
+        $('payment-form').classList.add('hidden');
+      }
+    } catch (err) {
+      showError(err.message || 'Payment dashboard could not load. Check domain → VPS and onex-bridge.');
+      await refreshDashboardStatus();
     }
-    $('amount').addEventListener('input', updateFeePreview);
-    $('pay-form').addEventListener('submit', handleSubmit);
+    if ($('amount')) $('amount').addEventListener('input', updateFeePreview);
+    if ($('pay-form')) $('pay-form').addEventListener('submit', handleSubmit);
   }
 
   window.hideError = hideError;
