@@ -5,7 +5,8 @@
 | Domain | **zblockchainsystem.com** |
 | GitHub | **zaragoza444** |
 | Gitea | **Zaragoza** @ git.anakatech.llc |
-| VPS | **zblockchainsystem.com** |
+| VPS SSH | **`51.75.64.28`** (deploy target) |
+| Public domain | **`zblockchainsystem.com`** (URLs only) |
 
 Repo: **https://github.com/zaragoza444/https-github.com-zaragoza444-onex**
 
