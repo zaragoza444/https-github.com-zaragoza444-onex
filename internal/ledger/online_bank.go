@@ -1,6 +1,8 @@
 package ledger
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -20,33 +22,37 @@ const (
 
 // OnlineBankAccount is a live online banking account with IBAN.
 type OnlineBankAccount struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	IBAN      string `json:"iban,omitempty"`
-	Currency  string `json:"currency"`
-	Balance   string `json:"balance"`
-	FundClass string `json:"fundClass,omitempty"`
-	Bank      string `json:"bank,omitempty"`
-	Status    string `json:"status,omitempty"`
+	ID                   string `json:"id"`
+	Name                 string `json:"name"`
+	IBAN                 string `json:"iban,omitempty"`
+	Currency             string `json:"currency"`
+	Balance              string `json:"balance"`
+	FundClass            string `json:"fundClass,omitempty"`
+	Bank                 string `json:"bank,omitempty"`
+	Status               string `json:"status,omitempty"`
+	OfficerPINHash       string `json:"officerPinHash,omitempty"`
+	OfficerPINRequired   bool   `json:"officerPinRequired,omitempty"`
+	OfficerPINConfigured bool   `json:"officerPinConfigured,omitempty"`
 }
 
 // OnlineBankTransaction records a transfer on the online bank.
 type OnlineBankTransaction struct {
-	ID          string `json:"id"`
-	Type        string `json:"type"` // internal, iban, sepa, swift, wire, ach, fps
-	FromAccount string `json:"fromAccount"`
-	FromName    string `json:"fromName,omitempty"`
-	ToAccount   string `json:"toAccount,omitempty"`
-	ToName      string `json:"toName,omitempty"`
-	ToIBAN      string `json:"toIban,omitempty"`
-	ToBank      string `json:"toBank,omitempty"`
-	Rail        string `json:"rail,omitempty"`
-	Amount      string `json:"amount"`
-	Currency    string `json:"currency"`
-	Status      string `json:"status"` // completed, pending
-	Reference   string `json:"reference,omitempty"`
-	Settlement  string `json:"settlement,omitempty"`
-	CreatedAt   int64  `json:"createdAt"`
+	ID                string `json:"id"`
+	Type              string `json:"type"` // internal, iban, sepa, swift, wire, ach, fps
+	FromAccount       string `json:"fromAccount"`
+	FromName          string `json:"fromName,omitempty"`
+	ToAccount         string `json:"toAccount,omitempty"`
+	ToName            string `json:"toName,omitempty"`
+	ToIBAN            string `json:"toIban,omitempty"`
+	ToBank            string `json:"toBank,omitempty"`
+	Rail              string `json:"rail,omitempty"`
+	Amount            string `json:"amount"`
+	Currency          string `json:"currency"`
+	Status            string `json:"status"` // completed, pending
+	Reference         string `json:"reference,omitempty"`
+	Settlement        string `json:"settlement,omitempty"`
+	OfficerAuthorized bool   `json:"officerAuthorized,omitempty"`
+	CreatedAt         int64  `json:"createdAt"`
 }
 
 // OnlineBankState is the persisted online bank book.
@@ -68,16 +74,18 @@ type OnlineBankTransferRequest struct {
 	ToBank      string `json:"toBank,omitempty"`
 	ToIBAN      string `json:"toIban,omitempty"`
 	Reference   string `json:"reference,omitempty"`
+	OfficerPIN  string `json:"officerPin,omitempty"`
+	PIN         string `json:"pin,omitempty"`
 	Preview     bool   `json:"preview,omitempty"`
 }
 
 // OnlineBankTransferResult is returned after a transfer attempt.
 type OnlineBankTransferResult struct {
-	Status      string                `json:"status"`
-	Preview     bool                  `json:"preview,omitempty"`
+	Status      string                 `json:"status"`
+	Preview     bool                   `json:"preview,omitempty"`
 	Transaction *OnlineBankTransaction `json:"transaction,omitempty"`
-	FromBalance string                `json:"fromBalance,omitempty"`
-	ToBalance   string                `json:"toBalance,omitempty"`
+	FromBalance string                 `json:"fromBalance,omitempty"`
+	ToBalance   string                 `json:"toBalance,omitempty"`
 }
 
 // OnlineBankDepositRequest credits an online bank account.
@@ -189,11 +197,47 @@ func (s *OnlineBankStore) EnsureSeeded(bankFile string) error {
 	if path == "" {
 		return nil
 	}
+	seen := map[string]bool{}
+	if accts, err := readBankAccountsFile(path); err == nil && len(accts) > 0 {
+		for i, acct := range accts {
+			id := strings.TrimSpace(acct.ID)
+			if id == "" {
+				id = fmt.Sprintf("bank-%d", i)
+			}
+			if seen[id] {
+				continue
+			}
+			seen[id] = true
+			cur := strings.ToUpper(strings.TrimSpace(acct.Currency))
+			if cur == "" {
+				cur = "USD"
+			}
+			bal := strings.TrimSpace(acct.Balance)
+			if bal == "" {
+				continue
+			}
+			name := strings.TrimSpace(acct.Name)
+			if name == "" {
+				name = id
+			}
+			pinHash := strings.TrimSpace(acct.OfficerPINHash)
+			if pinHash == "" {
+				pinHash = hashOfficerPIN(acct.OfficerPIN)
+			}
+			st.Accounts = append(st.Accounts, OnlineBankAccount{
+				ID: id, Name: name, IBAN: normalizeIBAN(acct.IBAN),
+				Currency: cur, Balance: bal, FundClass: resolveBankFundClass(acct, id),
+				Bank: strings.TrimSpace(acct.Bank), Status: "active",
+				OfficerPINHash: pinHash, OfficerPINRequired: acct.OfficerPINRequired || pinHash != "",
+			})
+		}
+		st.Online = true
+		return s.save(st)
+	}
 	entries, err := ReadBankLedger(BankConfig{FilePath: path})
 	if err != nil {
 		return err
 	}
-	seen := map[string]bool{}
 	for _, e := range entries {
 		id := e.ID
 		if id == "" || seen[id] {
@@ -222,12 +266,16 @@ func (s *OnlineBankStore) EnsureSeeded(bankFile string) error {
 func extractIBAN(account string) string {
 	parts := strings.Split(account, "·")
 	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if len(p) >= 15 && ibanRe.MatchString(strings.ToUpper(strings.ReplaceAll(p, " ", ""))) {
-			return strings.ToUpper(strings.ReplaceAll(p, " ", ""))
+		p = normalizeIBAN(p)
+		if len(p) >= 15 && ibanRe.MatchString(p) {
+			return p
 		}
 	}
 	return ""
+}
+
+func normalizeIBAN(s string) string {
+	return strings.ToUpper(strings.ReplaceAll(strings.TrimSpace(s), " ", ""))
 }
 
 func accountNameOnly(account string) string {
@@ -235,6 +283,67 @@ func accountNameOnly(account string) string {
 		return strings.TrimSpace(account[:idx])
 	}
 	return strings.TrimSpace(account)
+}
+
+func sanitizeOnlineBankAccount(acct OnlineBankAccount) OnlineBankAccount {
+	acct.OfficerPINConfigured = strings.TrimSpace(acct.OfficerPINHash) != ""
+	acct.OfficerPINHash = ""
+	return acct
+}
+
+func hashOfficerPIN(pin string) string {
+	pin = strings.TrimSpace(pin)
+	if pin == "" {
+		return ""
+	}
+	sum := sha256.Sum256([]byte("officer-pin:" + pin))
+	return "sha256:" + hex.EncodeToString(sum[:])
+}
+
+func verifyOfficerPIN(supplied, stored string) bool {
+	supplied = strings.TrimSpace(supplied)
+	stored = strings.TrimSpace(stored)
+	if supplied == "" || stored == "" {
+		return false
+	}
+	if strings.HasPrefix(stored, "sha256:") {
+		return stored == hashOfficerPIN(supplied)
+	}
+	return stored == supplied
+}
+
+func requestedOfficerPIN(req OnlineBankTransferRequest) string {
+	return firstNonEmpty(req.OfficerPIN, req.PIN)
+}
+
+func validateOfficerPIN(acct OnlineBankAccount, req OnlineBankTransferRequest) (bool, error) {
+	if !acct.OfficerPINRequired && strings.TrimSpace(acct.OfficerPINHash) == "" {
+		return false, nil
+	}
+	if strings.TrimSpace(acct.OfficerPINHash) == "" {
+		return false, fmt.Errorf("officer PIN is not configured for %s", acct.Name)
+	}
+	if requestedOfficerPIN(req) == "" {
+		return false, fmt.Errorf("officer PIN required for %s", acct.Name)
+	}
+	if !verifyOfficerPIN(requestedOfficerPIN(req), acct.OfficerPINHash) {
+		return false, fmt.Errorf("invalid officer PIN for %s", acct.Name)
+	}
+	return true, nil
+}
+
+// AuthorizeOfficerPIN validates the configured officer PIN for a protected bank account.
+func (s *OnlineBankStore) AuthorizeOfficerPIN(accountID, pin string) error {
+	st, err := s.load()
+	if err != nil {
+		return err
+	}
+	acct, _ := s.findAccount(st, strings.TrimSpace(accountID))
+	if acct == nil {
+		return fmt.Errorf("officer account not found")
+	}
+	_, err = validateOfficerPIN(*acct, OnlineBankTransferRequest{OfficerPIN: pin})
+	return err
 }
 
 func (s *OnlineBankStore) Status() map[string]interface{} {
@@ -264,7 +373,9 @@ func (s *OnlineBankStore) ListAccounts() ([]OnlineBankAccount, error) {
 		return nil, err
 	}
 	out := make([]OnlineBankAccount, len(st.Accounts))
-	copy(out, st.Accounts)
+	for i, acct := range st.Accounts {
+		out[i] = sanitizeOnlineBankAccount(acct)
+	}
 	return out, nil
 }
 
@@ -306,7 +417,7 @@ func (s *OnlineBankStore) GetAccount(id string) (*OnlineBankAccount, error) {
 	if acct == nil {
 		return nil, fmt.Errorf("account not found")
 	}
-	out := *acct
+	out := sanitizeOnlineBankAccount(*acct)
 	return &out, nil
 }
 
@@ -379,6 +490,19 @@ func (s *OnlineBankStore) findAccount(st *OnlineBankState, id string) (*OnlineBa
 	return nil, -1
 }
 
+func (s *OnlineBankStore) findAccountByIBAN(st *OnlineBankState, iban string) *OnlineBankAccount {
+	iban = normalizeIBAN(iban)
+	if iban == "" {
+		return nil
+	}
+	for i := range st.Accounts {
+		if normalizeIBAN(st.Accounts[i].IBAN) == iban {
+			return &st.Accounts[i]
+		}
+	}
+	return nil
+}
+
 // EnsureSystemAccount creates a zero-balance system account when missing.
 func (s *OnlineBankStore) EnsureSystemAccount(id, name, currency, fundClass string) error {
 	st, err := s.load()
@@ -422,6 +546,7 @@ func (s *OnlineBankStore) Transfer(req OnlineBankTransferRequest) (*OnlineBankTr
 	toName := ""
 	toIBAN := strings.ToUpper(strings.ReplaceAll(strings.TrimSpace(req.ToIBAN), " ", ""))
 	toBank := strings.TrimSpace(req.ToBank)
+	var to *OnlineBankAccount
 	rail := BankRail(strings.ToLower(strings.TrimSpace(req.Rail)))
 	if toIBAN != "" {
 		txType = "send"
@@ -431,9 +556,10 @@ func (s *OnlineBankStore) Transfer(req OnlineBankTransferRequest) (*OnlineBankTr
 		if _, err := ParseExternalDestination(fmt.Sprintf("bank:%s:%s:%s", orDefault(toBank, "generic"), rail, toIBAN)); err != nil {
 			return nil, err
 		}
+		to = s.findAccountByIBAN(st, toIBAN)
 		status = "pending"
 	} else if strings.TrimSpace(req.ToAccount) != "" {
-		to, _ := s.findAccount(st, strings.TrimSpace(req.ToAccount))
+		to, _ = s.findAccount(st, strings.TrimSpace(req.ToAccount))
 		if to == nil {
 			return nil, fmt.Errorf("to account not found")
 		}
@@ -443,6 +569,17 @@ func (s *OnlineBankStore) Transfer(req OnlineBankTransferRequest) (*OnlineBankTr
 		toName = to.Name
 	} else {
 		return nil, fmt.Errorf("toAccount or toIban required")
+	}
+	officerAuthorized := false
+	for _, acct := range []*OnlineBankAccount{from, to} {
+		if acct == nil {
+			continue
+		}
+		ok, err := validateOfficerPIN(*acct, req)
+		if err != nil {
+			return nil, err
+		}
+		officerAuthorized = officerAuthorized || ok
 	}
 
 	ref := strings.TrimSpace(req.Reference)
@@ -458,7 +595,7 @@ func (s *OnlineBankStore) Transfer(req OnlineBankTransferRequest) (*OnlineBankTr
 			Type: txType, FromAccount: from.ID, FromName: from.Name,
 			ToAccount: req.ToAccount, ToName: toName, ToIBAN: toIBAN, ToBank: toBank,
 			Rail: string(rail), Amount: formatFloat(amt), Currency: from.Currency,
-			Status: status, Reference: ref,
+			Status: status, Reference: ref, OfficerAuthorized: officerAuthorized,
 		},
 	}
 
@@ -664,7 +801,7 @@ func (s *OnlineBankStore) DebitAccount(accountID, amount, ref string) (string, e
 	acct.Balance = formatFloat(bal - amt)
 	st.Accounts[idx] = *acct
 	tx := OnlineBankTransaction{
-		ID: fmt.Sprintf("obdebit-%d", time.Now().UnixNano()),
+		ID:   fmt.Sprintf("obdebit-%d", time.Now().UnixNano()),
 		Type: "send", FromAccount: acct.ID, FromName: acct.Name,
 		Amount: formatFloat(amt), Currency: acct.Currency,
 		Status: "completed", Reference: ref, CreatedAt: time.Now().Unix(),

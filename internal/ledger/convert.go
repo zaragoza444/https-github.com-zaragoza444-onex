@@ -105,6 +105,15 @@ func formatFloat(v float64) string {
 	if math.IsNaN(v) || math.IsInf(v, 0) {
 		return "0"
 	}
+	if cents := math.Round(v * 100); math.Abs(v*100-cents) < 1e-6 {
+		s := fmt.Sprintf("%.2f", cents/100)
+		s = strings.TrimRight(s, "0")
+		s = strings.TrimRight(s, ".")
+		if s == "" || s == "-" {
+			return "0"
+		}
+		return s
+	}
 	s := fmt.Sprintf("%.12f", v)
 	s = strings.TrimRight(s, "0")
 	s = strings.TrimRight(s, ".")

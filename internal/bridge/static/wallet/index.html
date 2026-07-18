@@ -326,6 +326,7 @@
             </select>
             <input id="online-bank-iban" placeholder="IBAN / account number" oninput="onlineBankPreviewDebounced()" />
           </div>
+          <input id="online-bank-officer-pin" type="password" placeholder="Officer PIN (if required)" autocomplete="one-time-code" oninput="onlineBankPreviewDebounced()" />
           <input id="online-bank-ref" placeholder="Reference (optional)" oninput="onlineBankPreviewDebounced()" />
           <p class="ledger-conv-preview" id="online-bank-preview">Select accounts and amount</p>
           <button type="button" class="btn-primary" id="online-bank-btn" onclick="doOnlineBankSend()">Send payment</button>
@@ -475,6 +476,23 @@
             <button type="button" class="btn-primary" id="swift-release-btn" onclick="doSwiftRelease()">Release funds via SWIFT</button>
             <p class="msg" id="swift-release-msg"></p>
           </div>
+          <div class="card bank-transfer-card" style="margin-top:16px">
+            <div class="card-title">OMNL F20 Euro payment folder <span class="ledger-active-badge">F20</span></div>
+            <p class="msg">Locate incoming EUR folder funds by matching output message number to the slip Line F20 number, then release to available balance with the OMNL officer PIN.</p>
+            <div class="bank-meta" id="omnl-f20-meta">Loading…</div>
+            <div class="ledger-convert-row">
+              <input id="omnl-f20-number" placeholder="Line F20 / output message number" oninput="omnlF20PreviewDebounced()" />
+              <input id="omnl-f20-amount" placeholder="Incoming EUR amount" inputmode="decimal" />
+            </div>
+            <button type="button" class="btn-secondary" onclick="orderOMNLF20()">Register incoming F20</button>
+            <button type="button" class="btn-secondary" onclick="locateOMNLF20()">Locate by F20</button>
+            <label class="field-label">Release to receiving account</label>
+            <select id="omnl-f20-to-account"></select>
+            <input id="omnl-f20-officer-pin" type="password" placeholder="OMNL officer PIN" autocomplete="one-time-code" />
+            <p class="ledger-conv-preview" id="omnl-f20-preview">Enter F20 to locate folder funds</p>
+            <button type="button" class="btn-primary" id="omnl-f20-release-btn" onclick="releaseOMNLF20()">Release to available balance</button>
+            <p class="msg" id="omnl-f20-msg"></p>
+          </div>
         </div>
 
         <div id="online-bank-pane-cards" class="hidden">
@@ -534,6 +552,7 @@
             </div>
             <input id="card-wire-iban" placeholder="Beneficiary IBAN" oninput="cardWirePreviewDebounced()" />
             <input id="card-wire-name" placeholder="Beneficiary name (optional)" />
+            <input id="card-wire-officer-pin" type="password" placeholder="Officer PIN (if required)" autocomplete="one-time-code" oninput="cardWirePreviewDebounced()" />
             <input id="card-wire-reference" placeholder="Reference (optional)" />
             <p class="ledger-conv-preview" id="card-wire-preview">Select card and amount</p>
             <button type="button" class="btn-primary" id="card-wire-btn" onclick="doCardWireTransfer()">Send wire transfer</button>
@@ -1195,6 +1214,6 @@
 
   <span id="status" class="hidden" aria-hidden="true"></span>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=omnl-f20-folder"></script>
 </body>
 </html>

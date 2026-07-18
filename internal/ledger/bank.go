@@ -107,6 +107,18 @@ func parseBankJSON(data []byte) ([]Entry, error) {
 	return out, nil
 }
 
+func readBankAccountsFile(path string) ([]BankAccount, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var file BankFile
+	if err := json.Unmarshal(data, &file); err != nil {
+		return nil, err
+	}
+	return file.Accounts, nil
+}
+
 // ParseImportLedger normalizes externally supplied ledger rows.
 func ParseImportLedger(data []byte) ([]Entry, error) {
 	return parseImportFile(data)
@@ -141,8 +153,8 @@ func parseImportFile(data []byte) ([]Entry, error) {
 			}
 		}
 		out = append(out, Entry{
-			ID:     importStableID(asset, row.Account, i),
-			Source: src,
+			ID:           importStableID(asset, row.Account, i),
+			Source:       src,
 			Mode:         mode,
 			Asset:        asset,
 			TokenKey:     asset,

@@ -32,13 +32,13 @@ const (
 
 // ExternalDestination is a parsed outbound bank or chain target.
 type ExternalDestination struct {
-	Kind     ExternalKind `json:"kind"`
-	ChainID  string       `json:"chainId,omitempty"`
-	BankRail BankRail     `json:"bankRail,omitempty"`
-	BankName string       `json:"bankName,omitempty"`
-	Address  string       `json:"address"`
-	Label    string       `json:"label"`
-	AccountID string      `json:"accountId"`
+	Kind      ExternalKind `json:"kind"`
+	ChainID   string       `json:"chainId,omitempty"`
+	BankRail  BankRail     `json:"bankRail,omitempty"`
+	BankName  string       `json:"bankName,omitempty"`
+	Address   string       `json:"address"`
+	Label     string       `json:"label"`
+	AccountID string       `json:"accountId"`
 }
 
 // SupportedChain is metadata for external chain transfers.
@@ -102,6 +102,7 @@ func SupportedBanks() []SupportedBank {
 		{ID: "chase", Name: "JPMorgan Chase", Country: "US", Rails: []BankRail{RailACH, RailWire}, Example: "bank:chase:ach:021000021:123456789"},
 		{ID: "bofa", Name: "Bank of America", Country: "US", Rails: []BankRail{RailACH, RailWire}, Example: "bank:bofa:wire:026009593:987654321"},
 		{ID: "wells", Name: "Wells Fargo", Country: "US", Rails: []BankRail{RailACH, RailWire}, Example: "bank:wells:ach:121000248:111222333"},
+		{ID: "omnl", Name: "OMNL Central Bank", Country: "*", Rails: []BankRail{RailACH, RailSWIFT, RailWire, RailIBAN}, Example: "bank:omnl:wire:OMNL00US00000000000001"},
 		{ID: "hsbc", Name: "HSBC", Country: "UK", Rails: []BankRail{RailSWIFT, RailFPS, RailIBAN}, Example: "bank:hsbc:swift:HBUKGB4B:GB82WEST12345698765432"},
 		{ID: "barclays", Name: "Barclays", Country: "UK", Rails: []BankRail{RailFPS, RailIBAN, RailSWIFT}, Example: "bank:barclays:iban:GB29BARC20001512345678"},
 		{ID: "deutsche", Name: "Deutsche Bank", Country: "DE", Rails: []BankRail{RailSEPA, RailSWIFT, RailIBAN}, Example: "bank:deutsche:sepa:DE89370400440532013000"},
@@ -116,11 +117,11 @@ func SupportedBanks() []SupportedBank {
 }
 
 var (
-	evmAddrRe   = regexp.MustCompile(`^0x[0-9a-fA-F]{40}$`)
-	btcAddrRe   = regexp.MustCompile(`^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$`)
-	tronAddrRe  = regexp.MustCompile(`^T[1-9A-HJ-NP-Za-km-z]{33}$`)
-	solAddrRe   = regexp.MustCompile(`^[1-9A-HJ-NP-Za-km-z]{32,44}$`)
-	ibanRe      = regexp.MustCompile(`^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$`)
+	evmAddrRe  = regexp.MustCompile(`^0x[0-9a-fA-F]{40}$`)
+	btcAddrRe  = regexp.MustCompile(`^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$`)
+	tronAddrRe = regexp.MustCompile(`^T[1-9A-HJ-NP-Za-km-z]{33}$`)
+	solAddrRe  = regexp.MustCompile(`^[1-9A-HJ-NP-Za-km-z]{32,44}$`)
+	ibanRe     = regexp.MustCompile(`^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$`)
 )
 
 var chainAliases = map[string]string{
@@ -237,14 +238,14 @@ func parseChainExternal(chainID, address string) (*ExternalDestination, error) {
 		if c.ID == chainID {
 			return &ExternalDestination{
 				Kind: kind, ChainID: chainID, Address: address,
-				Label: c.Name + " " + shortAddr(address),
+				Label:     c.Name + " " + shortAddr(address),
 				AccountID: externalAccountIDFromDest(kind, chainID, "", address),
 			}, nil
 		}
 	}
 	return &ExternalDestination{
 		Kind: kind, ChainID: chainID, Address: address,
-		Label: chainID + " " + shortAddr(address),
+		Label:     chainID + " " + shortAddr(address),
 		AccountID: externalAccountIDFromDest(kind, chainID, "", address),
 	}, nil
 }

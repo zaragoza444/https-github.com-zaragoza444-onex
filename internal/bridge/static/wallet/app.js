@@ -3075,9 +3075,11 @@ function buildOnlineBankBody(preview) {
   const fromAccount = document.getElementById('online-bank-from')?.value;
   const amount = document.getElementById('online-bank-amount')?.value;
   const reference = document.getElementById('online-bank-ref')?.value?.trim();
+  const officerPin = document.getElementById('online-bank-officer-pin')?.value?.trim();
   if (!fromAccount || !amount) return null;
   const body = { fromAccount, amount, preview: !!preview };
   if (reference) body.reference = reference;
+  if (officerPin) body.officerPin = officerPin;
   if (onlineBankMode === 'internal') {
     const toAccount = document.getElementById('online-bank-to')?.value;
     if (!toAccount) return null;
@@ -3142,6 +3144,8 @@ async function doOnlineBankTransfer() {
   }
   if (!j.error) {
     document.getElementById('online-bank-amount').value = '';
+    const officerPin = document.getElementById('online-bank-officer-pin');
+    if (officerPin) officerPin.value = '';
     await refreshOnlineBank();
   }
 }
@@ -3273,13 +3277,13 @@ async function refreshOnlineBank() {
     }
     meta.textContent = line;
   }
-  await loadProductionPlatform(prod);
   onlineBankAccounts = accts.accounts || [];
   renderOnlineBankAccounts(onlineBankAccounts);
   fillOnlineBankSelects(onlineBankAccounts);
   fillOnlineBankActivityFilters(onlineBankAccounts);
   fillHybrixSelect(onlineBankAccounts);
   renderOnlineBankRecent(txs.transactions || []);
+  await loadProductionPlatform(prod);
   if (onlineBankMainTab === 'ledger') {
     await loadOnlineBankLedger();
   } else if (onlineBankMainTab === 'cards') {
@@ -3508,6 +3512,7 @@ async function cardWirePreview() {
   const cardId = document.getElementById('card-wire-pick')?.value;
   const amount = document.getElementById('card-wire-amount')?.value;
   const iban = document.getElementById('card-wire-iban')?.value?.trim();
+  const officerPin = document.getElementById('card-wire-officer-pin')?.value?.trim();
   if (!cardId || !amount || !iban) {
     if (preview) preview.textContent = 'Select card, amount, and IBAN';
     return;
@@ -3517,6 +3522,7 @@ async function cardWirePreview() {
     body: JSON.stringify({
       cardId, amount, beneficiaryIban: iban, preview: true,
       beneficiaryName: document.getElementById('card-wire-name')?.value?.trim(),
+      officerPin,
     }),
   });
   if (preview) preview.textContent = j.error ? j.error : `Preview wire ${amount} · Cards 101.1`;
@@ -3528,17 +3534,19 @@ async function doCardWireTransfer() {
   const cardId = document.getElementById('card-wire-pick')?.value;
   const amount = document.getElementById('card-wire-amount')?.value;
   const iban = document.getElementById('card-wire-iban')?.value?.trim();
+  const officerPin = document.getElementById('card-wire-officer-pin')?.value?.trim();
   if (!cardId || !amount || !iban) {
     if (msg) msg.textContent = 'Card, amount, and IBAN required';
     return;
   }
   if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
-  await connectGlobalProductionServer();
+  connectGlobalProductionServer().catch(() => {});
   const j = await api('/bridge/cards/101.1/wire', {
     method: 'POST',
     body: JSON.stringify({
       cardId, amount, beneficiaryIban: iban, preview: false,
       beneficiaryName: document.getElementById('card-wire-name')?.value?.trim(),
+      officerPin,
       reference: document.getElementById('card-wire-reference')?.value?.trim(),
     }),
   });
@@ -3548,6 +3556,8 @@ async function doCardWireTransfer() {
     return;
   }
   if (msg) msg.textContent = `✓ Wire ${j.status}: ${amount} · ${j.wireRef || ''}`;
+  const pin = document.getElementById('card-wire-officer-pin');
+  if (pin) pin.value = '';
   await refreshVirtualCards();
   await refreshOnlineBank();
 }
@@ -3652,6 +3662,100 @@ async function loadSwiftSystem() {
     sel.innerHTML = onlineBankAccounts.map(a =>
       `<option value="${escapeHtml(a.id)}">${escapeHtml(a.name)} · ${escapeHtml(a.balance)} ${escapeHtml(a.currency)}</option>`
     ).join('');
+  }
+  await loadOMNLF20Status();
+}
+
+let omnlF20Timer = null;
+
+function fillOMNLF20Accounts() {
+  const sel = document.getElementById('omnl-f20-to-account');
+  if (!sel) return;
+  const eur = (onlineBankAccounts || []).filter(a => (a.currency || '').toUpperCase() === 'EUR');
+  sel.innerHTML = (eur.length ? eur : (onlineBankAccounts || [])).map(a =>
+    `<option value="${escapeHtml(a.id)}">${escapeHtml(a.name)} · ${escapeHtml(a.balance)} ${escapeHtml(a.currency)}</option>`
+  ).join('');
+}
+
+async function loadOMNLF20Status() {
+  fillOMNLF20Accounts();
+  const meta = document.getElementById('omnl-f20-meta');
+  const j = await api('/bridge/bank/omnl/f20/status');
+  if (meta) {
+    meta.textContent = j.error ? j.error : `${j.bank || 'OMNL'} · ${j.pending || 0} pending · F20 required · tracers off`;
+  }
+}
+
+function omnlF20Value() {
+  return document.getElementById('omnl-f20-number')?.value?.trim() || '';
+}
+
+function omnlF20PreviewDebounced() {
+  clearTimeout(omnlF20Timer);
+  omnlF20Timer = setTimeout(locateOMNLF20, 350);
+}
+
+async function orderOMNLF20() {
+  const msg = document.getElementById('omnl-f20-msg');
+  const f20Number = omnlF20Value();
+  const amount = document.getElementById('omnl-f20-amount')?.value?.trim();
+  if (!f20Number || !amount) {
+    if (msg) msg.textContent = 'F20 and amount required';
+    return;
+  }
+  const j = await api('/bridge/bank/omnl/f20/order', {
+    method: 'POST',
+    body: JSON.stringify({ f20Number, outputMessageNumber: f20Number, amount, currency: 'EUR' }),
+  });
+  if (msg) msg.textContent = j.error ? j.error : `✓ F20 registered: ${j.item?.amount || amount} EUR`;
+  await locateOMNLF20();
+  await loadOMNLF20Status();
+}
+
+async function locateOMNLF20() {
+  const preview = document.getElementById('omnl-f20-preview');
+  const f20Number = omnlF20Value();
+  if (!f20Number) {
+    if (preview) preview.textContent = 'Enter F20 to locate folder funds';
+    return;
+  }
+  const j = await api('/bridge/bank/omnl/f20/locate', {
+    method: 'POST',
+    body: JSON.stringify({ f20Number, outputMessageNumber: f20Number }),
+  });
+  if (preview) {
+    preview.textContent = j.error
+      ? j.error
+      : `Located ${j.item?.amount || '—'} ${j.item?.currency || 'EUR'} · ${j.item?.status || '—'} · output ${j.item?.outputMessageNumber || f20Number}`;
+  }
+}
+
+async function releaseOMNLF20() {
+  const msg = document.getElementById('omnl-f20-msg');
+  const btn = document.getElementById('omnl-f20-release-btn');
+  const f20Number = omnlF20Value();
+  const toAccount = document.getElementById('omnl-f20-to-account')?.value;
+  const officerPin = document.getElementById('omnl-f20-officer-pin')?.value?.trim();
+  if (!f20Number || !toAccount || !officerPin) {
+    if (msg) msg.textContent = 'F20, receiving account, and officer PIN required';
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = 'Releasing…'; }
+  const j = await api('/bridge/bank/omnl/f20/release', {
+    method: 'POST',
+    body: JSON.stringify({ f20Number, outputMessageNumber: f20Number, toAccount, officerPin }),
+  });
+  if (btn) { btn.disabled = false; btn.textContent = 'Release to available balance'; }
+  if (msg) {
+    msg.textContent = j.error
+      ? j.error
+      : `✓ released: ${j.item?.amount || ''} ${j.item?.currency || 'EUR'} to ${j.item?.releasedToAccount || toAccount}`;
+  }
+  if (!j.error) {
+    const pin = document.getElementById('omnl-f20-officer-pin');
+    if (pin) pin.value = '';
+    await refreshOnlineBank();
+    await locateOMNLF20();
   }
 }
 
