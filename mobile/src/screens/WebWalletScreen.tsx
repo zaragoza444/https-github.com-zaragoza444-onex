@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import type { WebViewNavigation } from 'react-native-webview/lib/WebViewTypes';
-import { getWalletBaseUrl, shouldOpenWalletRequestExternally, walletUrlWithHash } from '../config';
+import { appName, getWalletBaseUrl, shouldOpenWalletRequestExternally, walletUrlWithHash } from '../config';
 import { INJECTED_BRIDGE_JS } from '../injectedBridge';
 
 type Props = {
@@ -71,7 +71,7 @@ export function WebWalletScreen({ deepLinkHash, onOpenSettings }: Props) {
       }
       if (msg.type === 'share' && msg.text) {
         if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(msg.text, { dialogTitle: 'OneX Wallet' });
+          await Sharing.shareAsync(msg.text, { dialogTitle: appName() });
         } else {
           await Clipboard.setStringAsync(msg.text);
         }

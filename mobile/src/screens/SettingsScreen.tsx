@@ -8,12 +8,14 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
+  appName,
   appVersion,
   DEFAULT_WALLET_URL,
   getWalletBaseUrl,
   normalizeWalletBaseUrl,
   setWalletBaseUrl,
 } from '../config';
+import { ALLTRA_PLUS_CHAIN_ID, PLUS_ENDPOINTS, POUCHPAY_PLUS_TAGLINE } from '../plusConfig';
 
 type Props = {
   onClose: () => void;
@@ -49,9 +51,15 @@ export function SettingsScreen({ onClose, onSaved }: Props) {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
-      <Text style={styles.title}>Settings</Text>
+      <Text style={styles.title}>{appName()} Settings</Text>
+      <Text style={styles.hint}>{POUCHPAY_PLUS_TAGLINE}</Text>
+      <Text style={styles.label}>Integrated rails</Text>
+      {PLUS_ENDPOINTS.map((endpoint) => (
+        <Text key={endpoint.id} style={styles.meta}>{endpoint.label}: {endpoint.value}</Text>
+      ))}
+      <Text style={styles.meta}>Alltra Plus Chain ID: {ALLTRA_PLUS_CHAIN_ID}</Text>
       <Text style={styles.label}>Wallet URL</Text>
-      <Text style={styles.hint}>Production: https://your-domain.com/wallet/</Text>
+      <Text style={styles.hint}>Production: https://your-pouchpay-plus-domain.com/wallet/</Text>
       <TextInput
         style={styles.input}
         value={url}
@@ -63,7 +71,7 @@ export function SettingsScreen({ onClose, onSaved }: Props) {
         placeholderTextColor="#666"
       />
       <Text style={styles.meta}>Active: {current}</Text>
-      <Text style={styles.meta}>Version {appVersion()}</Text>
+      <Text style={styles.meta}>{appName()} version {appVersion()}</Text>
       <Pressable style={styles.btn} onPress={save}>
         <Text style={styles.btnText}>Save & reload</Text>
       </Pressable>
