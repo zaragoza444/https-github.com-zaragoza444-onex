@@ -69,6 +69,17 @@ func TestBankOfficerDSSBOATSeedAndAuth(t *testing.T) {
 	if badSig.Valid {
 		t.Fatal("wrong signature should fail")
 	}
+
+	// Sole active officer: officerId may be omitted.
+	implicit, err := store.Verify(OfficerAuthRequest{
+		PIN: "918273", Signature: "ProdSignature-DSSBOAT-01",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !implicit.Valid || implicit.OfficerID != o.ID {
+		t.Fatalf("expected implicit officer auth %+v", implicit)
+	}
 }
 
 func TestBankOfficerNoDemoDefaultsWithoutEnv(t *testing.T) {

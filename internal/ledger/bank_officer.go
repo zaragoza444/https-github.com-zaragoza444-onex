@@ -377,9 +377,9 @@ func (s *BankOfficerStore) Verify(req OfficerAuthRequest) (*OfficerAuthResult, e
 	if err != nil {
 		return nil, err
 	}
-	o, ok := findOfficer(f, req.OfficerID)
+	o, ok, resolveErr := resolveOfficer(f, req.OfficerID)
 	if !ok {
-		return &OfficerAuthResult{Valid: false, Error: "officer not found"}, nil
+		return &OfficerAuthResult{Valid: false, Error: resolveErr}, nil
 	}
 	if !strings.EqualFold(o.Status, "active") {
 		return &OfficerAuthResult{Valid: false, OfficerID: o.ID, Error: "officer inactive"}, nil
@@ -405,9 +405,9 @@ func (s *BankOfficerStore) AuthorizeTransfer(req OfficerTransferRequest, bank *O
 	if err != nil {
 		return nil, err
 	}
-	o, ok := findOfficer(f, req.OfficerID)
+	o, ok, resolveErr := resolveOfficer(f, req.OfficerID)
 	if !ok {
-		return &OfficerTransferResult{Status: "denied", Error: "officer not found"}, nil
+		return &OfficerTransferResult{Status: "denied", Error: resolveErr, OfficerID: req.OfficerID}, nil
 	}
 	from := strings.TrimSpace(req.FromAccount)
 	if from == "" {
@@ -445,6 +445,28 @@ func findOfficer(f *bankOfficerFile, id string) (BankOfficer, bool) {
 		}
 	}
 	return BankOfficer{}, false
+}
+
+// resolveOfficer finds by id, or defaults to the sole active officer when id is empty.
+func resolveOfficer(f *bankOfficerFile, id string) (BankOfficer, bool, string) {
+	id = strings.TrimSpace(id)
+	if id != "" {
+		o, ok := findOfficer(f, id)
+		return o, ok, ""
+	}
+	var active []BankOfficer
+	for _, o := range f.Officers {
+		if strings.EqualFold(o.Status, "active") {
+			active = append(active, o)
+		}
+	}
+	if len(active) == 1 {
+		return active[0], true, ""
+	}
+	if len(active) == 0 {
+		return BankOfficer{}, false, "officer not found"
+	}
+	return BankOfficer{}, false, "officerId required"
 }
 
 func officerMayOperate(o BankOfficer, accountID string) bool {
