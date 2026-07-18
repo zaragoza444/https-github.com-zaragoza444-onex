@@ -48,6 +48,7 @@ func (s *Server) handlePaymentGatewayConfig(w http.ResponseWriter, r *http.Reque
 	writeJSON(w, map[string]interface{}{
 		"framework":       cfg.Framework,
 		"displayName":     cfg.DisplayName,
+		"logoUrl":         cfg.LogoURL,
 		"provider":        cfg.Provider,
 		"acceptedCards":   cfg.AcceptedCards,
 		"processingFee":   cfg.ProcessingFee,

@@ -5,8 +5,11 @@ import "testing"
 func TestNormalizeFundClassM2M3M4Mint(t *testing.T) {
 	cases := map[string]string{
 		"m2": FundM2, "savings": FundM2,
+		"safeguarded": FundM2, "settlement_reserve": FundM2, "reserved": FundM2,
 		"m3": FundM3, "wholesale": FundM3,
+		"treasury": FundM3, "liquidity_pool": FundM3,
 		"m4": FundM4, "money_market": FundM4,
+		"cross_border": FundM4, "wholesale_liquidity": FundM4, "tokenized_fiat": FundM4,
 		"mint": FundMINT, "stablecoin": FundMINT,
 	}
 	for raw, want := range cases {

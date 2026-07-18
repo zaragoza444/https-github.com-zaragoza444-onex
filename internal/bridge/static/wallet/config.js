@@ -42,10 +42,10 @@
     const h = location.hostname;
     if (h === 'localhost' || h === '127.0.0.1') {
       window.ONEX_BRIDGE_URL = 'http://127.0.0.1:9338';
-    } else if (location.pathname.startsWith('/wallet') || h === 'novatrustee.digital' || h.includes('onexproduction')) {
+    } else if (location.pathname.startsWith('/wallet') || h === 'zblockchainsystem.com' || h === 'www.zblockchainsystem.com' || h === 'blockchainsystem.com' || h === 'www.blockchainsystem.com' || h === 'novatrustee.digital' || h.includes('zblockchainsystem') || h.includes('onexproduction')) {
       window.ONEX_BRIDGE_URL = location.origin;
     } else if (h.includes('github.io') || h.includes('git.anakatech.llc')) {
-      window.ONEX_BRIDGE_URL = 'http://51.75.64.28:9338';
+      window.ONEX_BRIDGE_URL = 'https://zblockchainsystem.com';
     }
   }
 

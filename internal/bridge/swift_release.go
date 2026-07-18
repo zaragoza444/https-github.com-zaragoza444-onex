@@ -23,13 +23,9 @@ type SwiftReleaseRequest struct {
 }
 
 func (b *Bridge) globalServerURL() string {
-	host := strings.TrimSpace(os.Getenv("ONEX_PUBLIC_HOST"))
-	if host != "" {
-		return "http://" + host + ":9338"
-	}
 	domain := strings.TrimSpace(os.Getenv("ONEX_PRODUCTION_DOMAIN"))
 	if domain == "" {
-		domain = "onexproduction.com"
+		domain = "zblockchainsystem.com"
 	}
 	return "https://" + domain
 }

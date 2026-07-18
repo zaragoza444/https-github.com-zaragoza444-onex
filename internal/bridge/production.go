@@ -32,14 +32,20 @@ func (b *Bridge) ProductionPlatformStatus(ctx context.Context, evmHolder string)
 
 	domain := strings.TrimSpace(os.Getenv("ONEX_PRODUCTION_DOMAIN"))
 	if domain == "" {
-		domain = "onexproduction.com"
+		domain = "zblockchainsystem.com"
 	}
 	publicHost := strings.TrimSpace(os.Getenv("ONEX_PUBLIC_HOST"))
+	// Always prefer the HTTPS production domain for dashboard / public links.
+	// ONEX_PUBLIC_HOST is an optional IP fallback only (not the primary URL).
 	publicWallet := "https://" + domain + "/wallet/"
 	greenHealth := "https://" + domain + "/bridge/health/green"
+	publicPayments := "https://" + domain + "/payments/"
+	publicStatus := "https://" + domain + "/bridge/production/status"
+	ipWallet := ""
+	ipGreen := ""
 	if publicHost != "" {
-		publicWallet = "http://" + publicHost + ":9338/wallet/"
-		greenHealth = "http://" + publicHost + ":9338/bridge/health/green"
+		ipWallet = "http://" + publicHost + ":9338/wallet/"
+		ipGreen = "http://" + publicHost + ":9338/bridge/health/green"
 	}
 
 	mode := strings.TrimSpace(b.ledgerConfig().Mode)
@@ -71,17 +77,23 @@ func (b *Bridge) ProductionPlatformStatus(ctx context.Context, evmHolder string)
 			"ledger":      "/wallet/#ledger",
 			"platform":    "/wallet/#discover",
 			"onlineBank":  "/wallet/#onlinebank",
+			"payments":    "/payments/",
 			"fineract":    "https://fineract.hybxfinance.com/fineract-provider/swagger-ui/index.html",
 			"tokenLab":    "/bridge/platform/tokens",
 			"status":      "/bridge/production/status",
 			"greenHealth": "/bridge/health/green",
 		},
 		"public": map[string]string{
-			"host":   publicHost,
-			"wallet": publicWallet,
-			"ledger": strings.TrimSuffix(publicWallet, "/") + "/#ledger",
-			"green":  greenHealth,
-			"status": "https://" + domain + "/bridge/production/status",
+			"host":     publicHost,
+			"domain":   domain,
+			"wallet":   publicWallet,
+			"payments": publicPayments,
+			"ledger":   strings.TrimSuffix(publicWallet, "/") + "/#ledger",
+			"onlineBank": strings.TrimSuffix(publicWallet, "/") + "/#onlinebank",
+			"green":    greenHealth,
+			"status":   publicStatus,
+			"ipWallet": ipWallet,
+			"ipGreen":  ipGreen,
 		},
 		"api": map[string]string{
 			"status":       "/bridge/production/status",

@@ -20,7 +20,7 @@ go build -o "$REPO/bin/onex-bridge" ./cmd/onex-bridge
 ENV_FILE="/etc/onex/onex.env"
 if [ ! -f "$ENV_FILE" ]; then
   sudo mkdir -p /etc/onex
-  sudo cp deploy/env.onexproduction.example "$ENV_FILE"
+  sudo cp deploy/env.zbank.production.example "$ENV_FILE" 2>/dev/null || sudo cp deploy/env.zblockchainsystem.com.example "$ENV_FILE"
   KEY="$(openssl rand -base64 32 | tr -d '/+=' | head -c 32)"
   sudo sed -i "s/CHANGE_ME_LONG_RANDOM_SECRET/$KEY/" "$ENV_FILE"
 fi
@@ -36,25 +36,35 @@ upsert() {
 
 upsert ONEX_ONLINE_BANK 1
 upsert ONEX_PAYMENT_GATEWAY 1
-upsert ONEX_PAYMENT_GATEWAY_FILE "${REPO}/configs/payment-gateway.production.json"
-upsert ONEX_PAYMENT_GATEWAY_FRAMEWORK nova
+upsert ONEX_PAYMENT_GATEWAY_FILE "${REPO}/configs/payment-gateway.zbank.production.json"
+upsert ONEX_PAYMENT_GATEWAY_FRAMEWORK zbank
 upsert ONEX_PAYMENT_GATEWAY_PROVIDER stripe
-upsert ONEX_BANK_LEDGER_FILE "${REPO}/configs/bank-ledger.nova.example.json"
+upsert ONEX_BANK_LEDGER_FILE "${REPO}/configs/bank-ledger.zbank.production.json"
+upsert ONEX_ZBANK_OFFICERS_FILE "${REPO}/configs/zbank-officers.dssboat.example.json"
 upsert ONEX_LEDGER_MODE production
 upsert ONEX_PROJECT_ROOT "$REPO"
+
+if ! sudo grep -qE '^ONEX_ZBANK_OFFICER_PIN=[0-9]{4,8}$' "$ENV_FILE" 2>/dev/null; then
+  echo "WARN: set ONEX_ZBANK_OFFICER_PIN (4-8 digits) in $ENV_FILE — no demo defaults" >&2
+fi
+if sudo grep -qE '^ONEX_ZBANK_OFFICER_SIGNATURE=(CHANGE_ME|$)' "$ENV_FILE" 2>/dev/null || \
+   ! sudo grep -q '^ONEX_ZBANK_OFFICER_SIGNATURE=' "$ENV_FILE" 2>/dev/null; then
+  echo "WARN: set ONEX_ZBANK_OFFICER_SIGNATURE (≥8 chars) in $ENV_FILE — no demo defaults" >&2
+fi
 
 if command -v docker >/dev/null 2>&1 && [ -f docker-compose.prod.yml ]; then
   echo "==> Docker production stack"
   if [ ! -f .env ]; then
-    cp deploy/env.onexproduction.example .env
+    cp deploy/env.zbank.production.example .env 2>/dev/null || cp deploy/env.zblockchainsystem.com.example .env 2>/dev/null || cp deploy/env.onexproduction.example .env
   fi
   grep -q ONEX_PAYMENT_GATEWAY .env || cat >> .env <<EOF
 ONEX_ONLINE_BANK=1
 ONEX_PAYMENT_GATEWAY=1
-ONEX_PAYMENT_GATEWAY_FILE=configs/payment-gateway.production.json
-ONEX_PAYMENT_GATEWAY_FRAMEWORK=nova
+ONEX_PAYMENT_GATEWAY_FILE=configs/payment-gateway.zbank.production.json
+ONEX_PAYMENT_GATEWAY_FRAMEWORK=zbank
 ONEX_PAYMENT_GATEWAY_PROVIDER=stripe
-ONEX_BANK_LEDGER_FILE=configs/bank-ledger.nova.example.json
+ONEX_BANK_LEDGER_FILE=configs/bank-ledger.zbank.production.json
+ONEX_ZBANK_OFFICERS_FILE=configs/zbank-officers.dssboat.example.json
 EOF
   docker compose -f docker-compose.prod.yml --profile proxy up -d --build onex-bridge
   sleep 8

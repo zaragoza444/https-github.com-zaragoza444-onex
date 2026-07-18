@@ -85,6 +85,7 @@ type PaymentPage struct {
 type PaymentGatewayConfig struct {
 	Framework                    string                  `json:"framework"` // nova | zbank | nsb
 	DisplayName                  string                  `json:"displayName"`
+	LogoURL                      string                  `json:"logoUrl,omitempty"`
 	Provider                     string                  `json:"provider"` // mock | stripe
 	DefaultSettlementDestination string                  `json:"defaultSettlementDestination"`
 	ProcessingFee                ProcessingFeeConfig     `json:"processingFee"`
@@ -217,6 +218,9 @@ func (c *PaymentGatewayConfig) applyFrameworkDefaults() {
 		if c.DisplayName == "" || c.DisplayName == "Nova Bank Payment Gateway" {
 			c.DisplayName = "Z Bank Payment Gateway"
 		}
+		if strings.TrimSpace(c.LogoURL) == "" {
+			c.LogoURL = "/payments/assets/zbank-logo.png"
+		}
 	case FrameworkNSB:
 		if c.DisplayName == "" || c.DisplayName == "Nova Bank Payment Gateway" {
 			c.DisplayName = "NSB Payment Gateway"
@@ -246,6 +250,7 @@ func (c PaymentGatewayConfig) Status() map[string]interface{} {
 		"enabled":              PaymentGatewayEnabled(),
 		"framework":            c.Framework,
 		"displayName":          c.DisplayName,
+		"logoUrl":              c.LogoURL,
 		"provider":             c.Provider,
 		"stripeConfigured":     c.StripeSecretKey != "",
 		"stripeLiveReady":      c.StripeSecretKey != "" && c.StripePublishableKey != "" && c.StripeWebhookSecret != "",

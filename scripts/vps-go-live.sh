@@ -7,8 +7,8 @@ set -euo pipefail
 
 REPO="${ONEX_REPO:-$HOME/onex}"
 GITHUB="${GITHUB_REPO:-https://github.com/zaragoza444/onex.git}"
-DOMAIN="${ONEX_DEPLOY_DOMAIN:-}"
-CERT_EMAIL="${CERTBOT_EMAIL:-hello@onexproduction.com}"
+DOMAIN="${ONEX_DEPLOY_DOMAIN:-zblockchainsystem.com}"
+CERT_EMAIL="${CERTBOT_EMAIL:-hello@zblockchainsystem.com}"
 DEPLOY_MODE="${ONEX_DEPLOY_MODE:-auto}"   # auto | systemd | docker
 
 detect_ip() {
@@ -60,7 +60,7 @@ fi
 if [ "$USE_DOCKER" = "1" ] && [ -f docker-compose.prod.yml ]; then
   echo "==> Docker production stack (node + bridge + nginx + website)"
   if [ ! -f .env ]; then
-    cp deploy/env.onexproduction.example .env
+    cp deploy/env.zblockchainsystem.com.example .env
     KEY="$(openssl rand -base64 32 | tr -d '/+=' | head -c 32)"
     sed -i "s/CHANGE_ME_LONG_RANDOM_SECRET/$KEY/" .env 2>/dev/null || \
       sed -i '' "s/CHANGE_ME_LONG_RANDOM_SECRET/$KEY/" .env 2>/dev/null || true
@@ -89,7 +89,7 @@ if [ "$USE_DOCKER" = "1" ] && [ -f docker-compose.prod.yml ]; then
     echo "Payments: https://$DOMAIN/payments/"
   else
     echo "Wallet: http://${HOST_IP}:9338/wallet/"
-    echo "Site:   http://${HOST_IP}:9338/wallet/  (or configure DOMAIN=onexproduction.com)"
+    echo "Site:   http://${HOST_IP}:9338/wallet/  (or DOMAIN=zblockchainsystem.com)"
   fi
 else
   echo "==> Systemd stack (go, onexd + bridge + token lab)"
@@ -143,7 +143,7 @@ echo "Wallet:  http://${HOST_IP}:9338/wallet/"
 echo "Contact: http://${HOST_IP}/contact.html (if nginx) or website/contact.html"
 echo ""
 if [ -n "$DOMAIN" ]; then
-  echo "DNS: ensure A record $DOMAIN -> $HOST_IP (see deploy/dns-records-onexproduction.md)"
+  echo "DNS: ensure A record $DOMAIN -> $HOST_IP (see deploy/dns-records-zblockchainsystem.com.md)"
   echo "Email: enable Cloudflare Email Routing (docs/BUSINESS-EMAIL.md)"
 fi
-echo "Re-check from PC: .\\scripts\\deploy-onexproduction.ps1 -VpsIp $HOST_IP"
+echo "Re-check from PC: SSH_PASS=... python3 scripts/auto-deploy-vps.py"

@@ -1,6 +1,7 @@
 {
   "framework": "zbank",
   "displayName": "Z Bank Payment Gateway",
+  "logoUrl": "/payments/assets/zbank-logo.png",
   "provider": "mock",
   "defaultSettlementDestination": "zbank-usd-main",
   "processingFee": {
@@ -13,9 +14,27 @@
   "settlementDestinations": [
     {
       "id": "zbank-usd-main",
-      "label": "Z Bank — USD Main Account",
+      "label": "Z Bank — USD Spendable Wallet (M1)",
       "type": "internal",
-      "accountId": "nova-usd-checking",
+      "accountId": "zbank-usd-checking",
+      "currency": "USD",
+      "rail": "internal",
+      "active": true
+    },
+    {
+      "id": "zbank-usd-safeguarded",
+      "label": "Z Bank — USD Safeguarded Settlement (M2)",
+      "type": "internal",
+      "accountId": "zbank-usd-safeguarded",
+      "currency": "USD",
+      "rail": "internal",
+      "active": true
+    },
+    {
+      "id": "zbank-usd-treasury",
+      "label": "Z Bank — USD Treasury Liquidity (M3)",
+      "type": "internal",
+      "accountId": "zbank-usd-treasury",
       "currency": "USD",
       "rail": "internal",
       "active": true
@@ -37,8 +56,18 @@
       "slug": "pay",
       "flow": "payment",
       "title": "Z Bank Secure Payment",
-      "description": "Pay securely with Visa, Mastercard, or Amex.",
+      "description": "Pay securely with Visa, Mastercard, or Amex. Settles to Z Bank M1 spendable wallet.",
       "settlementDestination": "zbank-usd-main",
+      "currency": "USD",
+      "allowCustomAmount": true,
+      "active": true
+    },
+    {
+      "slug": "collect",
+      "flow": "collection",
+      "title": "Z Bank Collections",
+      "description": "Card collections land in safeguarded settlement (M2) before treasury release.",
+      "settlementDestination": "zbank-usd-safeguarded",
       "currency": "USD",
       "allowCustomAmount": true,
       "active": true

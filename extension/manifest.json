@@ -3,23 +3,47 @@
   "name": "OneX Wallet",
   "version": "1.0.0",
   "description": "MetaMask-style wallet for OneX blockchain (Ed25519)",
-  "permissions": ["storage"],
-  "host_permissions": ["http://localhost:8545/*", "http://localhost:8547/*", "https://*/*"],
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "http://localhost:8545/*",
+    "http://localhost:8547/*",
+    "https://*/*"
+  ],
   "action": {
     "default_title": "OneX Wallet",
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    }
   },
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*"],
-      "js": ["content.js"],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_start"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["inpage.js"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "inpage.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
-  ]
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
 }

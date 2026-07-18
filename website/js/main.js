@@ -1,12 +1,21 @@
 (function () {
   const cfg = window.ONEX_SITE || {};
-  const production = cfg.productionUrl || 'https://onexproduction.com';
+  const host = (location.hostname || '').toLowerCase();
+  const apexHosts = new Set([
+    'zblockchainsystem.com', 'www.zblockchainsystem.com',
+    'blockchainsystem.com', 'www.blockchainsystem.com',
+  ]);
+  const production = cfg.productionUrl || (apexHosts.has(host) ? location.origin : 'https://zblockchainsystem.com');
   const walletPath = cfg.walletPath || '/wallet/';
   const walletUrl = cfg.walletUrl || (production.replace(/\/$/, '') + walletPath);
+  const paymentsUrl = cfg.paymentsUrl || (production.replace(/\/$/, '') + '/payments/');
   const consoleUrl = cfg.consoleUrl || cfg.missionControlUrl || (production.replace(/\/$/, '') + '/token-lab/');
 
   document.querySelectorAll('[data-wallet]').forEach(el => {
     el.href = walletUrl;
+  });
+  document.querySelectorAll('[data-payments]').forEach(el => {
+    el.href = paymentsUrl;
   });
   document.querySelectorAll('[data-explorer]').forEach(el => {
     el.href = production.replace(/\/$/, '') + '/explorer/';
@@ -58,7 +67,7 @@
     form.addEventListener('submit', e => {
       e.preventDefault();
       const fd = new FormData(form);
-      const to = fd.get('department') || 'hello@onexproduction.com';
+      const to = fd.get('department') || 'hello@zblockchainsystem.com';
       const subject = encodeURIComponent('[OneX] ' + (fd.get('subject') || 'Website inquiry'));
       const body = encodeURIComponent(
         'Name: ' + fd.get('name') + '\nEmail: ' + fd.get('email') + '\n\n' + fd.get('message')
@@ -68,13 +77,14 @@
   }
 
   function productionStatusCandidates() {
-    const host = (location.hostname || '').toLowerCase();
+    const h = (location.hostname || '').toLowerCase();
     const urls = [];
-    if (host === 'onexproduction.com' || host === 'www.onexproduction.com' || host === 'novatrustee.digital') {
+    if (apexHosts.has(h)) {
       urls.push('/bridge/production/status');
+      urls.push('/bridge/payments/status');
     }
     urls.push(production.replace(/\/$/, '') + '/bridge/production/status');
-    if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.github.io')) {
+    if (h === 'localhost' || h === '127.0.0.1' || h.endsWith('.github.io')) {
       urls.push('http://127.0.0.1:9338/bridge/production/status');
     }
     return [...new Set(urls)];
@@ -115,7 +125,7 @@
 
     if (title) {
       if (!j || j.error) title.textContent = 'Production bridge unreachable';
-      else if (live) title.textContent = (j.domain || 'onexproduction.com') + ' · production live';
+      else if (live) title.textContent = (j.domain || 'zblockchainsystem.com') + ' · production live';
       else title.textContent = 'Bridge online · development mode';
     }
 
@@ -125,7 +135,7 @@
     if (j && j.error) {
       setText('hero-badge-text', 'Production bridge unreachable');
     } else if (live) {
-      setText('hero-badge-text', (j.domain || 'onexproduction.com') + ' · production live');
+      setText('hero-badge-text', (j.domain || 'zblockchainsystem.com') + ' · production live');
     } else if (j) {
       setText('hero-badge-text', 'Bridge online · development mode');
     }

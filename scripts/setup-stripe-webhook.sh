@@ -2,13 +2,12 @@
 # Configure Stripe webhook for OneX Payment Gateway.
 # Usage (on your machine or VPS):
 #   export ONEX_STRIPE_SECRET_KEY=sk_live_...
-#   export ONEX_PRODUCTION_DOMAIN=onexproduction.com
+#   export ONEX_PRODUCTION_DOMAIN=zblockchainsystem.com
 #   bash scripts/setup-stripe-webhook.sh
 set -euo pipefail
 
 DOMAIN="${ONEX_PRODUCTION_DOMAIN:-zblockchainsystem.com}"
 SECRET_KEY="${ONEX_STRIPE_SECRET_KEY:-}"
-ALT_DOMAIN="${ONEX_ALT_DOMAIN:-novatrustee.digital}"
 
 if [ -z "$SECRET_KEY" ]; then
   echo "ERROR: set ONEX_STRIPE_SECRET_KEY (sk_live_... or sk_test_...)" >&2
@@ -16,7 +15,6 @@ if [ -z "$SECRET_KEY" ]; then
 fi
 
 WEBHOOK_URL="https://${DOMAIN}/bridge/payments/webhook"
-ALT_WEBHOOK_URL="https://${ALT_DOMAIN}/bridge/payments/webhook"
 
 echo "==> Stripe webhook setup for OneX Payment Gateway"
 echo "    Primary URL: $WEBHOOK_URL"
@@ -39,7 +37,7 @@ RESP=$(curl -sf -u "${SECRET_KEY}:" \
   -d "url=${WEBHOOK_URL}" \
   -d "enabled_events[]=payment_intent.succeeded" \
   -d "enabled_events[]=payment_intent.payment_failed" \
-  -d "description=OneX Nova Bank Payment Gateway" \
+  -d "description=Z Bank Payment Gateway (zblockchainsystem.com)" \
   "https://api.stripe.com/v1/webhook_endpoints" 2>&1) || RESP=""
 
 if echo "$RESP" | grep -q '"secret"'; then
@@ -73,7 +71,7 @@ else
   echo "6. Click the endpoint → 'Signing secret' → Reveal"
   echo "7. Copy whsec_... into ONEX_STRIPE_WEBHOOK_SECRET"
   echo ""
-  echo "Optional second endpoint for $ALT_WEBHOOK_URL if using novatrustee.digital"
+  echo "Use only the canonical domain webhook: $WEBHOOK_URL"
 fi
 
 echo ""
