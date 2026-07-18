@@ -1,7 +1,9 @@
 # DNS — zblockchainsystem.com → OneX VPS
 
 **Production domain:** `zblockchainsystem.com`  
-**Deploy / SSH host:** `zblockchainsystem.com` (must resolve to your VPS IPv4)  
+**DNS provider:** Cloudflare — see **`deploy/DNS-CLOUDFLARE-zblockchainsystem.com.md`** for step-by-step  
+**VPS origin IPv4:** `51.75.64.28` (A record target — not used in public app URLs)  
+**Deploy / SSH host:** `zblockchainsystem.com` (after DNS points to VPS)  
 **GitHub:** [zaragoza444](https://github.com/zaragoza444)  
 **Gitea:** [Zaragoza/onex](https://git.anakatech.llc/Zaragoza/onex)
 
@@ -11,10 +13,10 @@
 
 | Type | Host / name | Value | TTL |
 |------|-------------|-------|-----|
-| A | `@` | *your VPS IPv4* (from hosting panel) | 300 |
-| A | `www` | *same VPS IPv4* | 300 |
+| A | `@` | `51.75.64.28` | Auto |
+| A | `www` | `51.75.64.28` | Auto |
 
-**Do not** point `@` at parking IPs (`76.53.10.34`, `76.223.54.146`, `13.248.169.48`) or Railway unless the bridge runs there.
+Set **DNS only** (grey cloud) in Cloudflare while testing. See `deploy/DNS-CLOUDFLARE-zblockchainsystem.com.md`.
 
 ---
 
@@ -22,7 +24,7 @@
 
 ```bash
 dig +short zblockchainsystem.com
-# Expected: your VPS IPv4 (not parking / Railway)
+# Expected: 51.75.64.28 (grey cloud) or Cloudflare proxy IPs (orange cloud + correct origin)
 bash scripts/verify-production-domains.sh
 ```
 
