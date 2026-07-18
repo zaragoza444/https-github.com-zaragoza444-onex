@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Z Bank · Dashboards</title>
+  <link rel="icon" type="image/png" href="/payments/assets/zbank-logo.png">
+  <style>
+    :root {
+      --bg: #0a0f14;
+      --surface: #141c26;
+      --border: #2a3a4f;
+      --text: #e8edf4;
+      --muted: #8b9cb3;
+      --accent: #c9a227;
+      --accent2: #3b82f6;
+      --radius: 12px;
+      --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px 64px; }
+    header { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; }
+    header img { width: 52px; height: 52px; border-radius: 10px; }
+    h1 { font-size: 1.5rem; font-weight: 600; }
+    .sub { color: var(--muted); font-size: 0.95rem; margin-top: 4px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: border-color 0.15s;
+    }
+    .card:hover { border-color: var(--accent); }
+    .card h2 { font-size: 1.05rem; font-weight: 600; }
+    .card p { color: var(--muted); font-size: 0.88rem; flex: 1; }
+    .card a {
+      display: inline-block;
+      margin-top: 8px;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+    .card a:hover { text-decoration: underline; }
+    .tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(201, 162, 39, 0.15);
+      color: var(--accent);
+      width: fit-content;
+    }
+    .tag.api { background: rgba(59, 130, 246, 0.15); color: var(--accent2); }
+    section { margin-top: 36px; }
+    section > h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    footer {
+      margin-top: 48px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    footer a { color: var(--accent2); }
+    #live-status { margin-top: 12px; font-size: 0.85rem; }
+    #live-status.ok { color: #22c55e; }
+    #live-status.err { color: #ef4444; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <img src="/payments/assets/zbank-logo.png" alt="Z Bank" width="52" height="52">
+      <div>
+        <h1>Z Bank Dashboards</h1>
+        <p class="sub">OneX Bridge · operator &amp; customer surfaces</p>
+      </div>
+    </header>
+
+    <p id="live-status">Checking bridge status…</p>
+
+    <section>
+      <h2>Operator</h2>
+      <div class="grid">
+        <article class="card">
+          <span class="tag">Admin</span>
+          <h2>Payment gateway dashboard</h2>
+          <p>Sessions, volume, fees, settlement routing, and recent card payments.</p>
+          <a href="/payments/dashboard/">Open dashboard →</a>
+        </article>
+        <article class="card">
+          <span class="tag api">API</span>
+          <h2>Production platform status</h2>
+          <p>Full stack health: ledger, online bank, Hybrix, Fineract, virtual cards, Bridge7.</p>
+          <a href="/bridge/production/status" target="_blank" rel="noopener">JSON status →</a>
+        </article>
+        <article class="card">
+          <span class="tag api">API</span>
+          <h2>Bank &amp; officer status</h2>
+          <p>Z Bank accounts (M1–M4), DSSBOaT officer store, and corporate signatory readiness.</p>
+          <a href="/bridge/bank/status" target="_blank" rel="noopener">Bank status →</a>
+          ·
+          <a href="/bridge/bank/officer/status" target="_blank" rel="noopener">Officer →</a>
+        </article>
+        <article class="card">
+          <span class="tag api">API</span>
+          <h2>Payments API</h2>
+          <p>Gateway framework, provider, Stripe readiness, and settlement destinations.</p>
+          <a href="/bridge/payments/status" target="_blank" rel="noopener">Payments status →</a>
+          ·
+          <a href="/bridge/payments/dashboard" target="_blank" rel="noopener">Dashboard API →</a>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>Customer</h2>
+      <div class="grid">
+        <article class="card">
+          <span class="tag">Portal</span>
+          <h2>Card payments portal</h2>
+          <p>Donate, invoice, and collect flows — Visa, Mastercard, Amex.</p>
+          <a href="/payments/">Payment portal →</a>
+        </article>
+        <article class="card">
+          <span class="tag">Wallet</span>
+          <h2>Online bank</h2>
+          <p>Multi-chain wallet with Z Bank online banking tab (accounts, transfers).</p>
+          <a href="/wallet/#onlinebank">Online bank →</a>
+        </article>
+        <article class="card">
+          <span class="tag">Wallet</span>
+          <h2>DeFi wallet</h2>
+          <p>Portfolio, swap, bridge, NFT, loans, and token platform.</p>
+          <a href="/wallet/">OneX Wallet →</a>
+        </article>
+      </div>
+    </section>
+
+    <footer>
+      <p>Powered by OneX Bridge · <a href="/health">Health</a> · <a href="/bridge/ledger/status">Ledger</a></p>
+    </footer>
+  </div>
+  <script>
+    (function () {
+      fetch('/bridge/payments/status')
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          var el = document.getElementById('live-status');
+          var on = d.enabled === true || d.enabled === 1;
+          el.textContent = location.hostname + ' · ' + (d.framework === 'zbank' ? 'Z Bank' : d.framework) +
+            ' · payments ' + (on ? 'LIVE' : 'OFF') + (d.provider ? ' · ' + d.provider : '');
+          el.className = on ? 'ok' : 'err';
+        })
+        .catch(function () {
+          document.getElementById('live-status').textContent = 'Bridge offline — start onex-bridge';
+          document.getElementById('live-status').className = 'err';
+        });
+    })();
+  </script>
+</body>
+</html>

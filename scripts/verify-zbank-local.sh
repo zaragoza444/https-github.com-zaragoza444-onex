@@ -59,6 +59,8 @@ echo ""
 echo "-- Static assets"
 check "payments portal" curl -sf -o /dev/null "$BASE/payments/"
 check "zbank logo" curl -sf -o /dev/null "$BASE/payments/assets/zbank-logo.png"
+check "dashboards hub" curl -sf -o /dev/null "$BASE/dashboards/"
+check "payment dashboard" curl -sf -o /dev/null "$BASE/payments/dashboard/"
 
 if [ -n "$API_KEY" ]; then
   echo ""

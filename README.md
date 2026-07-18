@@ -119,7 +119,7 @@ Z Bank is a separate brand from Nova Bank (`framework: zbank`) with M1–M4 oper
 | Env template | `deploy/env.zbank.production.example` |
 | Verify script | `bash scripts/verify-zbank-local.sh http://127.0.0.1:9338` |
 
-Payments portal: `http://HOST:9338/payments/` · API: `GET /bridge/payments/status` (expect `"framework":"zbank"`).
+Payments portal: `http://HOST:9338/payments/` · Dashboards hub: `/dashboards/` · Admin: `/payments/dashboard/`
 
 ### Docker (node + wallet bridge)
 

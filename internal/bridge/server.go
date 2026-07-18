@@ -24,6 +24,9 @@ var walletFS embed.FS
 //go:embed static/payments/*
 var paymentsFS embed.FS
 
+//go:embed static/dashboards/*
+var dashboardsFS embed.FS
+
 type Server struct {
 	b *Bridge
 }
@@ -52,6 +55,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/wallet/", http.StripPrefix("/wallet/", http.FileServer(http.FS(sub))))
 	paySub, _ := fs.Sub(paymentsFS, "static/payments")
 	mux.Handle("/payments/", http.StripPrefix("/payments/", http.FileServer(http.FS(paySub))))
+	dashSub, _ := fs.Sub(dashboardsFS, "static/dashboards")
+	mux.Handle("/dashboards/", http.StripPrefix("/dashboards/", http.FileServer(http.FS(dashSub))))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			http.Redirect(w, r, "/wallet/", http.StatusFound)
@@ -411,6 +416,7 @@ func (s *Server) Start(addr string) error {
 	log.Printf("onex-bridge: wallet UI http://127.0.0.1%s/wallet/", addr)
 	log.Printf("onex-bridge: payment portal http://127.0.0.1%s/payments/", addr)
 	log.Printf("onex-bridge: payment dashboard http://127.0.0.1%s/payments/dashboard/", addr)
+	log.Printf("onex-bridge: dashboards hub http://127.0.0.1%s/dashboards/", addr)
 	log.Printf("onex-bridge: JSON-RPC http://127.0.0.1%s/rpc -> %s", addr, s.b.Config().NodeURL)
 	return http.ListenAndServe(addr, s.Handler())
 }

@@ -10,9 +10,11 @@
 ## Dashboard URLs (after deploy)
 | Surface | URL |
 |---------|-----|
-| Payments dashboard | `/payments/` |
+| **Dashboards hub** | `/dashboards/` |
+| Payment gateway admin | `/payments/dashboard/` |
+| Card payments portal | `/payments/` |
 | Online bank | `/wallet/#onlinebank` |
-| Production status | `/bridge/production/status` |
+| Production status (JSON) | `/bridge/production/status` |
 | Payments API | `/bridge/payments/status` |
 
 Works on both apex hosts: `zblockchainsystem.com` and `blockchainsystem.com`.
