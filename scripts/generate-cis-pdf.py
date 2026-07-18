@@ -18,6 +18,8 @@ CSS_PATH = os.path.join(CIS_DIR, "pdf-style.css")
 
 FILES = [
     "CIS-Nova-Bank-Online-v1.md",
+    "CIS-Z-Bank-Online-v1.md",
+    "CIS-Z-Bank-DSSBOAT-Officer-v1.md",
     "CIS-Nova-1-Chain-22016-v1.md",
     "CIS-Nova-Integration-Matrix-v1.md",
     "README.md",

@@ -108,6 +108,19 @@ await window.ethereum?.request({
 
 Full guide: **[DEPLOY.md](DEPLOY.md)**
 
+### Z Bank (online banking + payment gateway)
+
+Z Bank is a separate brand from Nova Bank (`framework: zbank`) with M1–M4 operational liquidity layers, Stripe card acquiring, and DSSBOaT corporate officer auth (PIN + signature).
+
+| Resource | Path |
+|----------|------|
+| Go-live checklist | [docs/ZBANK-GO-LIVE.md](docs/ZBANK-GO-LIVE.md) |
+| CIS | [docs/cis/CIS-Z-Bank-Online-v1.md](docs/cis/CIS-Z-Bank-Online-v1.md) |
+| Env template | `deploy/env.zbank.production.example` |
+| Verify script | `bash scripts/verify-zbank-local.sh http://127.0.0.1:9338` |
+
+Payments portal: `http://HOST:9338/payments/` · API: `GET /bridge/payments/status` (expect `"framework":"zbank"`).
+
 ### Docker (node + wallet bridge)
 
 ```bash

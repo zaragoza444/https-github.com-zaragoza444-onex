@@ -40,6 +40,8 @@ Customer Integration Specifications (CIS) for **Nova Bank Online**, **Z Bank**, 
 | PDF | Source |
 |-----|--------|
 | [CIS-Nova-Bank-Online-v1.pdf](./CIS-Nova-Bank-Online-v1.pdf) | Nova Bank Online CIS |
+| [CIS-Z-Bank-Online-v1.pdf](./CIS-Z-Bank-Online-v1.pdf) | Z Bank Online CIS |
+| [CIS-Z-Bank-DSSBOAT-Officer-v1.pdf](./CIS-Z-Bank-DSSBOAT-Officer-v1.pdf) | Z Bank DSSBOaT officer CIS |
 | [CIS-Nova-1-Chain-22016-v1.pdf](./CIS-Nova-1-Chain-22016-v1.pdf) | Nova 1 Chain 22016 CIS |
 | [CIS-Nova-Integration-Matrix-v1.pdf](./CIS-Nova-Integration-Matrix-v1.pdf) | Integration matrix |
 | [README.pdf](./README.pdf) | This index |
