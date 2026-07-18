@@ -7,7 +7,7 @@ from pathlib import Path
 import paramiko
 
 ROOT = Path(__file__).resolve().parents[1]
-HOST = os.environ.get("SSH_HOST", "zblockchainsystem.com")
+HOST = os.environ.get("SSH_HOST", "51.75.64.28")
 USER = os.environ.get("SSH_USER", "ubuntu")
 DOMAIN = os.environ.get("ONEX_PRODUCTION_DOMAIN", "zblockchainsystem.com")
 
@@ -72,7 +72,7 @@ curl -sf http://127.0.0.1/bridge/payments/status || curl -sf http://127.0.0.1:93
     if err:
         print(err, file=sys.stderr)
     if "enabled" in out and "payment" in out.lower():
-        print(f"\nLIVE: http://{DOMAIN}/payments/?page=donate")
+        print(f"\nLIVE: https://{DOMAIN}/payments/?page=donate")
         return 0
     return 1
 

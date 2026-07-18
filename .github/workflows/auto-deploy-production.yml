@@ -18,7 +18,7 @@ jobs:
           ONEX_STRIPE_PUBLISHABLE_KEY: ${{ secrets.ONEX_STRIPE_PUBLISHABLE_KEY }}
           ONEX_STRIPE_WEBHOOK_SECRET: ${{ secrets.ONEX_STRIPE_WEBHOOK_SECRET }}
         with:
-          host: zblockchainsystem.com
+          host: ${{ secrets.SSH_HOST || '51.75.64.28' }}
           username: ubuntu
           password: ${{ secrets.SSH_PASS }}
           envs: ONEX_STRIPE_SECRET_KEY,ONEX_STRIPE_PUBLISHABLE_KEY,ONEX_STRIPE_WEBHOOK_SECRET
