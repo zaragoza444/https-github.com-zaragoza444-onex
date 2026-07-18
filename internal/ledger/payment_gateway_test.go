@@ -151,3 +151,40 @@ func TestPaymentGatewayZBankExampleSettlesToZBankAccounts(t *testing.T) {
 		t.Fatalf("treasury dest %+v", byID["zbank-usd-treasury"])
 	}
 }
+
+func TestPaymentGatewayDashboardStats(t *testing.T) {
+	dir := t.TempDir()
+	gwStore := &PaymentGatewayStore{path: filepath.Join(dir, "payment-gateway.json")}
+	st := &PaymentGatewayState{
+		Sessions: []PaymentSession{
+			{ID: "pay_1", Flow: PaymentFlowDonation, Amount: "50.00", Currency: "USD", ProcessingFee: "1.00", TotalCharged: "51.00", Status: PaymentStatusSucceeded, SettlementDestination: "dest1", SettlementLabel: "Checking", CreatedAt: 1000},
+			{ID: "pay_2", Flow: PaymentFlowPayment, Amount: "100.00", Currency: "USD", Status: PaymentStatusFailed, CreatedAt: 2000},
+			{ID: "pay_3", Flow: PaymentFlowCollection, Amount: "25.00", Currency: "EUR", Status: PaymentStatusProcessing, CreatedAt: 3000},
+		},
+	}
+	if err := gwStore.save(st); err != nil {
+		t.Fatal(err)
+	}
+	stats, err := gwStore.DashboardStats(10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats.TotalSessions != 3 {
+		t.Fatalf("total=%d", stats.TotalSessions)
+	}
+	if stats.ByStatus[PaymentStatusSucceeded] != 1 || stats.ByStatus[PaymentStatusFailed] != 1 {
+		t.Fatalf("byStatus=%v", stats.ByStatus)
+	}
+	if stats.VolumeByCurrency["USD"] != "50.00" {
+		t.Fatalf("volume=%v", stats.VolumeByCurrency)
+	}
+	if stats.FeesByCurrency["USD"] != "1.00" {
+		t.Fatalf("fees=%v", stats.FeesByCurrency)
+	}
+	if len(stats.RecentSessions) != 3 || stats.RecentSessions[0].ClientSecret != "" {
+		t.Fatalf("recent=%d", len(stats.RecentSessions))
+	}
+	if stats.BySettlement["dest1"].Count != 1 || stats.BySettlement["dest1"].Volume != "50.00" {
+		t.Fatalf("settlement=%v", stats.BySettlement)
+	}
+}
