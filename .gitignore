@@ -20,6 +20,9 @@ go-sdk.zip
 remotes.env
 configs/faucet-testnet.env
 configs/quiknode.env
+deploy/ECOSYSTEM-SECRETS.env
+.astra-ecosystem-handoff.local
+.astra-ecosystem-handoff.local.asc
 **/wallets/*.json
 !**/wallets/.gitkeep
 
