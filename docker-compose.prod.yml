@@ -54,14 +54,16 @@ services:
       ONEX_LEDGER_PRO_FILE: ${ONEX_LEDGER_PRO_FILE:-data/bridge7/ledger-pro.json}
       ONEX_CRYPTO_LEDGER_FILE: ${ONEX_CRYPTO_LEDGER_FILE:-data/bridge7/crypto-ledger.json}
       ONEX_ONLINE_BANK: ${ONEX_ONLINE_BANK:-1}
-      ONEX_BANK_LEDGER_FILE: ${ONEX_BANK_LEDGER_FILE:-configs/bank-ledger.nova.example.json}
+      ONEX_PRODUCTION_DOMAIN: ${ONEX_PRODUCTION_DOMAIN:-zblockchainsystem.com}
+      ONEX_BANK_LEDGER_FILE: ${ONEX_BANK_LEDGER_FILE:-configs/bank-ledger.zbank.production.json}
       ONEX_PAYMENT_GATEWAY: ${ONEX_PAYMENT_GATEWAY:-1}
-      ONEX_PAYMENT_GATEWAY_FILE: ${ONEX_PAYMENT_GATEWAY_FILE:-configs/payment-gateway.production.json}
-      ONEX_PAYMENT_GATEWAY_FRAMEWORK: ${ONEX_PAYMENT_GATEWAY_FRAMEWORK:-nova}
+      ONEX_PAYMENT_GATEWAY_FILE: ${ONEX_PAYMENT_GATEWAY_FILE:-configs/payment-gateway.zbank.production.json}
+      ONEX_PAYMENT_GATEWAY_FRAMEWORK: ${ONEX_PAYMENT_GATEWAY_FRAMEWORK:-zbank}
       ONEX_PAYMENT_GATEWAY_PROVIDER: ${ONEX_PAYMENT_GATEWAY_PROVIDER:-stripe}
       ONEX_STRIPE_SECRET_KEY: ${ONEX_STRIPE_SECRET_KEY:-}
       ONEX_STRIPE_PUBLISHABLE_KEY: ${ONEX_STRIPE_PUBLISHABLE_KEY:-}
       ONEX_STRIPE_WEBHOOK_SECRET: ${ONEX_STRIPE_WEBHOOK_SECRET:-}
+      ONEX_ZBANK_OFFICERS_FILE: ${ONEX_ZBANK_OFFICERS_FILE:-configs/zbank-officers.dssboat.example.json}
     depends_on:
       onexd:
         condition: service_healthy

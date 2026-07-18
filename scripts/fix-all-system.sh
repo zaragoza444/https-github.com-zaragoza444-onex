@@ -81,7 +81,11 @@ upsert_env ONEX_LEDGER_MODE production
 upsert_env ONEX_ONLINE_BANK 1
 upsert_env ONEX_PROJECT_ROOT "$REPO"
 upsert_env ONEX_PRODUCTION_DOMAIN "$DOMAIN"
-upsert_env ONEX_CORS_ORIGINS "https://zblockchainsystem.com,https://www.zblockchainsystem.com,https://blockchainsystem.com,https://www.blockchainsystem.com,http://blockchainsystem.com,http://www.blockchainsystem.com,https://git.anakatech.llc,https://zaragoza444.github.io,http://51.75.64.28:9338"
+# Clear IP override so dashboard/public URLs stay on HTTPS domain
+if sudo grep -q '^ONEX_PUBLIC_HOST=' "$ENV_FILE" 2>/dev/null; then
+  sudo sed -i 's/^ONEX_PUBLIC_HOST=.*/# ONEX_PUBLIC_HOST=/' "$ENV_FILE" || true
+fi
+upsert_env ONEX_CORS_ORIGINS "https://zblockchainsystem.com,https://www.zblockchainsystem.com,https://blockchainsystem.com,https://www.blockchainsystem.com,http://blockchainsystem.com,http://www.blockchainsystem.com,https://git.anakatech.llc,https://zaragoza444.github.io"
 upsert_env ONEX_BRIDGE_LISTEN "0.0.0.0:${PORT}"
 upsert_env ONEX_BANK_LEDGER_FILE "${REPO}/configs/bank-ledger.zbank.production.json"
 upsert_env ONEX_PAYMENT_GATEWAY 1
