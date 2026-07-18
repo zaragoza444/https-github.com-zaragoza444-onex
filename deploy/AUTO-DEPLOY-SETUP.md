@@ -18,7 +18,7 @@ Officer PIN/signature can live only on the VPS in `/etc/onex/onex.env` (`ONEX_ZB
 
 ## 2. Automatic deploy
 
-Every push to `main` runs `.github/workflows/auto-deploy-production.yml` which SSHs to `51.75.64.28` and runs:
+Every push to `main` runs `.github/workflows/auto-deploy-production.yml` which SSHs to `zblockchainsystem.com` and runs:
 
 ```bash
 bash scripts/fix-all-system.sh

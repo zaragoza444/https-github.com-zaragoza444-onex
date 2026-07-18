@@ -1,10 +1,10 @@
 #!/bin/bash
-# Run ON the ALI/ALLTRA ecosystem VPS (ubuntu@51.75.64.28) after git pull.
+# Run ON the ALI/ALLTRA ecosystem VPS (ubuntu@zblockchainsystem.com) after git pull.
 set -euo pipefail
 
 REPO="${ALI_DEPLOY_ROOT:-/home/ubuntu/onex}"
 GITHUB="${GITHUB_REPO:-https://github.com/zaragoza444/onex.git}"
-HOST_IP="${ALI_PUBLIC_HOST:-51.75.64.28}"
+DOMAIN="${ALI_PUBLIC_HOST:-zblockchainsystem.com}"
 export PATH="/usr/local/go/bin:$HOME/go/bin:$PATH"
 
 echo "==> firewall"
@@ -40,7 +40,7 @@ API_KEY="${ONEX_API_KEY:-$(openssl rand -base64 32 | tr -d '/+=' | head -c 32)}"
 sudo mkdir -p /etc/onex
 sudo tee /etc/onex/onex.env >/dev/null <<EOF
 ONEX_API_KEY=${API_KEY}
-ONEX_CORS_ORIGINS=http://${HOST_IP}:9338,http://${HOST_IP}:8545,https://zaragoza444.github.io,https://zaragoza444.github.io/onex,https://git.anakatech.llc,https://explorer.d-bis.org
+ONEX_CORS_ORIGINS=https://${DOMAIN},https://www.${DOMAIN},https://zaragoza444.github.io,https://zaragoza444.github.io/onex,https://git.anakatech.llc,https://explorer.d-bis.org
 ONEX_LEDGER_MODE=production
 ONEX_BANK_LEDGER_FILE=${REPO}/configs/bank-ledger.nova.example.json
 ONEX_ONLINE_BANK=1
@@ -52,8 +52,8 @@ ONEX_PROJECT_ROOT=${REPO}
 ONEX_HOME_DIR=${HOME}/.onex
 ONEX_NODE_URL=http://127.0.0.1:8545
 ONEX_BRIDGE_LISTEN=0.0.0.0:9338
+ONEX_PRODUCTION_DOMAIN=${DOMAIN}
 ONEX_DEFAULT_BRIDGE_CHAIN=dbis-138
-ONEX_PUBLIC_HOST=${HOST_IP}
 DBIS138_RPC_URL=https://rpc-core.d-bis.org
 DBIS138_EXPLORER=https://explorer.d-bis.org
 DBIS138_CHAIN_ID=138
@@ -137,10 +137,9 @@ curl -sf "http://127.0.0.1:9340/health" && echo " token-lab OK" || echo " token-
 systemctl is-active onexd onex-bridge onex-token-lab
 
 echo ""
-echo "=== PUBLIC (open ports 9338, 8545, 30303 on firewall) ==="
-echo "PUBLIC_WALLET=http://${HOST_IP}:9338/wallet/"
-echo "PUBLIC_LEDGER=http://${HOST_IP}:9338/wallet/#ledger"
-echo "PUBLIC_GREEN=http://${HOST_IP}:9338/bridge/health/green"
-echo "PUBLIC_TOKEN_LAB=http://${HOST_IP}:9340/"
-echo "GITHUB_PAGES=https://zaragoza444.github.io/onex/wallet/?bridge=http://${HOST_IP}:9338"
+echo "=== PUBLIC (use domain URLs) ==="
+echo "PUBLIC_WALLET=https://${DOMAIN}/wallet/"
+echo "PUBLIC_LEDGER=https://${DOMAIN}/wallet/#ledger"
+echo "PUBLIC_GREEN=https://${DOMAIN}/bridge/health/green"
+echo "GITHUB_PAGES=https://zaragoza444.github.io/onex/wallet/?bridge=https://${DOMAIN}"
 echo "ONEX_API_KEY=${API_KEY}"

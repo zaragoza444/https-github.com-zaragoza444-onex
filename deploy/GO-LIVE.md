@@ -38,7 +38,7 @@ ONEX_DEPLOY_DOMAIN=onexproduction.com CERTBOT_EMAIL=hello@onexproduction.com bas
 Windows preflight:
 
 ```powershell
-.\scripts\deploy-onexproduction.ps1 -VpsIp 51.75.64.28
+.\scripts\deploy-onexproduction.ps1 -VpsIp zblockchainsystem.com
 $env:SSH_PASS='password'; .\scripts\run-vps-go-live.ps1
 ```
 

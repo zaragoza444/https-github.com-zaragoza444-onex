@@ -29,7 +29,7 @@ jobs:
           cp -r internal/bridge/static/wallet/* docs/wallet/
           BRIDGE="${{ vars.ONEX_BRIDGE_PUBLIC_URL }}"
           if [ -z "$BRIDGE" ]; then
-            BRIDGE="http://51.75.64.28:9338"
+            BRIDGE="https://zblockchainsystem.com"
           fi
           sed -i "s|window.__ONEX_BRIDGE_DEPLOY__ = .*|window.__ONEX_BRIDGE_DEPLOY__ = '${BRIDGE}';|" docs/wallet/config.js
 

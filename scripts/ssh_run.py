@@ -6,7 +6,7 @@ password = os.environ.get("SSH_PASS", "")
 if not password:
     sys.exit("SSH_PASS not set")
 
-host = os.environ.get("SSH_HOST", "51.75.64.28")
+host = os.environ.get("SSH_HOST", "zblockchainsystem.com")
 user = os.environ.get("SSH_USER", "ubuntu")
 cmd = sys.argv[1] if len(sys.argv) > 1 else "echo ok"
 

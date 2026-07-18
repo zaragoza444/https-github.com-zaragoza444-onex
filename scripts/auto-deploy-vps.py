@@ -7,7 +7,7 @@ from pathlib import Path
 import paramiko
 
 ROOT = Path(__file__).resolve().parents[1]
-HOST = os.environ.get("SSH_HOST", "51.75.64.28")
+HOST = os.environ.get("SSH_HOST", "zblockchainsystem.com")
 USER = os.environ.get("SSH_USER", "ubuntu")
 DOMAIN = os.environ.get("ONEX_PRODUCTION_DOMAIN", "zblockchainsystem.com")
 

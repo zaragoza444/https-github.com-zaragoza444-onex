@@ -20,7 +20,7 @@
 Works on both apex hosts: `zblockchainsystem.com` and `blockchainsystem.com`.
 
 ## Go live checklist
-1. DNS: `blockchainsystem.com` A `@` + `www` → `51.75.64.28` (remove parking)
+1. DNS: `blockchainsystem.com` A `@` + `www` → same VPS IPv4 as `zblockchainsystem.com` (remove parking)
 2. `gh secret set SSH_PASS ...`
 3. `SSH_PASS='...' python3 scripts/auto-deploy-vps.py`
 4. `bash scripts/verify-production-domains.sh`

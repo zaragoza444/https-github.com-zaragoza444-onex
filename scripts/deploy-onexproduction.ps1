@@ -1,6 +1,6 @@
 # DNS + HTTPS + email preflight for onexproduction.com
 param(
-    [string]$VpsIp = "51.75.64.28",
+    [string]$VpsIp = "zblockchainsystem.com",
     [string]$Domain = "onexproduction.com"
 )
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-shot QuickNode go-live on VPS web console (ubuntu@51.75.64.28).
+# One-shot QuickNode go-live on VPS web console (ubuntu@zblockchainsystem.com).
 # 1. Create /etc/onex/quiknode.env from configs/quiknode.env.example (fill in your values)
 # 2. Run: bash scripts/vps-quiknode-console.sh
 set -euo pipefail

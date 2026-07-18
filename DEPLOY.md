@@ -6,7 +6,7 @@ Run OneX blockchain + OKX-style wallet bridge on a server (Docker or systemd).
 
 **Go live (public VPS + GitHub Pages):** [deploy/GO-LIVE.md](deploy/GO-LIVE.md), `scripts/go-live.ps1`
 
-**ALI / ALLTRA ecosystem VPS (`ubuntu@51.75.64.28`):** `scripts/deploy-ali-ecosystem.py` (remote SSH), `scripts/deploy-ali-ecosystem.sh` (run on server), `deploy/env.ali-ecosystem.example`.
+**ALI / ALLTRA ecosystem VPS (`ubuntu@zblockchainsystem.com`):** `scripts/deploy-ali-ecosystem.py` (remote SSH), `scripts/deploy-ali-ecosystem.sh` (run on server), `deploy/env.ali-ecosystem.example`.
 
 ```powershell
 # From Windows (requires SSH_PASS + port 22 reachable)
@@ -21,12 +21,12 @@ bash scripts/deploy-ali-ecosystem.sh
 
 | Service | Port | URL |
 |---------|------|-----|
-| Wallet + Real Ledger | 9338 | `http://51.75.64.28:9338/wallet/` |
-| Ledger tab | 9338 | `http://51.75.64.28:9338/wallet/#ledger` |
-| Node API | 8545 | `http://51.75.64.28:8545/health` |
-| Token Lab | 9340 | `http://51.75.64.28:9340/` |
+| Wallet + Real Ledger | 9338 | `https://zblockchainsystem.com/wallet/` |
+| Ledger tab | 9338 | `https://zblockchainsystem.com/wallet/#ledger` |
+| Node API | 8545 | `http://zblockchainsystem.com:8545/health` |
+| Token Lab | 9340 | `http://zblockchainsystem.com:9340/` |
 
-Set `ONEX_BRIDGE_PUBLIC_URL=http://51.75.64.28:9338` in GitHub Pages variables so the static wallet at https://zaragoza444.github.io/onex/wallet/ connects to this bridge.
+Set `ONEX_BRIDGE_PUBLIC_URL=https://zblockchainsystem.com` in GitHub Pages variables so the static wallet at https://zaragoza444.github.io/onex/wallet/ connects to this bridge.
 
 ## Docker (recommended)
 

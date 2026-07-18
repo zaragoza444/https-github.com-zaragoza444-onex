@@ -3,7 +3,7 @@
 | Item | Value |
 |------|-------|
 | **Domain** | `blockchainsystem.com` |
-| **VPS** | `51.75.64.28` |
+| **VPS** | `zblockchainsystem.com` |
 | **GitHub** | [zaragoza444](https://github.com/zaragoza444) → `https://github.com/zaragoza444/https-github.com-zaragoza444-onex` |
 | **Gitea** | [Zaragoza](https://git.anakatech.llc/Zaragoza) → `https://git.anakatech.llc/Zaragoza/onex` |
 
@@ -24,7 +24,7 @@ curl -fsSL https://raw.githubusercontent.com/zaragoza444/https-github.com-zarago
 
 ## DNS
 
-See `deploy/dns-records-blockchainsystem.com.md` — point `@` and `www` to `51.75.64.28`.
+See `deploy/dns-records-blockchainsystem.com.md` — point `@` and `www` to `zblockchainsystem.com`.
 
 ---
 
@@ -59,7 +59,7 @@ Events: `payment_intent.succeeded`, `payment_intent.payment_failed`
 | `ONEX_STRIPE_PUBLISHABLE_KEY` | Stripe live publishable |
 | `ONEX_STRIPE_WEBHOOK_SECRET` | Stripe webhook signing |
 
-Workflow input: host `51.75.64.28`, branch `main`
+Workflow input: host `zblockchainsystem.com`, branch `main`
 
 ---
 

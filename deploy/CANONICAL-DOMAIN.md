@@ -23,7 +23,7 @@ Nginx: `deploy/nginx-vps-zblockchain.conf` (both names → `onex-bridge`).
 
 ```bash
 ONEX_PRODUCTION_DOMAIN=zblockchainsystem.com
-ONEX_CORS_ORIGINS=https://zblockchainsystem.com,https://www.zblockchainsystem.com,https://blockchainsystem.com,https://www.blockchainsystem.com,http://blockchainsystem.com,http://www.blockchainsystem.com,https://git.anakatech.llc,https://zaragoza444.github.io,http://51.75.64.28:9338
+ONEX_CORS_ORIGINS=https://zblockchainsystem.com,https://www.zblockchainsystem.com,https://blockchainsystem.com,https://www.blockchainsystem.com,http://blockchainsystem.com,http://www.blockchainsystem.com,https://git.anakatech.llc,https://zaragoza444.github.io
 ```
 
 Prefer `deploy/env.zbank.production.example`.

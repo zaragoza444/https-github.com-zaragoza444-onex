@@ -1,6 +1,6 @@
 # OneX — DNS records for onexproduction.com
 
-Replace `YOUR_VPS_IP` with your server public IPv4 (e.g. `51.75.64.28`).
+Replace `YOUR_VPS_IP` with your server public IPv4 (e.g. `zblockchainsystem.com`).
 
 ## Website (required)
 

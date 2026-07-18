@@ -76,7 +76,7 @@ def build() -> Path:
     pdf.body(
         "OneX Token Lab is deployed and running in production mode on your VPS."
     )
-    pdf.bullet("App URL: http://51.75.64.28:9340")
+    pdf.bullet("App URL: http://zblockchainsystem.com:9340")
     pdf.bullet("Health: GET /health  |  Ready: GET /ready")
     pdf.bullet("Mode: production (API key required for deploy/register)")
     pdf.bullet("Chains: 12 supported (BSC, Ethereum, Base, Polygon, Arbitrum, Optimism, Avalanche, Linea, Blast, Scroll, Solana track, Sui track)")
@@ -88,7 +88,7 @@ def build() -> Path:
     pdf.body("Main branch contains OneX Token Lab, OneXToken contract, multi-chain server, and production UI.")
 
     pdf.section("First-Time Setup (Browser)")
-    pdf.bullet("Open http://51.75.64.28:9340")
+    pdf.bullet("Open http://zblockchainsystem.com:9340")
     pdf.bullet("Click Settings in the top navigation bar")
     pdf.bullet("Paste your BSC_LAUNCHER_API_KEY from the server .env file")
     pdf.bullet("Click Save API key")
@@ -103,14 +103,14 @@ def build() -> Path:
         "BSC_LAUNCHER_ENV=production\n"
         "BSC_LAUNCHER_LISTEN=:9340\n"
         "BSC_LAUNCHER_API_KEY=<your-secret-key>\n"
-        "BSC_LAUNCHER_CORS_ORIGINS=http://51.75.64.28:9340\n"
+        "BSC_LAUNCHER_CORS_ORIGINS=http://zblockchainsystem.com:9340\n"
         "BSC_RPC_URL=https://bsc-dataseed.binance.org\n"
         "BSCSCAN_API_KEY=<etherscan-v2-key>"
     )
     pdf.body("Never commit .env or private keys to Git. The API key is stored in the browser via Settings (localStorage).")
 
     pdf.section("VPS Details")
-    pdf.bullet("Host: ubuntu@51.75.64.28")
+    pdf.bullet("Host: ubuntu@zblockchainsystem.com")
     pdf.bullet("Install path: /home/ubuntu/onex-token-lab")
     pdf.bullet("Binary: /home/ubuntu/onex-token-lab/bin/bsc-launcher")
     pdf.bullet("Systemd service: onex-token-lab")
