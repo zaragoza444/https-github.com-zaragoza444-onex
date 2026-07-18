@@ -1,6 +1,6 @@
 # Run full VPS go-live when SSH works, or print web-console command.
 param(
-    [string]$VpsIp = "51.75.64.28",
+    [string]$VpsIp = "zblockchainsystem.com",
     [string]$Domain = "",
     [switch]$ForceRemote
 )

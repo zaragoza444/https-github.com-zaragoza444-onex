@@ -17,7 +17,6 @@ set -euo pipefail
 REPO="${ONEX_REPO:-$HOME/onex}"
 GITHUB="${GITHUB_REPO:-https://github.com/zaragoza444/https-github.com-zaragoza444-onex.git}"
 BRANCH="main"
-HOST_IP="${ONEX_PUBLIC_HOST:-51.75.64.28}"
 DOMAIN="${ONEX_PRODUCTION_DOMAIN:-zblockchainsystem.com}"
 
 echo "=============================================="
@@ -66,7 +65,7 @@ bash "$REPO/scripts/apply-production-env.sh" 2>/dev/null || {
     "ONEX_BANK_LEDGER_FILE=${REPO}/configs/bank-ledger.nova.example.json" \
     "ONEX_LEDGER_MODE=production" \
     "ONEX_PROJECT_ROOT=${REPO}" \
-    "ONEX_PUBLIC_HOST=${HOST_IP}"; do
+    "ONEX_PRODUCTION_DOMAIN=${DOMAIN}"; do
     k="${pair%%=*}"; v="${pair#*=}"
     if sudo grep -q "^${k}=" "$ENV_FILE" 2>/dev/null; then
       sudo sed -i "s|^${k}=.*|${k}=${v}|" "$ENV_FILE"
@@ -141,9 +140,9 @@ echo ""
 echo "=============================================="
 echo " PAYMENT GATEWAY BOOTSTRAP COMPLETE"
 echo "=============================================="
-echo "Portal:   http://${HOST_IP}:9338/payments/"
-echo "Donate:   http://${HOST_IP}:9338/payments/?page=donate"
-echo "Status:   http://${HOST_IP}:9338/bridge/payments/status"
+echo "Portal:   https://${DOMAIN}/payments/"
+echo "Donate:   https://${DOMAIN}/payments/?page=donate"
+echo "Status:   https://${DOMAIN}/bridge/payments/status"
 echo "API key:  ${API_KEY}"
 echo ""
 if ! sudo grep -q 'sk_live_' /etc/onex/onex.env 2>/dev/null || sudo grep -q 'sk_live_CHANGE_ME' /etc/onex/onex.env 2>/dev/null; then
@@ -151,7 +150,7 @@ if ! sudo grep -q 'sk_live_' /etc/onex/onex.env 2>/dev/null || sudo grep -q 'sk_
   echo "  sudo systemctl restart onex-bridge"
   echo "  bash scripts/setup-stripe-webhook.sh"
 fi
-echo "HTTPS (after DNS -> ${HOST_IP}):"
+echo "HTTPS:"
 echo "  https://${DOMAIN}/payments/"
 echo "  https://${DOMAIN}/payments/?page=donate"
 echo "GitHub: zaragoza444 | Gitea: git.anakatech.llc/Zaragoza/onex"

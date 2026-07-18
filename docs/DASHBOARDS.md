@@ -55,4 +55,4 @@ bash scripts/verify-zbank-local.sh http://127.0.0.1:9338
 
 ## Production
 
-Requires VPS deploy + DNS → `51.75.64.28`. See `docs/ZBANK-GO-LIVE.md` and `deploy/FIX-domain-dashboard.md`.
+Requires VPS deploy + DNS → `zblockchainsystem.com`. See `docs/ZBANK-GO-LIVE.md` and `deploy/FIX-domain-dashboard.md`.

@@ -31,7 +31,7 @@ def main() -> int:
         return 1
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    client.connect("51.75.64.28", username="ubuntu", password=password, timeout=30)
+    client.connect("zblockchainsystem.com", username="ubuntu", password=password, timeout=30)
     sftp = client.open_sftp()
     with sftp.file("/tmp/vps_pull_github.sh", "w") as f:
         f.write(SCRIPT.replace("\r\n", "\n"))

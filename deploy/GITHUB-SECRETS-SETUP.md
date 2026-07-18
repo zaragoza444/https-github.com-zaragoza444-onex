@@ -5,7 +5,7 @@
 | Domain | **zblockchainsystem.com** |
 | GitHub | **zaragoza444** |
 | Gitea | **Zaragoza** @ git.anakatech.llc |
-| VPS | **51.75.64.28** |
+| VPS | **zblockchainsystem.com** |
 
 Repo: **https://github.com/zaragoza444/https-github.com-zaragoza444-onex**
 
@@ -16,13 +16,13 @@ Repo: **https://github.com/zaragoza444/https-github.com-zaragoza444-onex**
 
 | Name | Value | Where to get it |
 |------|-------|-----------------|
-| `SSH_PASS` | Your ubuntu VPS password | OVH / hosting panel for `51.75.64.28` |
+| `SSH_PASS` | Your ubuntu VPS password | OVH / hosting panel for `zblockchainsystem.com` |
 | `ONEX_STRIPE_SECRET_KEY` | `sk_live_...` | [Stripe → API keys](https://dashboard.stripe.com/apikeys) (live mode) |
 | `ONEX_STRIPE_PUBLISHABLE_KEY` | `pk_live_...` | Same page |
 | `ONEX_STRIPE_WEBHOOK_SECRET` | `whsec_...` | After webhook created (see below) |
 
 3. Go to **Actions → Deploy payment gateway (production VPS) → Run workflow**
-4. Leave host as `51.75.64.28`, branch `main`, click **Run workflow**
+4. Leave host as `zblockchainsystem.com`, branch `main`, click **Run workflow**
 
 ## Stripe webhook (if you don't have whsec yet)
 
@@ -43,12 +43,12 @@ Then add `whsec_...` as GitHub secret `ONEX_STRIPE_WEBHOOK_SECRET` and re-run th
 
 ## DNS (required for HTTPS)
 
-Point `zblockchainsystem.com` A record → `51.75.64.28` (currently may show `76.53.10.34`).
+Point `zblockchainsystem.com` A record → `zblockchainsystem.com` (currently may show `76.53.10.34`).
 
 ## Verify
 
 ```bash
-curl -s http://51.75.64.28:9338/bridge/payments/status
+curl -s https://zblockchainsystem.com/bridge/payments/status
 curl -s https://zblockchainsystem.com/payments/
 ```
 

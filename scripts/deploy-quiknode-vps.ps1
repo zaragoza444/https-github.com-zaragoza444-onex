@@ -1,9 +1,9 @@
-# Deploy QuickNode + Ethereum middleware to VPS 51.75.64.28
+# Deploy QuickNode + Ethereum middleware to VPS zblockchainsystem.com
 # Usage:
 #   $env:SSH_PASS='your-ubuntu-password'
 #   .\scripts\deploy-quiknode-vps.ps1
 param(
-    [string]$VpsIp = "51.75.64.28"
+    [string]$VpsIp = "zblockchainsystem.com"
 )
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path

@@ -34,19 +34,10 @@ func (b *Bridge) ProductionPlatformStatus(ctx context.Context, evmHolder string)
 	if domain == "" {
 		domain = "zblockchainsystem.com"
 	}
-	publicHost := strings.TrimSpace(os.Getenv("ONEX_PUBLIC_HOST"))
-	// Always prefer the HTTPS production domain for dashboard / public links.
-	// ONEX_PUBLIC_HOST is an optional IP fallback only (not the primary URL).
 	publicWallet := "https://" + domain + "/wallet/"
 	greenHealth := "https://" + domain + "/bridge/health/green"
 	publicPayments := "https://" + domain + "/payments/"
 	publicStatus := "https://" + domain + "/bridge/production/status"
-	ipWallet := ""
-	ipGreen := ""
-	if publicHost != "" {
-		ipWallet = "http://" + publicHost + ":9338/wallet/"
-		ipGreen = "http://" + publicHost + ":9338/bridge/health/green"
-	}
 
 	mode := strings.TrimSpace(b.ledgerConfig().Mode)
 	if mode == "" {
@@ -86,7 +77,6 @@ func (b *Bridge) ProductionPlatformStatus(ctx context.Context, evmHolder string)
 			"greenHealth": "/bridge/health/green",
 		},
 		"public": map[string]string{
-			"host":     publicHost,
 			"domain":   domain,
 			"wallet":   publicWallet,
 			"payments":     publicPayments,
@@ -96,8 +86,6 @@ func (b *Bridge) ProductionPlatformStatus(ctx context.Context, evmHolder string)
 			"onlineBank": strings.TrimSuffix(publicWallet, "/") + "/#onlinebank",
 			"green":    greenHealth,
 			"status":   publicStatus,
-			"ipWallet": ipWallet,
-			"ipGreen":  ipGreen,
 		},
 		"api": map[string]string{
 			"status":       "/bridge/production/status",

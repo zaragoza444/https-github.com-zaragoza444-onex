@@ -94,7 +94,7 @@ UNIT
   sleep 6
 fi
 
-HOST="${ONEX_PUBLIC_HOST:-$(curl -sf --max-time 5 https://api.ipify.org || echo 127.0.0.1)}"
+HOST="${ONEX_PRODUCTION_DOMAIN:-zblockchainsystem.com}"
 echo ""
 echo "==> Verify"
 curl -sf "http://127.0.0.1:9338/bridge/payments/status" && echo
@@ -102,11 +102,11 @@ curl -sf -o /dev/null -w "payments portal HTTP %{http_code}\n" "http://127.0.0.1
 
 echo ""
 echo "=== PAYMENT GATEWAY LIVE ==="
-echo "Portal:  http://${HOST}:9338/payments/"
-echo "Donate:  http://${HOST}:9338/payments/?page=donate"
-echo "Invoice: http://${HOST}:9338/payments/?page=invoice"
-echo "Collect: http://${HOST}:9338/payments/?page=collect"
-echo "Status:  http://${HOST}:9338/bridge/payments/status"
+echo "Portal:  https://${HOST}/payments/"
+echo "Donate:  https://${HOST}/payments/?page=donate"
+echo "Invoice: https://${HOST}/payments/?page=invoice"
+echo "Collect: https://${HOST}/payments/?page=collect"
+echo "Status:  https://${HOST}/bridge/payments/status"
 echo ""
 echo "For live Visa/MC/Amex: add ONEX_STRIPE_* keys to $ENV_FILE and restart onex-bridge"
 echo "Webhook URL: https://YOUR_DOMAIN/bridge/payments/webhook"

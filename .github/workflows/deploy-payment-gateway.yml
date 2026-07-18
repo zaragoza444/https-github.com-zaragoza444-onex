@@ -6,7 +6,7 @@ on:
       host:
         description: VPS IP or hostname
         required: true
-        default: "51.75.64.28"
+        default: "zblockchainsystem.com"
       branch:
         description: Git branch to deploy
         required: true

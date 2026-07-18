@@ -12,7 +12,7 @@ from pathlib import Path
 import paramiko
 
 ROOT = Path(__file__).resolve().parents[1]
-HOST = os.environ.get("SSH_HOST", "51.75.64.28")
+HOST = os.environ.get("SSH_HOST", "zblockchainsystem.com")
 USER = os.environ.get("SSH_USER", "ubuntu")
 REMOTE = os.environ.get("ALI_DEPLOY_ROOT", "/home/ubuntu/onex")
 GITHUB = os.environ.get(
@@ -245,7 +245,7 @@ ONEX_PAYMENT_GATEWAY_FRAMEWORK=nova
 ONEX_PAYMENT_GATEWAY_PROVIDER=stripe
 ONEX_BANK_LEDGER_FILE=$REPO/configs/bank-ledger.nova.example.json
 ONEX_DEFAULT_BRIDGE_CHAIN=dbis-138
-ONEX_PUBLIC_HOST={HOST}
+ONEX_PRODUCTION_DOMAIN={HOST}
 DBIS138_RPC_URL=https://rpc-core.d-bis.org
 DBIS138_EXPLORER=https://explorer.d-bis.org
 DBIS138_CHAIN_ID=138
@@ -353,7 +353,7 @@ def main() -> int:
     load_local_env()
     password = os.environ.get("SSH_PASS")
     if not password:
-        print("SSH_PASS required (ubuntu@51.75.64.28)", file=sys.stderr)
+        print("SSH_PASS required (ubuntu@zblockchainsystem.com)", file=sys.stderr)
         return 1
 
     api_key = os.environ.get("ONEX_API_KEY") or secrets.token_urlsafe(32)

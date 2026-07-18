@@ -2,7 +2,7 @@ import os
 import sys
 import paramiko
 
-host = sys.argv[1] if len(sys.argv) > 1 else "51.75.64.28"
+host = sys.argv[1] if len(sys.argv) > 1 else "zblockchainsystem.com"
 user = sys.argv[2] if len(sys.argv) > 2 else "ubuntu"
 password = os.environ.get("SSH_PASS", "")
 if not password:

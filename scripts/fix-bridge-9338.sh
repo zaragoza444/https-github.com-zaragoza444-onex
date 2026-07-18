@@ -116,7 +116,7 @@ if command -v nginx >/dev/null 2>&1; then
   sudo tee /etc/nginx/sites-available/zblockchain-onex >/dev/null <<NGX
 server {
     listen 80;
-    server_name ${DOMAIN} www.${DOMAIN} 51.75.64.28;
+    server_name ${DOMAIN} www.${DOMAIN} zblockchainsystem.com;
 
     location /payments/ {
         proxy_pass http://127.0.0.1:${PORT}/payments/;

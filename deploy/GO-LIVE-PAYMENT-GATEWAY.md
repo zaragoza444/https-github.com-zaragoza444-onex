@@ -1,7 +1,7 @@
 # Payment Gateway — Production Setup Walkthrough
 
 **Recommended primary domain:** `onexproduction.com`  
-**VPS IP:** `51.75.64.28`
+**VPS IP:** `zblockchainsystem.com`
 
 ---
 
@@ -11,15 +11,15 @@ At your domain registrar, **delete** parking A records and add:
 
 | Host | Type | Value |
 |------|------|-------|
-| `@` (onexproduction.com) | A | `51.75.64.28` |
-| `www` | A | `51.75.64.28` |
-| `@` (novatrustee.digital) | A | `51.75.64.28` |
+| `@` (onexproduction.com) | A | `zblockchainsystem.com` |
+| `www` | A | `zblockchainsystem.com` |
+| `@` (novatrustee.digital) | A | `zblockchainsystem.com` |
 
 Verify:
 
 ```bash
 dig +short onexproduction.com
-# Must show only: 51.75.64.28
+# Must show only: zblockchainsystem.com
 ```
 
 ---
@@ -180,8 +180,8 @@ Configured in `configs/payment-gateway.production.json`. To route to a specific 
 
 ## Support checklist
 
-- [ ] DNS → `51.75.64.28`
-- [ ] Bridge running (`curl http://51.75.64.28:9338/health`)
+- [ ] DNS → `zblockchainsystem.com`
+- [ ] Bridge running (`curl https://zblockchainsystem.com/health`)
 - [ ] Stripe live keys in env
 - [ ] Webhook registered + `whsec_` in env
 - [ ] `stripeLiveReady: true` in status API

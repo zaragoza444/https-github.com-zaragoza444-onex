@@ -58,7 +58,7 @@ def main() -> int:
         return 1
 
     api_key = os.environ.get("ONEX_API_KEY", "onex-prod-8f3k2m9x7p4q1w6n5v0z2r8t")
-    host_ip = os.environ.get("SSH_HOST", "51.75.64.28")
+    host_ip = os.environ.get("SSH_HOST", "zblockchainsystem.com")
 
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())

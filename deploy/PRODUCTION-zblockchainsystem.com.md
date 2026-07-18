@@ -3,7 +3,7 @@
 | Item | Value |
 |------|-------|
 | **Domain** | `zblockchainsystem.com` |
-| **VPS** | `51.75.64.28` |
+| **VPS** | `zblockchainsystem.com` |
 | **GitHub** | `zaragoza444` |
 | **Gitea** | `Zaragoza` @ git.anakatech.llc |
 

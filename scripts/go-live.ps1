@@ -1,6 +1,6 @@
 # Go live: push to GitHub, deploy to public VPS, enable Pages wallet.
 param(
-    [string]$PublicHost = "51.75.64.28",
+    [string]$PublicHost = "zblockchainsystem.com",
     [string]$GitHubUser = "zaragoza444",
     [string]$RepoName = "onex",
     [switch]$SkipPush,

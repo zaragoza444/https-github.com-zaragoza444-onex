@@ -2,14 +2,16 @@
 # Verify production domains return HTTP 200 with real bridge/payments (not parking lander / Nova SPA).
 set -euo pipefail
 
+CANONICAL="${ONEX_PRODUCTION_DOMAIN:-zblockchainsystem.com}"
 DOMAINS=(
+  "${CANONICAL}"
+  "www.${CANONICAL}"
   "${ONEX_VERIFY_DOMAIN:-blockchainsystem.com}"
   "www.blockchainsystem.com"
-  "zblockchainsystem.com"
-  "www.zblockchainsystem.com"
 )
 
 fail=0
+PARKING_RE='76\.223\.54\.146|13\.248\.169\.48|76\.53\.10\.34'
 
 check_json() {
   local url="$1"
@@ -21,7 +23,7 @@ check_json() {
     fail=1
     return
   fi
-  if echo "$body" | grep -qiE '<!doctype|<html|/lander'; then
+  if echo "$body" | grep -qiE '<!doctype|<html|/lander|Application not found'; then
     echo "FAIL $url → HTML/SPA/lander (want JSON bridge)"
     echo "     ${body:0:120}"
     fail=1
@@ -44,39 +46,55 @@ check_portal() {
     fail=1
     return
   fi
-  if echo "$body" | grep -qi '/lander'; then
-    echo "FAIL $url → parking lander"
+  if echo "$body" | grep -qiE '/lander|Application not found'; then
+    echo "FAIL $url → parking lander or dead host"
     fail=1
     return
   fi
   echo "OK   $url → HTTP $code"
 }
 
-echo "==> DNS"
-for d in blockchainsystem.com zblockchainsystem.com; do
+echo "==> DNS (canonical: ${CANONICAL})"
+CANON_IP=$(dig +short "$CANONICAL" A 2>/dev/null | head -1 | tr -d ' ')
+if [ -z "$CANON_IP" ]; then
+  echo "  FAIL ${CANONICAL} — no A record (point @ and www to your VPS)"
+  fail=1
+else
+  if echo "$CANON_IP" | grep -qE "$PARKING_RE"; then
+    echo "  FAIL ${CANONICAL} → $CANON_IP (parking / wrong host — use VPS IPv4)"
+    fail=1
+  else
+    echo "  OK   ${CANONICAL} → $CANON_IP"
+  fi
+fi
+
+for d in blockchainsystem.com www.blockchainsystem.com; do
   ips=$(dig +short "$d" A 2>/dev/null | tr '\n' ' ')
   echo "  $d → $ips"
-  if [ "$d" = "blockchainsystem.com" ] && echo "$ips" | grep -qE '76\.223\.54\.146|13\.248\.169\.48'; then
-    echo "  !! PARKING DNS — set A @ and www to 51.75.64.28 (see deploy/FIX-blockchainsystem.com.md)"
+  if echo "$ips" | grep -qE "$PARKING_RE"; then
+    echo "  !! PARKING DNS — set A @ and www to same IPv4 as ${CANONICAL}"
     fail=1
-  fi
-  if ! echo "$ips" | grep -q '51.75.64.28'; then
-    echo "  !! expected 51.75.64.28"
+  elif [ -n "$CANON_IP" ] && ! echo "$ips" | grep -q "$CANON_IP"; then
+    echo "  !! should match ${CANONICAL} (${CANON_IP})"
     fail=1
   fi
 done
 
-echo "==> Endpoints"
+echo "==> Endpoints (https://${CANONICAL})"
+check_json "https://${CANONICAL}/bridge/payments/status"
+check_portal "https://${CANONICAL}/payments/"
+check_portal "https://${CANONICAL}/dashboards/"
+check_portal "https://${CANONICAL}/health"
+
 for d in "${DOMAINS[@]}"; do
-  check_json "http://${d}/bridge/payments/status"
-  check_portal "http://${d}/payments/"
-  check_portal "http://${d}/health"
+  [ "$d" = "$CANONICAL" ] && continue
+  check_json "http://${d}/bridge/payments/status" || true
 done
 
 if [ "$fail" -ne 0 ]; then
   echo ""
-  echo "NOT READY — fix DNS + run: bash scripts/fix-all-system.sh"
+  echo "NOT READY — point DNS to VPS, set gh secret SSH_PASS, run: bash scripts/fix-all-system.sh"
   exit 1
 fi
 echo ""
-echo "ALL DOMAINS READY (HTTP 200 production)"
+echo "ALL DOMAINS READY (${CANONICAL})"
